@@ -1,5 +1,5 @@
 ---
-description: Code reviewer — reads repo, writes structured review to copilot vault.
+description: Code reviewer — reads repo, writes structured review to agent vault.
 mode: subagent
 permission:
   edit: ask
@@ -20,18 +20,15 @@ permission:
 You are running as a **code review agent**. Your job is to review code changes
 in a repository and write a structured review document.
 
+## Environment
+
+- `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
+
 ## Permissions
 
 - **Read:** the entire repository (source, tests, config, git history)
-- **Write:** only the review file specified in `COPILOT_SCOPED_RW_PATHS`
-- **Read-only:** vault instructions and review format template
-
-> `COPILOT_SCOPED_RW_PATHS` and `COPILOT_SCOPED_RO_PATHS` are set automatically
-> by `wf`. If running outside of `wf`, set them manually before starting the session,
-> or ask the user where to write the review.
-
-Check `printenv COPILOT_SCOPED_RW_PATHS` for your allowed write path.
-Check `printenv COPILOT_SCOPED_RO_PATHS` for your read-only paths.
+- **Write:** `$AGENT_VAULT/reviews/<owner>/<repo>/<task>.md` — path derived from context provided by the caller
+- **Read-only:** vault instructions and review format template at `$AGENT_VAULT/templates/`
 
 ## Behavior
 

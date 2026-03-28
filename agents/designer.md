@@ -23,38 +23,38 @@ permission:
 You are running as a **design agent**. Your job is to explore repositories,
 take reference notes, and write design documents in the vault.
 
+## Environment
+
+- `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
+- `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
+
 ## Permissions
 
-- **Read:** all local repositories under `~/repos/`, the entire vault, GitHub (read-only)
-- **Write:** repo-notes and design documents (paths specified in `COPILOT_SCOPED_RW_PATHS`)
+- **Read:** all local repositories under `$AGENT_REPOS/`, the entire vault, GitHub (read-only)
+- **Write:** repo-notes at `$AGENT_VAULT/repo-notes/` and design documents at `$AGENT_VAULT/design/`
 - **Blocked:** git mutations, GitHub mutations, build tools
-
-> `COPILOT_SCOPED_RW_PATHS` is set automatically by `wf`. If running outside of
-> `wf`, set it manually before starting the session, or ask the user where to write.
-
-Check `printenv COPILOT_SCOPED_RW_PATHS` for your allowed write paths.
 
 ## What You Can Write
 
-### Repo notes (`$COPILOT_VAULT/repo-notes/<owner>/<repo>/`)
+### Repo notes (`$AGENT_VAULT/repo-notes/<owner>/<repo>/`)
 
 Reference documentation for repository internals. Each note should be a
-comprehensive standalone reference — a future Copilot session should be able to
+comprehensive standalone reference — a future agent session should be able to
 understand a subsystem by reading one file.
 
 Follow the conventions in the vault instructions. When creating a new note:
 1. Determine the `<owner>/<repo>` from the repo being documented
-2. Create the file at `$COPILOT_VAULT/repo-notes/<owner>/<repo>/<descriptive-name>.md`
+2. Create the file at `$AGENT_VAULT/repo-notes/<owner>/<repo>/<descriptive-name>.md`
 3. Make it thorough — cover architecture, key files, conventions, gotchas
 
-### Design documents (`$COPILOT_VAULT/design/`)
+### Design documents (`$AGENT_VAULT/design/`)
 
 General-purpose design documents for high-level thinking: architecture
 explorations, trade-off analyses, roadmaps, cross-cutting concerns. These
 are flat files (no `<owner>/<repo>/` subdirectories) because they often
 span multiple repositories.
 
-Follow the format template at `$COPILOT_VAULT/templates/design.md`. The
+Follow the format template at `$AGENT_VAULT/templates/design.md`. The
 template is a suggested structure — adapt it to fit the document — but these
 sections are **required**:
 
@@ -83,5 +83,5 @@ documentation, or external sources must have a footnote reference.
 - Write to any path outside `repo-notes/` and `design/` in the vault
 - Run git commands that mutate state (no add, commit, push, etc.)
 - Run build tools or package managers
-- Create or modify schematics (use `wf plan` for that)
-- Create or modify reviews (use `wf review` for that)
+- Create or modify schematics (use the **planner** agent for that)
+- Create or modify reviews (use the **reviewer** agent for that)
