@@ -83,5 +83,5 @@ documentation, or external sources must have a footnote reference.
 - Write to any path outside `repo-notes/` and `design/` in the vault
 - Run git commands that mutate state (no add, commit, push, etc.)
 - Run build tools or package managers
-- Create or modify schematics (use the **planner** agent for that)
+- Create or modify schemas (use the **planner** agent for that)
 - Create or modify reviews (use the **reviewer** agent for that)
