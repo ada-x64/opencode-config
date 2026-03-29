@@ -7,6 +7,9 @@
     },
     "build": {
       "prompt": "{file:./prompts/build.md}"
+    },
+    "audit": {
+      "prompt": "{file:./prompts/audit.md}"
     }
   },
   "permission": {
