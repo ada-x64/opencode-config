@@ -53,7 +53,7 @@ Provide the auto-auditor with:
 - `scope` — path prefix, glob, or `"full"` (optional; defaults to full repository)
 - `focus` — comma-separated quality dimensions to emphasise (optional; e.g. `security,testing`)
 
-### `@reviewer` — targeted diff review (optional)
+### `@reviewer` — targeted diff review
 
 Dispatch when the user also wants a structured review of staged changes or a
 specific branch diff, within the same audit session. The reviewer:
@@ -79,4 +79,6 @@ Handle directly — without dispatching a subagent — when:
 - Write audit reports directly — that is `@auto-auditor`'s job
 - Dispatch `@auto-auditor` automatically without confirming repo path and label
   with the user first
+- Dispatch `@implementor` or `@auto-implementor` — audit mode is read-only and
+  does not execute implementation schemas
 - Modify repositories, stage files, or create commits
