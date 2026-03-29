@@ -40,7 +40,7 @@ else
   if command -v uuidgen &>/dev/null; then
     topic="agent-vault-$(uuidgen | tr '[:upper:]' '[:lower:]')"
   else
-    topic="agent-vault-$(cat /proc/sys/kernel/random/uuid)"
+    topic="agent-vault-$(tr '[:upper:]' '[:lower:]' < /proc/sys/kernel/random/uuid)"
   fi
   echo "$topic" > "$topic_file"
   echo "Generated new topic: $topic"
@@ -79,7 +79,7 @@ EOF
 echo "Wrote ntfy client config to $ntfy_config"
 
 # ── Scheduled timers for daily summaries ────────────────────────────
-    dashboard_cmd="/bin/bash $skill_dir/triage-dashboard.sh --notify-summary"
+dashboard_cmd="/bin/bash \"$skill_dir/triage-dashboard.sh\" --notify-summary"
 
 case "$platform" in
   linux|wsl-systemd)
@@ -166,8 +166,10 @@ UNIT
 </plist>
 PLIST
 
-    launchctl bootstrap "gui/$(id -u)" "$plist" 2>/dev/null || \
-    launchctl load "$plist" 2>/dev/null || {
+    # Try bootstrap (modern), fall back to load (legacy <10.11) — both are idempotent-safe here
+    launchctl bootstrap "gui/$(id -u)" "$plist" 2>/dev/null \
+      || launchctl load -w "$plist" 2>/dev/null \
+      || {
       echo "Warning: could not load plist. Run manually:"
       echo "  launchctl bootstrap gui/\$(id -u) $plist"
     }
@@ -180,13 +182,13 @@ PLIST
     win_script="$skill_dir/triage-dashboard.sh"
 
     schtasks.exe /Create /SC DAILY /TN "AgentVault\\TriageSummaryAM" \
-      /TR "wsl.exe bash -c \"AGENT_VAULT='$vault' NTFY_TOPIC='$topic' bash $win_script --notify-summary\"" \
+      /TR "wsl.exe bash -c \"AGENT_VAULT='$vault' NTFY_TOPIC='$topic' /bin/bash '$win_script' --notify-summary\"" \
       /ST 09:00 /F 2>/dev/null || {
       echo "Warning: could not create morning task. You may need to run from an elevated prompt."
     }
 
     schtasks.exe /Create /SC DAILY /TN "AgentVault\\TriageSummaryPM" \
-      /TR "wsl.exe bash -c \"AGENT_VAULT='$vault' NTFY_TOPIC='$topic' bash $win_script --notify-summary\"" \
+      /TR "wsl.exe bash -c \"AGENT_VAULT='$vault' NTFY_TOPIC='$topic' /bin/bash '$win_script' --notify-summary\"" \
       /ST 17:00 /F 2>/dev/null || {
       echo "Warning: could not create evening task. You may need to run from an elevated prompt."
     }
