@@ -7,18 +7,19 @@ opencode configuration: models, modes, agents, prompts, skills, and permissions.
 ```
 opencode.json        # Model, mode prompts, and global bash permissions
 agents/              # Subagent definitions (dispatched via Task tool)
-prompts/             # Mode system prompts (build, plan)
+prompts/             # Mode system prompts (build, plan, audit)
 skills/              # Loadable skill instructions and scripts
 ```
 
 ## Modes
 
-Two modes, each with its own system prompt:
+Three modes, each with its own system prompt:
 
 | Mode | Prompt | Description |
 |------|--------|-------------|
 | **build** | `prompts/build.md` | Full tool access — file edits, commands, subagent dispatch |
 | **plan** | `prompts/plan.md` | Read-only exploration and schema authoring |
+| **audit** | `prompts/audit.md` | Read-only quality analysis — tool dispatch and report orchestration |
 
 Switch modes with the Tab key in the opencode TUI.
 
@@ -34,6 +35,7 @@ Subagents dispatched via the Task tool. Each is defined in `agents/`:
 | `@reviewer` | `agents/reviewer.md` | Structured code review; writes findings to the vault |
 | `@designer` | `agents/designer.md` | Repo notes, design documents, vault drafts |
 | `@triage` | `agents/triage.md` | Writes triage entries (escalations, design questions, run summaries); produces triage reports |
+| `@auto-auditor` | `agents/auto-auditor.md` | Headless audit agent — static analysis, coverage, vault report |
 
 ## Skills
 

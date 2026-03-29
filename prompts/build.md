@@ -103,6 +103,21 @@ write a design document, or produce an exploratory written summary. The
 designer writes to `$AGENT_VAULT/repo-notes/`, `$AGENT_VAULT/design/`, and
 `$AGENT_VAULT/draft/`.
 
+### `@auto-auditor` — full-repository or scoped audit
+
+Dispatch when the user wants a quality analysis of a repository without
+switching to audit mode. The auto-auditor runs static analysis tools, collects
+coverage data, and writes a structured audit report to
+`$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
+
+Provide:
+- `repo_path` — absolute path to the repository
+- `label` — short identifier (e.g. `full-audit`, `security-pass`)
+- `scope` — path prefix or `"full"` (optional)
+- `focus` — quality dimensions to emphasise (optional; e.g. `security,testing`)
+
+For dedicated audit sessions, switch to audit mode (Tab key) instead.
+
 ## Direct Work (No Subagent)
 
 Handle directly — without dispatching a subagent — when the task is:

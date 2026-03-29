@@ -84,6 +84,20 @@ To record a handoff or design-question entry directly (e.g. when pausing work
 before implementation begins), provide `task_dir`, `repo_path`, and `type`
 instead.
 
+### `@auto-auditor` — full-repository or scoped audit
+
+Dispatch when the user wants a quality snapshot of a repository as part of
+planning work. The auto-auditor runs available static analysis tools and writes
+a structured audit report to `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
+
+Provide:
+- `repo_path` — absolute path to the repository
+- `label` — short identifier (e.g. `full-audit`, `security-pass`)
+- `scope` — path prefix or `"full"` (optional)
+- `focus` — quality dimensions to emphasise (optional)
+
+For dedicated audit sessions, switch to audit mode (Tab key) instead.
+
 ## Direct Work (No Subagent)
 
 Handle directly — without dispatching a subagent — when the user asks you to:
