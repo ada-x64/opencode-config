@@ -51,14 +51,17 @@ triage_file="$task_dir/triage.md"
 
 1. Read `CONTRIBUTING.md` from the repository root (if it exists).
 2. Read the full schema at `$schema_file`.
-3. Read the schema's `**Branch:**` field and switch to that branch, creating it
-   if it does not exist:
+3. Read the `branch` field from the schema's YAML frontmatter and switch to that
+   branch, creating it if it does not exist:
    ```bash
-   git -C "$repo_path" switch -c <branch> 2>/dev/null || git -C "$repo_path" switch <branch>
+   branch="$(obsidian property:read vault=agent.obs \
+     path="tasks/<owner>/<repo>/<task>/schema.md" name=branch)"
+   git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
    ```
-4. Update the schema's `**Status:**` field to `in progress`:
+4. Update the schema status to `in progress`:
    ```bash
-   sed -i 's/^\*\*Status:\*\* todo$/\*\*Status:\*\* in progress/' "$schema_file"
+   obsidian property:set vault=agent.obs \
+     path="tasks/<owner>/<repo>/<task>/schema.md" name=status value="in progress"
    ```
 
 ### For each commit group (1, 2, 3, …)
@@ -89,10 +92,10 @@ Schema context: <schema_file>
 
 Read the review file. Evaluate findings by severity:
 
-- **All findings are low severity or below (nit/low):** Fix in a single commit,
-  move on. Done — 1 review for this group.
+- **All findings are medium severity or below (nit/low/medium):** Fix in a single
+  commit, move on. Done — 1 review for this group.
   ```bash
-  git -C "$repo_path" commit -am "review: address low-severity findings"
+  git -C "$repo_path" commit -am "review: address findings"
   ```
 
 - **Any finding is high or critical:** Fix those issues, commit the fixes:
@@ -106,12 +109,13 @@ Read the review file. Evaluate findings by severity:
 @reviewer
 Re-review <repo_path> after fixes. Write findings to <review_file>.
 Focus on whether high/critical issues from round 1 are resolved.
+High/critical issues from round 1: <paste the high+ findings from round 1>
 Schema context: <schema_file>
 ```
 
 Read the review. Evaluate:
 
-- **No high+ findings remain:** Fix any remaining low findings in one commit.
+- **No high+ findings remain:** Fix any remaining medium/low findings in one commit.
   Done — 2 reviews for this group.
 
 - **High+ findings persist:** Fix and commit, then proceed to Round 3.
@@ -125,12 +129,14 @@ Schema context: <schema_file>
 
 Read the review. Evaluate:
 
-- **No high+ findings:** Fix remaining lows. Done — 3 reviews.
+- **No high+ findings:** Fix remaining medium/lows. Done — 3 reviews.
 
 - **High+ findings still persist:** This is a design problem, not a code fix
   problem. Do NOT stop. Instead:
-  1. Dispatch `@planner` or `@designer` (choose based on whether the issue is
-     about implementation approach vs. architectural design):
+  1. Dispatch `@planner` for analysis (or `@designer` if the issue is a
+     structural/architectural question rather than an implementation choice —
+     e.g., wrong abstraction boundary or module coupling vs. wrong algorithm
+     or missing validation):
      ```
      @planner
      The review loop for commit group <N> in <schema_file> has exhausted
@@ -138,6 +144,7 @@ Read the review. Evaluate:
      and write findings to <triage_file>.
      Remaining issues: <paste the high+ findings>
      ```
+     To dispatch `@designer` instead, replace `@planner` above.
   2. Write an escalation entry to `$triage_file` (see Triage section below).
   3. **Continue to the next commit group.** Do not stop the run.
 
@@ -150,27 +157,33 @@ genuine design ambiguity or made a non-trivial judgment call, write a
 ### Triage
 
 The triage file at `$triage_file` collects escalation notes, design questions,
-and run summaries. Each entry is appended as a new section with frontmatter.
+and run summaries. Each triage document is a **single-entry file** — one
+frontmatter block per file, one `type` per file.
 
 Read the triage format template at `$AGENT_VAULT/templates/triage.md` for the
-exact entry format. Use these entry types:
+exact frontmatter and body format. Use these entry types:
 
 | Type | When |
 |------|------|
 | `escalation` | Review loop exhausted (3 rounds, still high+ issues) |
 | `design-question` | Genuine ambiguity encountered, you made a judgment call |
 | `run-summary` | Written at completion — summarizes the entire run |
+| `handoff` | Not used by auto-implementor — written manually when stopping mid-schema |
 
-When writing a triage entry, always append to the file — never overwrite
-existing entries.
+When a task generates multiple triage entries (e.g., an escalation during
+group 2 and a run-summary at the end), write each to a separate file:
+- `$task_dir/triage.md` — first entry
+- `$task_dir/triage-2.md` — second entry
+- `$task_dir/triage-3.md` — and so on
 
 ### Completion
 
 After all commit groups are done and validated:
 
-1. Update the schema's `**Status:**` field to `complete`:
+1. Update the schema status to `complete`:
    ```bash
-   sed -i 's/^\*\*Status:\*\* in progress$/\*\*Status:\*\* complete/' "$schema_file"
+   obsidian property:set vault=agent.obs \
+     path="tasks/<owner>/<repo>/<task>/schema.md" name=status value=complete
    ```
 2. Write a `run-summary` entry to `$triage_file` summarizing:
    - Commit groups completed
