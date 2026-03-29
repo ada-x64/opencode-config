@@ -15,7 +15,7 @@ detect_platform() {
   if [[ "$(uname -s)" == "Darwin" ]]; then
     echo "macos"
   elif [[ -f /proc/version ]] && grep -qi "microsoft" /proc/version; then
-    if systemctl --user status 2>/dev/null | head -1 | grep -q "running"; then
+    if systemctl --user is-system-running 2>/dev/null | grep -qE "^(running|degraded)$"; then
       echo "wsl-systemd"
     else
       echo "wsl"
@@ -36,7 +36,12 @@ if [[ -f "$topic_file" ]]; then
   topic="$(cat "$topic_file")"
   echo "Existing topic found: $topic"
 else
-  topic="agent-vault-$(uuidgen | tr '[:upper:]' '[:lower:]')"
+  # uuidgen may not be available on minimal Linux (Alpine, etc.) — fallback to kernel uuid
+  if command -v uuidgen &>/dev/null; then
+    topic="agent-vault-$(uuidgen | tr '[:upper:]' '[:lower:]')"
+  else
+    topic="agent-vault-$(cat /proc/sys/kernel/random/uuid)"
+  fi
   echo "$topic" > "$topic_file"
   echo "Generated new topic: $topic"
 fi
@@ -74,7 +79,7 @@ EOF
 echo "Wrote ntfy client config to $ntfy_config"
 
 # ── Scheduled timers for daily summaries ────────────────────────────
-dashboard_cmd="bash $skill_dir/triage-dashboard.sh --notify-summary"
+    dashboard_cmd="/bin/bash $skill_dir/triage-dashboard.sh --notify-summary"
 
 case "$platform" in
   linux|wsl-systemd)
@@ -140,7 +145,7 @@ UNIT
         <key>NTFY_TOPIC</key>
         <string>$topic</string>
         <key>PATH</key>
-        <string>/usr/local/bin:/usr/bin:/bin</string>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
     </dict>
     <key>StartCalendarInterval</key>
     <array>
@@ -161,9 +166,10 @@ UNIT
 </plist>
 PLIST
 
+    launchctl bootstrap "gui/$(id -u)" "$plist" 2>/dev/null || \
     launchctl load "$plist" 2>/dev/null || {
       echo "Warning: could not load plist. Run manually:"
-      echo "  launchctl load $plist"
+      echo "  launchctl bootstrap gui/\$(id -u) $plist"
     }
     echo "Installed launchd agent for daily summaries (9am, 5pm)"
     ;;
