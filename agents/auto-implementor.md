@@ -42,7 +42,6 @@ repo_path="<path provided by caller>"
 task_dir="$AGENT_VAULT/tasks/<owner>/<repo>/<task>"
 schema_file="$task_dir/schema.md"
 review_file="$task_dir/review.md"
-triage_file="$task_dir/triage.md"
 ```
 
 ## Behavior
@@ -137,48 +136,49 @@ Read the review. Evaluate:
 
 - **High+ findings still persist:** This is a design problem, not a code fix
   problem. Do NOT stop. Instead:
-  1. Dispatch `@planner` for analysis (or `@designer` if the issue is a
-     structural/architectural question rather than an implementation choice —
-     e.g., wrong abstraction boundary or module coupling vs. wrong algorithm
-     or missing validation):
+  1. Dispatch `@triage` with type=escalation:
      ```
-     @planner
-     The review loop for commit group <N> in <schema_file> has exhausted
-     3 rounds with persistent high-severity findings. Analyze the problem
-     and write findings to <triage_file>.
-     Remaining issues: <paste the high+ findings>
+     @triage
+     Write an escalation triage entry.
+     task_dir: <task_dir>
+     repo_path: <repo_path>
+     type: escalation
+     commit_group: <N>
+     round: 3
+     persistent_findings: <paste the high+ findings>
+     attempted_fixes: <brief description of what was tried in rounds 1-3>
      ```
-     To dispatch `@designer` instead, replace `@planner` above.
-  2. Write an escalation entry to `$triage_file` (see Triage section below).
-  3. **Continue to the next commit group.** Do not stop the run.
+  2. **Continue to the next commit group.** Do not stop the run.
 
 **e. Record design decisions** — if during implementation you encountered a
-genuine design ambiguity or made a non-trivial judgment call, write a
-`design-question` entry to `$triage_file` before moving to the next group.
+genuine design ambiguity or made a non-trivial judgment call, dispatch `@triage`
+with type=design-question before moving to the next group:
+```
+@triage
+Write a design-question triage entry.
+task_dir: <task_dir>
+repo_path: <repo_path>
+type: design-question
+decision_point: <describe the ambiguity>
+options_considered: <list the options>
+choice_made: <what you chose and why>
+```
 
 **f. Continue** — proceed immediately to the next commit group. Do not pause.
 
 ### Triage
 
-The triage file at `$triage_file` collects escalation notes, design questions,
-and run summaries. Each triage document is a **single-entry file** — one
-frontmatter block per file, one `type` per file.
+All triage writes are handled by `@triage`. Dispatch it with the appropriate
+type and context — never write triage files directly.
 
-Read the triage format template at `$AGENT_VAULT/templates/triage.md` for the
-exact frontmatter and body format. Use these entry types:
+| Type | When | Who dispatches |
+|------|------|----------------|
+| `escalation` | Review loop exhausted (3 rounds, still high+ issues) | auto-implementor (step d) |
+| `design-question` | Genuine ambiguity encountered, judgment call made | auto-implementor (step e) |
+| `run-summary` | Written at completion — summarizes the entire run | auto-implementor (Completion) |
+| `handoff` | Mid-schema stop, handing off to next agent or human | written manually |
 
-| Type | When |
-|------|------|
-| `escalation` | Review loop exhausted (3 rounds, still high+ issues) |
-| `design-question` | Genuine ambiguity encountered, you made a judgment call |
-| `run-summary` | Written at completion — summarizes the entire run |
-| `handoff` | Not used by auto-implementor — written manually when stopping mid-schema |
-
-When a task generates multiple triage entries (e.g., an escalation during
-group 2 and a run-summary at the end), write each to a separate file:
-- `$task_dir/triage.md` — first entry
-- `$task_dir/triage-2.md` — second entry
-- `$task_dir/triage-3.md` — and so on
+`@triage` manages file naming automatically (`triage.md`, `triage-2.md`, …).
 
 ### Completion
 
@@ -189,12 +189,19 @@ After all commit groups are done and validated:
    obsidian property:set vault=agent.obs \
      path="tasks/<owner>/<repo>/<task>/schema.md" name=status value=complete
    ```
-2. Write a `run-summary` entry to `$triage_file` summarizing:
-   - Commit groups completed
-   - Total review rounds across all groups
-   - Escalations (if any)
-   - Design decisions made
-   - Unresolved nit-level findings
+2. Dispatch `@triage` with type=run-summary:
+   ```
+   @triage
+   Write a run-summary triage entry.
+   task_dir: <task_dir>
+   repo_path: <repo_path>
+   type: run-summary
+   commit_groups_completed: <list>
+   total_review_rounds: <N>
+   escalations: <filenames or "none">
+   design_decisions: <brief list or "none">
+   unresolved_findings: <brief list or "none">
+   ```
 
 ## What you MUST NOT do
 
@@ -205,4 +212,4 @@ After all commit groups are done and validated:
 - Write outside the repository and vault paths
 - Stop the run because a review loop is stuck — escalate and continue
 - Dispatch more than 3 reviews for a single commit group
-- Overwrite an existing triage file — write each entry to its own file (triage.md, triage-2.md, …)
+- Write triage entries directly — always dispatch `@triage` for all triage writes
