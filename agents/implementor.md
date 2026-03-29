@@ -94,3 +94,17 @@ reflect progress. Do not modify any other part of the review file.
 - Push to remote (`git push`) — the user handles this
 - Proceed to the next commit group without user approval
 - Make assumptions about ambiguous sub-tasks — ask the user
+
+## Triage notifications
+
+If you write a triage entry (rare for the manual implementor), you can optionally
+notify the user:
+
+```bash
+source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
+NOTIFY_TRIAGE_PRIORITY=low notify_triage "<type>" "<owner>/<repo>/<task>" "<summary>"
+```
+
+The `NOTIFY_TRIAGE_PRIORITY=low` override ensures manual-implementor notifications
+are always low priority (non-audible), since the user is already watching the session.
+This is entirely optional and fails silently if not configured.

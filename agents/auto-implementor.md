@@ -44,6 +44,11 @@ schema_file="$task_dir/schema.md"
 review_file="$task_dir/review.md"
 ```
 
+Load the notification helper (fails silently if not configured):
+```bash
+source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
+```
+
 ## Behavior
 
 ### Startup
@@ -180,6 +185,17 @@ type and context — never write triage files directly.
 
 `@triage` manages file naming automatically (`triage.md`, `triage-2.md`, …).
 
+After dispatching any triage entry, send a push notification:
+
+```bash
+notify_triage "<type>" "<owner>/<repo>/<task>" "<one-line summary>"
+```
+
+This fires a push notification to the user's phone/desktop. The `notify_triage`
+function maps triage types to notification priorities (escalations are `high`,
+run-summaries are `low`). It fails silently if notifications are not configured
+— it must never block agent work.
+
 ### Completion
 
 After all commit groups are done and validated:
@@ -201,6 +217,10 @@ After all commit groups are done and validated:
    escalations: <filenames or "none">
    design_decisions: <brief list or "none">
    unresolved_findings: <brief list or "none">
+   ```
+3. Send a completion notification:
+   ```bash
+   notify_triage run-summary "<owner>/<repo>/<task>" "Run complete: <N> groups, <N> reviews, <N> escalations"
    ```
 
 ## What you MUST NOT do
