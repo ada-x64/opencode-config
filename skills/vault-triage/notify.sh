@@ -38,12 +38,12 @@ notify_triage() {
     ntfy publish --priority="$priority" --title="[$type] $task" --tags="$tag" \
       "$topic" "$body" 2>/dev/null || true
   elif command -v curl &>/dev/null; then
-    curl -s \
+    curl -sL \
       -H "Title: [$type] $task" \
       -H "Priority: $priority" \
       -H "Tags: $tag" \
       -d "$body" \
-      "ntfy.sh/$topic" >/dev/null 2>&1 || true
+      "https://ntfy.sh/$topic" >/dev/null 2>&1 || true
   fi
   # If neither ntfy nor curl is available, silently do nothing
   return 0

@@ -17,7 +17,8 @@ This skill provides tools to surface those triage entries:
    `$AGENT_VAULT/triage-inbox.md` with wiki-links, grouped by status.
 2. **Push notifications** — `notify.sh` provides a `notify_triage` function that agents
    call after writing triage files, sending alerts via ntfy.sh.
-3. **Setup** — `setup.sh` performs one-time platform configuration for notifications.
+3. **Setup** — `setup.sh` performs one-time platform configuration for notifications
+   (scheduled daily summaries, ntfy client config, topic generation).
 
 ## How to Invoke
 

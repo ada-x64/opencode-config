@@ -71,8 +71,8 @@ if $notify_summary; then
   if command -v ntfy &>/dev/null; then
     ntfy publish --priority="$priority" --title="Triage Summary" --tags="clipboard" "$topic" "$summary" 2>/dev/null || true
   elif command -v curl &>/dev/null; then
-    curl -s -H "Title: Triage Summary" -H "Priority: $priority" -H "Tags: clipboard" \
-      -d "$summary" "ntfy.sh/$topic" >/dev/null 2>&1 || true
+    curl -sL -H "Title: Triage Summary" -H "Priority: $priority" -H "Tags: clipboard" \
+      -d "$summary" "https://ntfy.sh/$topic" >/dev/null 2>&1 || true
   else
     echo "Neither ntfy nor curl found. Cannot send notification." >&2
   fi
