@@ -81,6 +81,9 @@ triage items for a task or repository.
 - A `task_dir` path or `owner/repo` scope
 - Optionally: include addressed/dismissed entries (default: pending only)
 
+Report mode is typically invoked directly by a human (in build mode) rather
+than by another agent.
+
 `@triage` manages file naming automatically and never overwrites existing entries.
 
 ### `@planner` — schema authoring

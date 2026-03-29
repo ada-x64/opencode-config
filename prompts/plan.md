@@ -80,6 +80,10 @@ to record a design decision that arose outside a normal implementation run.
 Provide either a `task_dir` or an `owner/repo` scope. `@triage` will read all
 triage files in scope and return a grouped summary of pending items.
 
+To record a handoff or design-question entry directly (e.g. when pausing work
+before implementation begins), provide `task_dir`, `repo_path`, and `type`
+instead.
+
 ## Direct Work (No Subagent)
 
 Handle directly — without dispatching a subagent — when the user asks you to:
