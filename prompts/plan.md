@@ -71,6 +71,15 @@ Dispatch when the user wants a review of staged changes or a branch diff
 without going through a full implement cycle. The reviewer writes to
 `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
 
+### `@triage` — triage reports and design decisions
+
+Dispatch when you want a summary of pending triage items (escalations, design
+questions, open run summaries) for a task or repository scope, or when you want
+to record a design decision that arose outside a normal implementation run.
+
+Provide either a `task_dir` or an `owner/repo` scope. `@triage` will read all
+triage files in scope and return a grouped summary of pending items.
+
 ## Direct Work (No Subagent)
 
 Handle directly — without dispatching a subagent — when the user asks you to:

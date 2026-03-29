@@ -48,8 +48,7 @@ between commit groups**. The auto-implementor will:
 - Read the schema and switch to the correct branch
 - Work through each commit group autonomously
 - Run a bounded review loop (max 3 reviews per group) after each commit
-- Escalate to `@planner`/`@designer` if stuck, then continue
-- Write a run summary to the task's triage file on completion
+- Dispatch `@triage` for escalations, design questions, and the run summary
 
 Provide the auto-implementor with:
 - The repository path (e.g. `$AGENT_REPOS/<owner>/<repo>`)
@@ -67,6 +66,22 @@ implementor commit group. The reviewer:
 - Tags every finding with severity (nit/low/medium/high/critical) and
   category (bug/performance/design/types/maintenance/security/docs/testing/style)
 - Writes the structured review to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`
+
+### `@triage` — triage writes and reporting
+
+Dispatch when an implementor agent needs to record a triage entry (escalation,
+design question, run summary, handoff), or when you want a summary of pending
+triage items for a task or repository.
+
+**Write mode** — provide:
+- `task_dir`, `repo_path`, `type` (escalation | design-question | run-summary | handoff)
+- Type-specific context (findings, decisions made, run statistics, etc.)
+
+**Report mode** — provide:
+- A `task_dir` path or `owner/repo` scope
+- Optionally: include addressed/dismissed entries (default: pending only)
+
+`@triage` manages file naming automatically and never overwrites existing entries.
 
 ### `@planner` — schema authoring
 
