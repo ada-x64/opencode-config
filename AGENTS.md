@@ -208,6 +208,11 @@ This is the opposite of the global `opencode.json` list, which grants a wide
 read-only baseline. The deny-override makes each agent's capabilities
 independently auditable without cross-referencing the global config.
 
+**Orchestrators vs. leaf agents:** `@planner` and `@auto-implementor` carry
+`task: allow` and may dispatch subagents. All other agents (`@implementor`,
+`@reviewer`, `@designer`, `@triage`, `@auto-auditor`) are **leaf agents** —
+they have no `task:` permission and cannot spawn further subagents.
+
 For full details — including the complete read-only baseline, the per-agent
 write permission table, file-system scope restrictions, and instructions for
 adding a new agent — see the vault note:

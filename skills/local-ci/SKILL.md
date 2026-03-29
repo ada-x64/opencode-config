@@ -104,7 +104,9 @@ Follow this workflow:
    docker stop artifact-server && docker rm artifact-server
    ```
 
-## Workspace CI Workflows
+## Workspace CI Workflows _(illustrative — may be out of date)_
+
+_Check each repository's `.github/workflows/` directory for the current list._
 
 | Repository | Workflow(s) |
 |------------|------------|
