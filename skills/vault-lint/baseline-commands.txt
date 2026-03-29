@@ -1,0 +1,87 @@
+cat *
+head *
+tail *
+less *
+file *
+stat *
+wc *
+ls*
+tree *
+find *
+fd *
+grep *
+rg *
+ag *
+sort *
+uniq *
+cut *
+tr *
+awk *
+jq *
+yq *
+diff *
+comm *
+column *
+basename *
+dirname *
+readlink *
+realpath *
+which *
+printenv*
+env
+echo *
+pwd
+whoami
+id
+uname *
+date *
+hostname
+git status*
+git log*
+git diff*
+git show*
+git blame*
+git branch*
+git tag*
+git remote*
+git rev-parse*
+git rev-list*
+git shortlog*
+git describe*
+git ls-files*
+git ls-tree*
+git cat-file*
+git reflog*
+git config --get*
+git stash list*
+gh pr list*
+gh pr view*
+gh pr diff*
+gh pr status*
+gh pr checks*
+gh issue list*
+gh issue view*
+gh issue status*
+gh repo view*
+gh repo list*
+gh run list*
+gh run view*
+gh release list*
+gh release view*
+gh auth status*
+gh api *
+gh project list*
+obsidian read*
+obsidian search*
+obsidian files*
+obsidian folders*
+obsidian properties*
+obsidian property:read*
+obsidian tags*
+obsidian backlinks*
+obsidian links*
+obsidian outline*
+obsidian vault*
+obsidian vaults*
+obsidian property:set*
+ntfy publish*
