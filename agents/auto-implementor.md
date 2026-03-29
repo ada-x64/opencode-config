@@ -1,5 +1,5 @@
 ---
-description: Autonomous implementation agent — executes schemas end-to-end without pausing. Bounded review loop, triage integration, escalation to planner/designer. Never pushes.
+description: Autonomous implementation agent — executes schemas end-to-end without pausing. Bounded review loop, delegates all triage writes to @triage. Never pushes.
 mode: subagent
 permission:
   edit:
