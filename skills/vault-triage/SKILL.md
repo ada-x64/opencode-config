@@ -42,6 +42,8 @@ notify_triage escalation "ada-x64/qproj/fix-tests" "Review loop exhausted on com
 
 ### First-time setup
 
+> **Note:** `setup.sh` is shipped separately. Run once after the full skill is installed.
+
 ```bash
 bash ~/.config/opencode/skills/vault-triage/setup.sh
 ```
