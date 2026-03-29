@@ -94,7 +94,7 @@ Provide:
 - `repo_path` — absolute path to the repository
 - `label` — short identifier (e.g. `full-audit`, `security-pass`)
 - `scope` — path prefix or `"full"` (optional)
-- `focus` — quality dimensions to emphasise (optional)
+- `focus` — quality dimensions to emphasise (optional; e.g. `security,testing`)
 
 For dedicated audit sessions, switch to audit mode (Tab key) instead.
 
