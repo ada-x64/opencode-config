@@ -185,7 +185,7 @@ type and context — never write triage files directly.
 
 `@triage` manages file naming automatically (`triage.md`, `triage-2.md`, …).
 
-After dispatching any triage entry, send a push notification:
+After dispatching a mid-run triage entry (escalation or design-question), send a push notification:
 
 ```bash
 notify_triage "<type>" "<owner>/<repo>/<task>" "<one-line summary>"
@@ -194,7 +194,9 @@ notify_triage "<type>" "<owner>/<repo>/<task>" "<one-line summary>"
 This fires a push notification to the user's phone/desktop. The `notify_triage`
 function maps triage types to notification priorities (escalations are `high`,
 run-summaries are `low`). It fails silently if notifications are not configured
-— it must never block agent work.
+— it must never block agent work. The `run-summary` notification is sent
+separately in the Completion section (step 3) — do not call `notify_triage` a
+second time for `run-summary` from this section.
 
 ### Completion
 
