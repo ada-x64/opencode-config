@@ -3,18 +3,105 @@ description: Headless audit agent — detects language and tools, runs static an
 mode: subagent
 permission:
   edit: allow
+  write: allow
   bash:
+    # Deny everything by default, then allow specific commands
     "*": deny
-    # Git read-only
+    # File system (read-only)
+    "cat *": allow
+    "head *": allow
+    "tail *": allow
+    "less *": allow
+    "file *": allow
+    "stat *": allow
+    "wc *": allow
+    "ls*": allow
+    "tree *": allow
+    "find *": allow
+    "fd *": allow
+    "grep *": allow
+    "rg *": allow
+    "ag *": allow
+    "sort *": allow
+    "uniq *": allow
+    "cut *": allow
+    "tr *": allow
+    "awk *": allow
+    "jq *": allow
+    "yq *": allow
+    "diff *": allow
+    "comm *": allow
+    "column *": allow
+    "basename *": allow
+    "dirname *": allow
+    "readlink *": allow
+    "realpath *": allow
+    "which *": allow
+    "printenv*": allow
+    "env": allow
+    "echo *": allow
+    "pwd": allow
+    "whoami": allow
+    "id": allow
+    "uname *": allow
+    "date *": allow
+    "hostname": allow
+    # Git (read-only)
+    "git status*": allow
     "git log*": allow
     "git diff*": allow
     "git show*": allow
     "git blame*": allow
-    "git ls-files*": allow
+    "git branch*": allow
+    "git tag*": allow
+    "git remote*": allow
     "git rev-parse*": allow
-    "git status*": allow
-    # Tool detection
-    "which *": allow
+    "git rev-list*": allow
+    "git shortlog*": allow
+    "git describe*": allow
+    "git ls-files*": allow
+    "git ls-tree*": allow
+    "git cat-file*": allow
+    "git reflog*": allow
+    "git config --get*": allow
+    "git stash list*": allow
+    # GitHub CLI (read-only)
+    "gh pr list*": allow
+    "gh pr view*": allow
+    "gh pr diff*": allow
+    "gh pr status*": allow
+    "gh pr checks*": allow
+    "gh issue list*": allow
+    "gh issue view*": allow
+    "gh issue status*": allow
+    "gh repo view*": allow
+    "gh repo list*": allow
+    "gh run list*": allow
+    "gh run view*": allow
+    "gh release list*": allow
+    "gh release view*": allow
+    "gh auth status*": allow
+    "gh api *": allow
+    "gh project list*": allow
+    # Obsidian (read-only + audit vault writes)
+    "obsidian read*": allow
+    "obsidian search*": allow
+    "obsidian files*": allow
+    "obsidian folders*": allow
+    "obsidian properties*": allow
+    "obsidian property:read*": allow
+    "obsidian tags*": allow
+    "obsidian backlinks*": allow
+    "obsidian links*": allow
+    "obsidian outline*": allow
+    "obsidian vault*": allow
+    "obsidian vaults*": allow
+    "obsidian property:set*": allow
+    "obsidian create*": allow
+    # Notifications
+    "ntfy publish*": allow
+    # curl (for fetching advisory databases, documentation)
+    "curl*": allow
     # Rust static analysis + coverage
     "cargo clippy*": allow
     "cargo audit*": allow
@@ -27,10 +114,10 @@ permission:
     "yarn audit*": allow
     "eslint*": allow
     "tsc*": allow
-    "jest*": allow          # direct invocation
-    "vitest*": allow        # direct invocation
-    "npx jest*": allow      # via npx
-    "npx vitest*": allow    # via npx
+    "jest*": allow
+    "vitest*": allow
+    "npx jest*": allow
+    "npx vitest*": allow
     # Python static analysis + coverage
     "pip-audit*": allow
     "safety*": allow
@@ -41,22 +128,8 @@ permission:
     # Cross-language
     "semgrep*": allow
     "trivy*": allow
-    # Shell utilities for output processing
-    "jq *": allow
-    "grep *": allow
-    "wc *": allow
-    "sort *": allow
-    "uniq *": allow
-    "find *": allow
-    "cat *": allow
-    "head *": allow
-    "tail *": allow
-    "ls*": allow
-    "stat *": allow
-    # Obsidian CLI for vault writes
-    "obsidian create*": allow
-    "obsidian property:set*": allow
   external_directory:
+    "~/repos/**": allow
     "~/obsidian/agent.obs/**": allow
 ---
 
