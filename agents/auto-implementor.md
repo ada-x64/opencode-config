@@ -47,10 +47,10 @@ review_file="$task_dir/review.md"
 
 1. Read `CONTRIBUTING.md` from the repository root (if it exists).
 2. Read the full schema.
-3. Read the schema's `**Branch:**` field and switch to that branch, creating it
-   if it does not exist:
+3. Read the branch from the schema's frontmatter and switch to it, creating if needed:
    ```bash
-   git -C "$repo_path" switch -c <branch> 2>/dev/null || git -C "$repo_path" switch <branch>
+   branch="$(obsidian property:read vault=agent.obs path="tasks/<owner>/<repo>/<task>/schema.md" name=branch)"
+   git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
    ```
 4. Update the schema status to `in progress`:
    ```bash
@@ -85,8 +85,12 @@ Schema context: <schema_file>
 `low` or higher:
 - Fix the issue in the repo
 - Stage and commit the fix: `git -C "$repo_path" commit -am "review: <short description>"`
+- If the re-review still shows the same high/critical findings after 3 review
+  cycles, stop retrying. Write a triage escalation to `$task_dir/triage.md`
+  following the format at `$AGENT_VAULT/templates/triage.md` (`type: escalation`),
+  then continue to the next commit group.
 
-Nit-level findings do not require a fix commit — note them and move on.
+Nit-level findings do not require a fix commit — collect them for the triage summary.
 
 **f. Continue** — proceed immediately to the next commit group. Do not pause.
 
@@ -98,8 +102,10 @@ After all commit groups are done and validated:
    ```bash
    obsidian property:set vault=agent.obs path="tasks/<owner>/<repo>/<task>/schema.md" name=status value=complete
    ```
-2. Write a brief summary of what was implemented, what was reviewed, and any
-   nit-level findings left unaddressed.
+2. Write a run-summary triage file at `$task_dir/triage.md` following the
+   format at `$AGENT_VAULT/templates/triage.md` (`type: run-summary`). Include
+   commit groups completed, validation results, decisions made, and nit-level
+   findings left unaddressed.
 
 ## What you MUST NOT do
 

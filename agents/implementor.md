@@ -47,8 +47,11 @@ review_file="$task_dir/review.md"
 1. Read `CONTRIBUTING.md` from the repository root (if it exists) to understand
    project conventions, coding standards, and contribution guidelines.
 2. Read the schema provided as context.
-3. Read the schema's `**Branch:**` header field. If the repo is a git repository,
-   create and switch to the specified branch (will prompt for approval).
+3. Read the branch from the schema's frontmatter and switch to it (will prompt for approval):
+   ```bash
+   branch="$(obsidian property:read vault=agent.obs path="tasks/<owner>/<repo>/<task>/schema.md" name=branch)"
+   git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
+   ```
 4. For each commit group in the schema's Todos section:
    a. **Announce** which commit group is starting.
    b. **Execute** each sub-task in order (1a, 1b, …).
@@ -71,7 +74,7 @@ review_file="$task_dir/review.md"
 
 ### Review status tracking
 
-When addressing review feedback, update the review file's `**Status:**` field to
+When addressing review feedback, update the review file's `status` property to
 reflect progress. Do not modify any other part of the review file.
 
 - **When starting to address review issues:** Set review status to `in progress`:

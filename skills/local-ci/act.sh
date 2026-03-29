@@ -1,7 +1,5 @@
 #!/bin/bash
 
-GH_AUTH=$(gh auth token)
-
 docker run \
   --name artifact-server \
   -d -p 8080:8080 \
@@ -13,4 +11,4 @@ gh act \
   --env ACTIONS_RUNTIME_TOKEN=foo \
   --env ACTIONS_CACHE_URL=http://artifacts.docker.internal:8080/ \
   --artifact-server-path ../artifacts  \
-  $@
+  "$@"

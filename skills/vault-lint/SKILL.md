@@ -18,7 +18,7 @@ fields, valid status values, and per-issue annotations.
 ## How to Invoke
 
 ```bash
-# Lint everything
+# Lint everything (vault docs + bash scripts)
 bash ~/.config/opencode/skills/vault-lint/lint.sh
 
 # Schemas only
@@ -61,6 +61,12 @@ bash ~/.config/opencode/skills/vault-lint/lint.sh --schemas-only ada-x64/agent-c
 | `## Verdict:` | Required section |
 | Per-issue `**Severity:**` | Required for each `### N.` issue section |
 | Per-issue `**Category:**` | Required for each `### N.` issue section |
+
+### Bash scripts (`~/.config/opencode/skills/**/*.sh`)
+
+All shell scripts are passed through `shellcheck`. Requires `shellcheck` to be
+installed (`apt-get install shellcheck` or `brew install shellcheck`). If not
+installed, this check is skipped with a warning.
 
 ## Exit Codes
 
