@@ -2,22 +2,17 @@
 description: Triage agent — writes structured triage entries to the vault (escalations, design questions, run summaries, handoffs) and produces human-readable triage reports.
 mode: subagent
 permission:
+  edit: allow
   bash:
-    "*": deny
-    "git log*": allow
-    "git show*": allow
-    "git diff*": allow
-    "git status*": allow
-    "git blame*": allow
-    "git rev-parse*": allow
-    "git ls-files*": allow
-    "obsidian files*": allow
-    "obsidian folders*": allow
-    "obsidian read*": allow
-    "obsidian search*": allow
-    "obsidian property:read*": allow
-    "obsidian create*": allow
-    "obsidian property:set*": allow
+    "*": allow
+    "git add*": deny
+    "git commit*": deny
+    "git push*": deny
+    "git merge*": deny
+    "git rebase*": deny
+    "git reset*": deny
+    "gh pr create*": deny
+    "gh issue create*": deny
   external_directory:
     "~/obsidian/agent.obs/**": allow
 ---
@@ -193,7 +188,7 @@ Body must include:
 
 ### handoff
 
-Written when work is interrupted mid-schema (not used by auto-implementor).
+Written when work is interrupted mid-schema (not used by auto-implementor; triggered manually by a human or by `@implementor` when stopping mid-run).
 
 Body must include:
 - Last completed commit group
@@ -202,7 +197,7 @@ Body must include:
 
 ## What you MUST NOT do
 
-- Dispatch other agents — write recommendations only
+- Invoke or dispatch other agents — write dispatch recommendations in the body only
 - Mutate code or git history
 - Write triage files outside `$AGENT_VAULT/tasks/` directories
 - Overwrite an existing triage file — always pick the next available filename
