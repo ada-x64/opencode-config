@@ -12,6 +12,8 @@ if [[ -z "$vault" ]]; then
   echo "Usage: bash init.sh <vault-path>" >&2
   exit 1
 fi
+# Expand leading tilde so paths like ~/foo work correctly
+vault="${vault/#\~/$HOME}"
 
 skill_dir="$(cd "$(dirname "$0")" && pwd)"
 created=0
@@ -76,6 +78,11 @@ Each task directory contains up to three files:
 - `review.md` — Structured code review for work done against the schema.
 - `triage.md` — Escalation notes, design questions, and run summaries.
 
+### `tasks/_fleet/<task>.md` — Fleet (cross-repo) schemas
+
+Umbrella documents coordinating work across multiple repositories. These are
+flat files (not directories) since they don't have per-task reviews or triage.
+
 ### `repo-notes/<owner>/<repo>/` — Repository reference documentation
 
 Reference summaries of repository internals (build systems, architecture,
@@ -109,15 +116,65 @@ Cached project board, milestone, and label data for repositories.
 - `AGENTS.md` — This file.
 - `templates/` — Format templates for schemas, reviews, triage, and issues.
 
+## Workflow
+
+All non-trivial implementation work follows three phases:
+
+1. **Plan** — `@planner` explores the codebase, discusses with the user, writes
+   a schema to `tasks/<owner>/<repo>/<task>/schema.md`.
+2. **Implement** — `@implementor` or `@auto-implementor` executes the schema
+   step-by-step, committing after each group.
+3. **Review** — `@reviewer` writes a structured review to
+   `tasks/<owner>/<repo>/<task>/review.md`.
+
+## Agent Roles
+
+| Agent | Role |
+|-------|------|
+| `@planner` | Schema authoring, GitHub issue creation |
+| `@implementor` | Manual schema execution with approval gates |
+| `@auto-implementor` | Autonomous schema execution with bounded review loop |
+| `@reviewer` | Structured code review |
+| `@designer` | Repo notes, design documents, drafts |
+
+## Environment
+
+| Variable | Purpose |
+|----------|---------|
+| `AGENT_VAULT` | Path to this vault (e.g. `~/obsidian/agent.obs`) |
+| `AGENT_REPOS` | Path to local repository checkouts (e.g. `~/repos`) |
+
 ## Conventions
 
 - Documents are Markdown, authored for Obsidian (may use wiki-links, callouts).
 - Do not hard-wrap prose — Obsidian soft-wraps paragraphs.
-- `repo-notes/` docs should be comprehensive standalone references.
-- Task schemas should be actionable implementation specs.
-- Task reviews store full code reviews.
-- Path convention: `tasks/<owner>/<repo>/` mirrors the local checkout
-  path convention `~/repos/<owner>/<repo>`.
+- Schemas and reviews use YAML frontmatter for metadata (`repo`, `status`, `date`, etc.).
+- Path convention: `tasks/<owner>/<repo>/` mirrors the local checkout path
+  convention `~/repos/<owner>/<repo>`.
+- Use the `obsidian` CLI for vault file management (move, delete, create, properties).
+- **Task and issue titles must not contain regex special characters** (`.`, `(`, `)`,
+  `*`, `[`, `]`, `+`, `?`, `{`, `}`, `^`, `$`, `|`, `\`). The `vault-lint` script
+  uses title text as a regex pattern when scanning review files — special characters
+  will silently corrupt issue-block extraction.
+
+## Obsidian CLI
+
+The `obsidian` command is available for headless vault management:
+
+```bash
+# Read operations
+obsidian files vault=agent.obs           # List all files
+obsidian folders vault=agent.obs         # List all folders
+obsidian read vault=agent.obs path="<p>" # Read file contents
+obsidian search vault=agent.obs query="<q>"  # Search vault
+obsidian property:read vault=agent.obs path="<p>" name=<prop>  # Read property
+
+# Mutation operations
+obsidian move vault=agent.obs path="<old>" to="<new>"         # Move (updates links)
+obsidian delete vault=agent.obs path="<p>" permanent           # Delete
+obsidian create vault=agent.obs path="<p>" content="<text>"    # Create
+obsidian property:set vault=agent.obs path="<p>" name=<prop> value=<val>  # Set property
+```
 AGENTS_EOF
   echo "  created: $vault/AGENTS.md"
   (( created++ )) || true
