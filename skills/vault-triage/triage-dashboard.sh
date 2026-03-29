@@ -27,13 +27,13 @@ for triage in "$vault"/tasks/*/*/*/triage.md; do
   date="$(yq --front-matter=extract '.date // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
 
   link="[[${rel%.md}]]"
-  row="| $link | $type | $agent | $date |"
+  row="| $link | $item_type | $item_agent | $item_date |"
 
   case "$status" in
     pending)
       pending+=("$row")
       (( ++pending_count ))
-      [[ "$type" == "escalation" ]] && (( ++escalation_count ))
+      [[ "$item_type" == "escalation" ]] && (( ++escalation_count ))
       ;;
     addressed)
       addressed+=("$row")
