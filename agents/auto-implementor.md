@@ -56,6 +56,10 @@ triage_file="$task_dir/triage.md"
    ```bash
    branch="$(obsidian property:read vault=agent.obs \
      path="tasks/<owner>/<repo>/<task>/schema.md" name=branch)"
+   if [[ -z "$branch" || "$branch" == "(empty)" ]]; then
+     echo "Warning: schema has no branch field — staying on current branch." >&2
+     branch="$(git -C "$repo_path" branch --show-current)"
+   fi
    git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
    ```
 4. Update the schema status to `in progress`:
@@ -201,4 +205,4 @@ After all commit groups are done and validated:
 - Write outside the repository and vault paths
 - Stop the run because a review loop is stuck — escalate and continue
 - Dispatch more than 3 reviews for a single commit group
-- Overwrite existing triage entries — always append
+- Overwrite an existing triage file — write each entry to its own file (triage.md, triage-2.md, …)
