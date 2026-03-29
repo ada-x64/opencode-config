@@ -27,10 +27,10 @@ permission:
     "yarn audit*": allow
     "eslint*": allow
     "tsc*": allow
-    "jest*": allow
-    "vitest*": allow
-    "npx jest*": allow
-    "npx vitest*": allow
+    "jest*": allow          # direct invocation
+    "vitest*": allow        # direct invocation
+    "npx jest*": allow      # via npx
+    "npx vitest*": allow    # via npx
     # Python static analysis + coverage
     "pip-audit*": allow
     "safety*": allow
@@ -174,7 +174,7 @@ Read the codebase within scope and synthesise findings:
    ```
 
 3. Synthesise findings across five categories. For each category:
-   - Cross-reference tool output (cite specific tool findings by tool name).
+   - Cross-reference tool output (cite specific tool findings by tool name and line).
    - Add LLM-observed patterns not caught by tools.
    - Assign a severity level (`critical/high/medium/low/info`) to each finding.
    - Use **roadmap-priority semantics** — not merge-gate semantics.
