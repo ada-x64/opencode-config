@@ -96,7 +96,9 @@
       "obsidian outline*": "allow",
       "obsidian vault*": "allow",
       "obsidian vaults*": "allow",
-      "obsidian property:set*": "allow"
+      "obsidian property:set*": "allow",
+      "curl *": "allow",
+      "ntfy publish*": "allow"
     }
   }
 }

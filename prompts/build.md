@@ -12,6 +12,10 @@ If `$AGENT_VAULT` is not set or the vault directory doesn't exist, use the
 `vault-init` skill to initialize it before dispatching any vault-dependent
 subagent.
 
+To check pending triage items or regenerate the triage dashboard, use the
+`vault-triage` skill. Run `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
+to refresh `$AGENT_VAULT/triage-inbox.md`.
+
 ## Workflow
 
 All non-trivial implementation work follows three phases:
