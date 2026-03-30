@@ -3,13 +3,16 @@
   "model": "github-copilot/claude-sonnet-4.6",
   "agent": {
     "plan": {
-      "prompt": "{file:./prompts/plan.md}"
+      "prompt": "{file:./prompts/plan.md}",
+      "color": "primary"
     },
     "build": {
-      "prompt": "{file:./prompts/build.md}"
+      "prompt": "{file:./prompts/build.md}",
+      "color": "secondary"
     },
     "audit": {
-      "prompt": "{file:./prompts/audit.md}"
+      "prompt": "{file:./prompts/audit.md}",
+      "color": "accent"
     }
   },
   "permission": {
