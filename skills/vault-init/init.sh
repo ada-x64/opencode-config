@@ -157,23 +157,23 @@ All non-trivial implementation work follows three phases:
   uses title text as a regex pattern when scanning review files — special characters
   will silently corrupt issue-block extraction.
 
-## Obsidian CLI
+## Vault Access
 
-The `obsidian` command is available for headless vault management:
+The vault is a plain directory of Markdown files with YAML frontmatter.
+No app needs to be running to read or write it.
 
 ```bash
 # Read operations
-obsidian files vault=agent.obs           # List all files
-obsidian folders vault=agent.obs         # List all folders
-obsidian read vault=agent.obs path="<p>" # Read file contents
-obsidian search vault=agent.obs query="<q>"  # Search vault
-obsidian property:read vault=agent.obs path="<p>" name=<prop>  # Read property
+find "$AGENT_VAULT" -name "*.md"                          # List all files
+rg "search term" "$AGENT_VAULT" --glob "*.md"             # Search vault
+cat "$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md"  # Read file
+yq --front-matter=extract '.status' <file>                # Read frontmatter field
 
 # Mutation operations
-obsidian move vault=agent.obs path="<old>" to="<new>"         # Move (updates links)
-obsidian delete vault=agent.obs path="<p>" permanent           # Delete
-obsidian create vault=agent.obs path="<p>" content="<text>"    # Create
-obsidian property:set vault=agent.obs path="<p>" name=<prop> value=<val>  # Set property
+mv <src> <dst>                                            # Move/rename
+rm <file>                                                 # Delete
+# Create/edit: use the Write and Edit tools, or standard redirection
+yq --front-matter=process -i '.status = "complete"' <file>  # Set frontmatter field
 ```
 AGENTS_EOF
   echo "  created: $vault/AGENTS.md"

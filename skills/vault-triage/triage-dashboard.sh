@@ -21,10 +21,10 @@ for triage in "$vault"/tasks/*/*/*/triage.md; do
   [[ "$triage" == *"/_fleet/"* ]] && continue
 
   rel="${triage#"$vault"/}"
-  status="$(obsidian property:read vault=agent.obs path="$rel" name=status 2>/dev/null || echo "unknown")"
-  type="$(obsidian property:read vault=agent.obs path="$rel" name=type 2>/dev/null || echo "unknown")"
-  agent="$(obsidian property:read vault=agent.obs path="$rel" name=agent 2>/dev/null || echo "unknown")"
-  date="$(obsidian property:read vault=agent.obs path="$rel" name=date 2>/dev/null || echo "unknown")"
+  status="$(yq --front-matter=extract '.status // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
+  type="$(yq --front-matter=extract '.type // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
+  agent="$(yq --front-matter=extract '.agent // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
+  date="$(yq --front-matter=extract '.date // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
 
   link="[[${rel%.md}]]"
   row="| $link | $type | $agent | $date |"
