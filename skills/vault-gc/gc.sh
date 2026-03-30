@@ -45,7 +45,7 @@ for schematic in "$vault"/tasks/*/*/*/schema.md; do
   reason=""
 
   # Check 1: Status frontmatter field
-  status_val="$(obsidian property:read vault=agent.obs path="tasks/$owner/$repo/$task/schema.md" name=status 2>/dev/null || true)"
+  status_val="$(yq --front-matter=extract '.status' "$schematic" 2>/dev/null || true)"
   if [[ "$status_val" == "complete" ]]; then
     should_archive=true
     reason="status: complete"
@@ -53,7 +53,7 @@ for schematic in "$vault"/tasks/*/*/*/schema.md; do
 
   # Check 2: Issue link (only if not already marked for archival)
   if ! $should_archive; then
-    issue_val="$(obsidian property:read vault=agent.obs path="tasks/$owner/$repo/$task/schema.md" name=issue 2>/dev/null || true)"
+    issue_val="$(yq --front-matter=extract '.issue' "$schematic" 2>/dev/null || true)"
     if [[ -n "$issue_val" ]]; then
       issue_num="$(echo "$issue_val" | grep -oP '#\K\d+' || true)"
       issue_owner="$(echo "$issue_val" | grep -oP 'github\.com/\K[^/]+' || true)"
