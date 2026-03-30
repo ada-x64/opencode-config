@@ -19,6 +19,7 @@ there is no build step.
 ├── package.json           # Node dependency (@opencode-ai/plugin)
 ├── agents/                # Subagent definitions (dispatched via Task tool)
 │   ├── planner.md
+│   ├── project-manager.md
 │   ├── implementor.md
 │   ├── auto-implementor.md
 │   ├── reviewer.md
@@ -217,7 +218,7 @@ independently auditable without cross-referencing the global config.
 
 **Orchestrators vs. leaf agents:** `@planner` and `@auto-implementor` carry
 `task: allow` and may dispatch subagents. All other agents (`@implementor`,
-`@reviewer`, `@designer`, `@triage`, `@auto-auditor`) are **leaf agents** —
+`@project-manager`, `@reviewer`, `@designer`, `@triage`, `@auto-auditor`) are **leaf agents** —
 they have no `task:` permission and cannot spawn further subagents.
 
 For full details — including the complete read-only baseline, the per-agent
@@ -390,7 +391,7 @@ dispatches it automatically after each commit.
 3. Copy the full read-only baseline from `agents/designer.md` (or any agent).
 4. Add only the write permissions the new agent actually needs.
 5. Add `external_directory` entries if the agent needs paths beyond `~/repos/`
-   and `~/obsidian/agent.obs/`.
+   and `~/winhome/obsidian/agent.obs/`.
 6. Write the system prompt in the Markdown body after the closing `---`.
 7. Add the agent to the permission table in
    `repo-notes/ada-x64/opencode-config/agent-permissions.md` in the vault.

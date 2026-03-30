@@ -94,7 +94,9 @@ than by another agent.
 Dispatch when the user wants to design a feature but no schema exists yet.
 The planner explores the codebase, discusses the plan with the user, writes a
 schema, and creates a GitHub issue. You do not need to switch to plan mode
-(Tab) to invoke the planner. From that point forward, `@project-manager` owns issue lifecycle management.
+(Tab) to invoke the planner.
+
+Once the schema is written and the issue is created, `@project-manager` owns issue lifecycle management from that point forward.
 
 ### `@project-manager` — issue lifecycle and project board operations
 
