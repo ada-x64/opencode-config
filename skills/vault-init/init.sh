@@ -8,9 +8,9 @@ set -euo pipefail
 
 vault="${1:-${AGENT_VAULT:-}}"
 if [[ -z "$vault" ]]; then
-  echo "Error: No vault path provided and AGENT_VAULT is not set." >&2
-  echo "Usage: bash init.sh <vault-path>" >&2
-  exit 1
+	echo "Error: No vault path provided and AGENT_VAULT is not set." >&2
+	echo "Usage: bash init.sh <vault-path>" >&2
+	exit 1
 fi
 # Expand leading tilde so paths like ~/foo work correctly
 vault="${vault/#\~/$HOME}"
@@ -20,22 +20,22 @@ created=0
 
 # Helper: create directory if missing
 ensure_dir() {
-  if [[ ! -d "$1" ]]; then
-    mkdir -p "$1"
-    echo "  created: $1"
-    (( created++ )) || true
-  fi
+	if [[ ! -d "$1" ]]; then
+		mkdir -p "$1"
+		echo "  created: $1"
+		((created++)) || true
+	fi
 }
 
 # Helper: copy file if missing (no overwrite)
 ensure_file() {
-  local src="$1" dst="$2"
-  if [[ ! -f "$dst" ]]; then
-    mkdir -p "$(dirname "$dst")"
-    cp "$src" "$dst"
-    echo "  created: $dst"
-    (( created++ )) || true
-  fi
+	local src="$1" dst="$2"
+	if [[ ! -f "$dst" ]]; then
+		mkdir -p "$(dirname "$dst")"
+		cp "$src" "$dst"
+		echo "  created: $dst"
+		((created++)) || true
+	fi
 }
 
 echo "Initializing vault at: $vault"
@@ -52,15 +52,15 @@ ensure_dir "$vault/templates"
 
 # Copy templates (only if missing)
 if [[ -d "$skill_dir/templates" ]]; then
-  for tmpl in "$skill_dir/templates"/*.md; do
-    [[ -f "$tmpl" ]] || continue
-    ensure_file "$tmpl" "$vault/templates/$(basename "$tmpl")"
-  done
+	for tmpl in "$skill_dir/templates"/*.md; do
+		[[ -f "$tmpl" ]] || continue
+		ensure_file "$tmpl" "$vault/templates/$(basename "$tmpl")"
+	done
 fi
 
 # Write AGENTS.md (only if missing)
 if [[ ! -f "$vault/AGENTS.md" ]]; then
-  cat > "$vault/AGENTS.md" << 'AGENTS_EOF'
+	cat >"$vault/AGENTS.md" <<'AGENTS_EOF'
 # Agent Vault
 
 ## What This Repository Is
@@ -135,6 +135,7 @@ All non-trivial implementation work follows three phases:
 | `@implementor` | Manual schema execution with approval gates |
 | `@auto-implementor` | Autonomous schema execution with bounded review loop |
 | `@reviewer` | Structured code review |
+| `@triage` | Escalation writes, design-question records, run summaries |
 | `@designer` | Repo notes, design documents, drafts |
 
 ## Environment
@@ -151,7 +152,7 @@ All non-trivial implementation work follows three phases:
 - Schemas and reviews use YAML frontmatter for metadata (`repo`, `status`, `date`, etc.).
 - Path convention: `tasks/<owner>/<repo>/` mirrors the local checkout path
   convention `~/repos/<owner>/<repo>`.
-- Use the `obsidian` CLI for vault file management (move, delete, create, properties).
+- To move, delete, or rename vault files, use standard shell tools (`mv`, `rm`) or the Write/Edit tools directly — there is no `obsidian` CLI.
 - **Task and issue titles must not contain regex special characters** (`.`, `(`, `)`,
   `*`, `[`, `]`, `+`, `?`, `{`, `}`, `^`, `$`, `|`, `\`). The `vault-lint` script
   uses title text as a regex pattern when scanning review files — special characters
@@ -176,14 +177,14 @@ rm <file>                                                 # Delete
 yq --front-matter=process -i '.status = "complete"' <file>  # Set frontmatter field
 ```
 AGENTS_EOF
-  echo "  created: $vault/AGENTS.md"
-  (( created++ )) || true
+	echo "  created: $vault/AGENTS.md"
+	((created++)) || true
 fi
 
 echo ""
-if (( created > 0 )); then
-  echo "Done: $created items created."
+if ((created > 0)); then
+	echo "Done: $created items created."
 else
-  echo "Done: vault already fully initialized."
+	echo "Done: vault already fully initialized."
 fi
 echo "Vault path: $vault"

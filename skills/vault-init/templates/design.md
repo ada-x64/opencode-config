@@ -1,4 +1,4 @@
-# Design Document Format
+# design Document Format
 
 Design documents capture high-level thinking: architecture explorations, trade-off
 analyses, roadmaps, and cross-cutting concerns. This is a suggested format — adapt
