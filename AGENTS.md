@@ -6,8 +6,9 @@ operation modes, subagent personas, skill libraries, and bash permission
 policies that govern every agent session.
 
 Everything here is loaded automatically by opencode at startup. Changing a
-file in this repo immediately changes the behaviour of the next session —
-there is no build step.
+file in this repo immediately changes the behaviour of the next session.
+Model configuration is managed via `build.yaml` + `build.sh` (see
+[Build System](#build-system)).
 
 ---
 
@@ -16,6 +17,8 @@ there is no build step.
 ```
 ~/.config/opencode/
 ├── opencode.json          # Core config: model, mode prompts, global bash permissions
+├── build.yaml             # Model tier definitions (source of truth for model assignment)
+├── build.sh               # Applies build.yaml → opencode.json + agent frontmatter
 ├── package.json           # Node dependency (@opencode-ai/plugin)
 ├── agents/                # Subagent definitions (dispatched via Task tool)
 │   ├── planner.md
@@ -53,7 +56,7 @@ there is no build step.
 
 `opencode.json` is the root configuration file. It does three things:
 
-1. **Sets the default model** — currently `github-copilot/claude-sonnet-4.6`.
+1. **Sets the default model** — currently `github-copilot/claude-opus-4.6` (managed by `build.sh`; do not edit by hand).
 2. **Registers mode prompts** — each mode name (`build`, `plan`, `audit`) maps
    to a system prompt file via `{file:./prompts/<name>.md}`.
 3. **Defines the global bash permission list** — a broad set of read-only
@@ -62,6 +65,53 @@ there is no build step.
 
 The `@opencode-ai/plugin` package (`package.json`) provides the opencode plugin
 interface; `bun.lock` pins the exact version.
+
+---
+
+## Build System
+
+Model assignment is managed declaratively via `build.yaml` and applied by
+`build.sh`. Do not edit model fields in `opencode.json` or agent frontmatter
+by hand — the build script will overwrite manual changes.
+
+### `build.yaml`
+
+Defines two model tiers:
+
+| Tier | Model | Inherits global? |
+|------|-------|-----------------|
+| `design` | `github-copilot/claude-opus-4.6` | Yes (no `model` override in agent frontmatter) |
+| `execute` | `github-copilot/claude-sonnet-4.6` | No (explicit `model` override) |
+
+Each agent declares its tier via a `tier:` field in its YAML frontmatter.
+
+### Tier assignments
+
+| Agent | Tier |
+|-------|------|
+| `@planner` | `design` |
+| `@designer` | `design` |
+| `@auto-auditor` | `design` |
+| `@implementor` | `execute` |
+| `@auto-implementor` | `execute` |
+| `@reviewer` | `execute` |
+| `@triage` | `execute` |
+
+### `build.sh`
+
+Reads `build.yaml` and:
+1. Sets the `model` field in `opencode.json` to `global.model`.
+2. For each agent file, reads its `tier` from frontmatter, looks up the tier
+   in `build.yaml`, and sets or removes the `model` field accordingly.
+3. Prints a summary of changes.
+
+The script is idempotent — running it multiple times produces the same result.
+
+### Changing models
+
+1. Edit `build.yaml` (change a tier's model, or move an agent between tiers by editing its `tier:` frontmatter field).
+2. Run `./build.sh`.
+3. Commit the resulting changes.
 
 ---
 

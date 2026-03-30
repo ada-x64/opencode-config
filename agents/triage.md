@@ -1,6 +1,7 @@
 ---
 description: Triage agent — writes structured triage entries to the vault (escalations, design questions, run summaries, handoffs) and produces human-readable triage reports.
 tier: execute
+model: github-copilot/claude-sonnet-4.6
 mode: subagent
 permission:
   edit: allow

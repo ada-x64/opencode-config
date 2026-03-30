@@ -1,6 +1,7 @@
 ---
 description: Autonomous implementation agent — executes schemas end-to-end without pausing. Bounded review loop, delegates all triage writes to @triage. Never pushes.
 tier: execute
+model: github-copilot/claude-sonnet-4.6
 mode: subagent
 permission:
   edit:

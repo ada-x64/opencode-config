@@ -1,6 +1,7 @@
 ---
 description: Implementation agent — executes schemas step-by-step. Always reads CONTRIBUTING.md before beginning work.
 tier: execute
+model: github-copilot/claude-sonnet-4.6
 mode: subagent
 permission:
   edit: allow
@@ -176,6 +177,8 @@ permission:
     "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
     # notify_triage function (called standalone after sourcing)
     "notify_triage *": allow
+    # notify_triage with inline env-var priority override (e.g. NOTIFY_TRIAGE_PRIORITY=low notify_triage ...)
+    "NOTIFY_TRIAGE_PRIORITY=* notify_triage *": allow
     # curl (used by notify.sh send path)
     "curl *": allow
   external_directory:

@@ -1,6 +1,7 @@
 ---
 description: Code reviewer — reads repo, writes structured review to agent vault.
 tier: execute
+model: github-copilot/claude-sonnet-4.6
 mode: subagent
 permission:
   edit: allow
