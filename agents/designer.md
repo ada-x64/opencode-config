@@ -1,5 +1,6 @@
 ---
 description: Design agent — writes repo notes and design documents in the vault.
+tier: design
 mode: subagent
 permission:
   edit: allow

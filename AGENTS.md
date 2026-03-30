@@ -142,21 +142,28 @@ Plan ──────► Implement ──────► Review
 - **File:** `agents/implementor.md`
 - **Role:** Executes a schema commit-group by commit-group, **pausing after
   each group** for user review before proceeding. Reads `CONTRIBUTING.md` at
-  startup to learn project conventions.
+  startup to learn project conventions. On startup: applies `in-progress` label
+  and posts a start comment on the linked GitHub issue. On completion: removes
+  `in-progress` label and posts a completion comment.
 - **Write access:** Full repository edits, `git add`, `git switch`,
-  `git checkout`, build/test tools, `yq` (for schema/review status updates).
-- **Does not:** `git commit` (the user does that); push; skip approval gates.
+  `git checkout`, build/test tools, `yq` (for schema/review status updates),
+  `gh issue edit`/`comment` (label transitions and issue comments), `curl`
+  (for notify.sh), `source`/`notify_triage` (for triage notifications).
+- **Does not:** `git commit` (the user does that); push; skip approval gates;
+  apply `review-ready` label (that is manual/PM-agent only).
 
 #### `@auto-implementor` — autonomous schema execution
 - **File:** `agents/auto-implementor.md`
 - **Role:** Executes a schema **end-to-end without pausing**. After each commit
   group it stages, commits, then runs a bounded review loop (max 3 rounds of
   `@reviewer`). Escalations and design-question decisions are handed off to
-  `@triage`. Sends push notifications at key milestones.
+  `@triage`. Sends push notifications at key milestones. On startup: applies
+  `in-progress` label and posts a start comment on the linked GitHub issue. On
+  completion: removes `in-progress` label and posts a completion comment.
 - **Write access:** Everything `@implementor` has, plus `git commit`,
-  `git stash`, and `source` (for the notify helper).
+  `git stash`.
 - **Does not:** Push to remote (hard rule, no exceptions); write triage files
-  directly (always delegates to `@triage`).
+  directly (always delegates to `@triage`); apply `review-ready` label (manual/PM only).
 - **Review loop:** After each commit, runs up to 3 review rounds. If high+
   findings persist after round 3, escalates via `@triage` and continues — it
   never stops the run.

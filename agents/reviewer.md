@@ -1,5 +1,6 @@
 ---
 description: Code reviewer — reads repo, writes structured review to agent vault.
+tier: execute
 mode: subagent
 permission:
   edit: allow

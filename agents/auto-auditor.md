@@ -1,5 +1,6 @@
 ---
 description: Headless audit agent — detects language and tools, runs static analysis, writes structured audit report to vault. Never modifies the repository.
+tier: design
 mode: subagent
 permission:
   edit: allow

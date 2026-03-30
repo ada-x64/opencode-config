@@ -1,0 +1,13 @@
+# Model build configuration
+# Run `./build.sh` after editing to apply changes
+
+global:
+  model: github-copilot/claude-opus-4.6
+
+tiers:
+  design:
+    # null = inherit global model (no model override in agent frontmatter)
+    model: null
+
+  execute:
+    model: github-copilot/claude-sonnet-4.6

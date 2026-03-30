@@ -1,5 +1,6 @@
 ---
 description: Triage agent — writes structured triage entries to the vault (escalations, design questions, run summaries, handoffs) and produces human-readable triage reports.
+tier: execute
 mode: subagent
 permission:
   edit: allow

@@ -1,5 +1,6 @@
 ---
 description: Implementation agent — executes schemas step-by-step. Always reads CONTRIBUTING.md before beginning work.
+tier: execute
 mode: subagent
 permission:
   edit: allow
@@ -83,8 +84,9 @@ permission:
     "gh auth status*": allow
     "gh api *": allow
     "gh project list*": allow
-    # GitHub CLI (mutations — label state transitions)
+    # GitHub CLI (mutations — label state transitions and issue comments)
     "gh issue edit*": allow
+    "gh issue comment*": allow
     # Vault write (filesystem)
     "mv *": allow
     "rm *": allow
@@ -170,6 +172,12 @@ permission:
     "jest*": allow
     "vitest*": allow
     "tsc*": allow
+    # Shell sourcing (notify helper — trailing * allows && chaining)
+    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    # notify_triage function (called standalone after sourcing)
+    "notify_triage *": allow
+    # curl (used by notify.sh send path)
+    "curl *": allow
   external_directory:
     "~/repos/**": allow
     "~/winhome/obsidian/agent.obs/**": allow
@@ -202,7 +210,7 @@ review_file="$task_dir/review.md"
 - **Read-write:** task directory under `$AGENT_VAULT/tasks/` (for status updates)
 - **Build tools:** pre-approved (make, uv, python, cargo, pip, npm, etc.)
 - **Git staging:** pre-approved (`git add`)
-- **GitHub issue label transitions:** pre-approved (`gh issue edit` for `in-progress`/`review-ready` only)
+- **GitHub issue label transitions:** pre-approved (`gh issue edit` for `in-progress` label only; `review-ready` is set manually)
 - **Git commit/push, other gh mutations:** NOT pre-approved — always prompt
 
 ## Behavior
@@ -240,19 +248,45 @@ review_file="$task_dir/review.md"
   unset _issue_field _issue_num _repo_slug
   ```
   This is best-effort and never blocks the startup sequence.
-- **After final commit group:** When all commit groups are complete and validated,
-  update the schema status to `complete`:
-  ```bash
-  yq --front-matter=process -i '.status = "complete"' "$schema_file"
-  ```
-- **After setting status `complete`:** Apply the `review-ready` label and remove `in-progress` (skip if vault-only or blank):
+- **Also on startup:** Post a start comment on the linked GitHub issue (skip if vault-only or blank):
   ```bash
   _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
     _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
-    gh issue edit "$_issue_num" -R "$_repo_slug" \
-      --add-label "review-ready" --remove-label "in-progress" 2>/dev/null || true
+    _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
+    gh issue comment "$_issue_num" -R "$_repo_slug" \
+      --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
+      2>/dev/null || true
+  fi
+  unset _issue_field _issue_num _repo_slug _group_count
+  ```
+  This is best-effort and never blocks the startup sequence.
+- **After final commit group:** When all commit groups are complete and validated,
+  update the schema status to `complete`:
+  ```bash
+  yq --front-matter=process -i '.status = "complete"' "$schema_file"
+  ```
+- **After setting status `complete`:** Remove the `in-progress` label from the linked GitHub issue (skip if vault-only or blank):
+  ```bash
+  _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+  if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
+    _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
+    _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+    gh issue edit "$_issue_num" -R "$_repo_slug" --remove-label "in-progress" 2>/dev/null || true
+  fi
+  unset _issue_field _issue_num _repo_slug
+  ```
+  This is best-effort and never blocks the completion sequence.
+- **Also on completion:** Post a completion comment on the linked GitHub issue (skip if vault-only or blank):
+  ```bash
+  _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+  if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
+    _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
+    _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+    gh issue comment "$_issue_num" -R "$_repo_slug" \
+      --body "Implementation complete on branch \`${branch}\`. All commit groups implemented and validated." \
+      2>/dev/null || true
   fi
   unset _issue_field _issue_num _repo_slug
   ```
@@ -280,7 +314,7 @@ reflect progress. Do not modify any other part of the review file.
 - Push to remote (`git push`) — the user handles this
 - Proceed to the next commit group without user approval
 - Make assumptions about ambiguous sub-tasks — ask the user
-- Apply `in-progress` or `review-ready` labels when the schema's `issue:` field is blank, `null`, `(empty)`, or starts with `local-`
+- Apply `in-progress` label when the schema's `issue:` field is blank, `null`, `(empty)`, or starts with `local-`
 
 ## Triage notifications
 

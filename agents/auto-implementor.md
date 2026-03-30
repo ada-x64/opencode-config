@@ -1,5 +1,6 @@
 ---
 description: Autonomous implementation agent — executes schemas end-to-end without pausing. Bounded review loop, delegates all triage writes to @triage. Never pushes.
+tier: execute
 mode: subagent
 permission:
   edit:
@@ -85,8 +86,9 @@ permission:
     "gh auth status*": allow
     "gh api *": allow
     "gh project list*": allow
-    # GitHub CLI (mutations — label state transitions)
+    # GitHub CLI (mutations — label state transitions and issue comments)
     "gh issue edit*": allow
+    "gh issue comment*": allow
     # Vault write (filesystem)
     "mv *": allow
     "rm *": allow
@@ -174,8 +176,12 @@ permission:
     "jest*": allow
     "vitest*": allow
     "tsc*": allow
-    # Shell sourcing (notify helper only — no wildcard)
-    "source ~/.config/opencode/skills/vault-triage/notify.sh": allow
+    # Shell sourcing (notify helper — trailing * allows && chaining)
+    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    # notify_triage function (called standalone after sourcing)
+    "notify_triage *": allow
+    # curl (used by notify.sh send path)
+    "curl *": allow
   external_directory:
     "~/repos/**": allow
     "~/winhome/obsidian/agent.obs/**": allow
@@ -244,6 +250,20 @@ source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
      gh issue edit "$_issue_num" -R "$_repo_slug" --add-label "in-progress" 2>/dev/null || true
    fi
    unset _issue_field _issue_num _repo_slug
+   ```
+       This is best-effort — it never fails the startup sequence.
+6. Post a start comment on the linked GitHub issue (skip if vault-only or blank):
+   ```bash
+   _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
+     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
+     _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+     _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
+     gh issue comment "$_issue_num" -R "$_repo_slug" \
+       --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
+       2>/dev/null || true
+   fi
+   unset _issue_field _issue_num _repo_slug _group_count
    ```
    This is best-effort — it never fails the startup sequence.
 
@@ -316,19 +336,22 @@ Read the review. Evaluate:
 
 - **High+ findings still persist:** This is a design problem, not a code fix
   problem. Do NOT stop. Instead:
-  1. Dispatch `@triage` with type=escalation:
-     ```
-     @triage
-     Write an escalation triage entry.
-     task_dir: <task_dir>
-     repo_path: <repo_path>
-     type: escalation
-     commit_group: <N>
-     round: 3
-     persistent_findings: <paste the high+ findings>
-     attempted_fixes: <brief description of what was tried in rounds 1-3>
-     ```
-  2. **Continue to the next commit group.** Do not stop the run.
+   1. Dispatch `@triage` with type=escalation:
+      ```
+      @triage
+      Write an escalation triage entry.
+      task_dir: <task_dir>
+      repo_path: <repo_path>
+      type: escalation
+      commit_group: <N>
+      round: 3
+      persistent_findings: <paste the high+ findings>
+      attempted_fixes: <brief description of what was tried in rounds 1-3>
+      ```
+      If the `@triage` dispatch fails or returns without confirming a file was
+      written, record it in your internal failed-triage list:
+      `{type: escalation, commit_group: N, summary: <one-line finding summary>}`.
+   2. **Continue to the next commit group.** Do not stop the run.
 
 **e. Record design decisions** — if during implementation you encountered a
 genuine design ambiguity or made a non-trivial judgment call, dispatch `@triage`
@@ -343,6 +366,10 @@ decision_point: <describe the ambiguity>
 options_considered: <list the options>
 choice_made: <what you chose and why>
 ```
+
+If the `@triage` dispatch fails or returns without confirming a file was written,
+record it in your internal failed-triage list: `{type, commit_group, summary}`.
+Do not stop the run — continue to the next group.
 
 **f. Continue** — proceed immediately to the next commit group. Do not pause.
 
@@ -370,7 +397,7 @@ This fires a push notification to the user's phone/desktop. The `notify_triage`
 function maps triage types to notification priorities (escalations are `high`,
 run-summaries are `low`). It fails silently if notifications are not configured
 — it must never block agent work. The `run-summary` notification is sent
-separately in the Completion section (step 3) — do not call `notify_triage` a
+separately in the Completion section (step 5) — do not call `notify_triage` a
 second time for `run-summary` from this section.
 
 ### Completion
@@ -381,19 +408,31 @@ After all commit groups are done and validated:
    ```bash
    yq --front-matter=process -i '.status = "complete"' "$schema_file"
    ```
-2. Apply the `review-ready` label to the linked GitHub issue (skip if vault-only or blank):
+2. Remove the `in-progress` label from the linked GitHub issue (skip if vault-only or blank):
    ```bash
    _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
    if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
      _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
      _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
-     gh issue edit "$_issue_num" -R "$_repo_slug" \
-       --add-label "review-ready" --remove-label "in-progress" 2>/dev/null || true
+     gh issue edit "$_issue_num" -R "$_repo_slug" --remove-label "in-progress" 2>/dev/null || true
+   fi
+   unset _issue_field _issue_num _repo_slug
+   ```
+    This is best-effort — it never fails the completion sequence.
+3. Post a completion comment on the linked GitHub issue (skip if vault-only or blank):
+   ```bash
+   _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
+     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
+     _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+     gh issue comment "$_issue_num" -R "$_repo_slug" \
+       --body "Implementation complete on branch \`${branch}\`. ${_groups_completed} commit groups implemented and validated." \
+       2>/dev/null || true
    fi
    unset _issue_field _issue_num _repo_slug
    ```
    This is best-effort — it never fails the completion sequence.
-3. Dispatch `@triage` with type=run-summary:
+4. Dispatch `@triage` with type=run-summary:
    ```
    @triage
    Write a run-summary triage entry.
@@ -405,11 +444,20 @@ After all commit groups are done and validated:
    escalations: <filenames or "none">
    design_decisions: <brief list or "none">
    unresolved_findings: <brief list or "none">
+   failed_triage_dispatches: <list from internal failed-triage list, or "none">
    ```
-4. Send a completion notification:
+   If this run-summary dispatch itself fails, note it in your final return
+   message to the caller (see step 5).
+5. Send a completion notification:
    ```bash
    notify_triage run-summary "<owner>/<repo>/<task>" "Run complete: <N> groups, <N> reviews, <N> escalations"
    ```
+6. Return a final summary to the caller. Always include:
+   - Commit groups completed
+   - Total review rounds
+   - Escalations filed (filenames)
+   - Any failed triage dispatches (type, commit group, one-line summary for each)
+   - Whether the run-summary triage entry was written successfully
 
 ## What you MUST NOT do
 
@@ -421,4 +469,4 @@ After all commit groups are done and validated:
 - Stop the run because a review loop is stuck — escalate and continue
 - Dispatch more than 3 reviews for a single commit group
 - Write triage entries directly — always dispatch `@triage` for all triage writes
-- Apply `in-progress` or `review-ready` labels when the schema's `issue:` field is blank, `null`, `(empty)`, or starts with `local-`
+- Apply `in-progress` label when the schema's `issue:` field is blank, `null`, `(empty)`, or starts with `local-`

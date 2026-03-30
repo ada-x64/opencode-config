@@ -1,5 +1,6 @@
 ---
 description: Planning agent — explores codebase, discusses design, writes schemas.
+tier: design
 mode: subagent
 permission:
   edit: allow
