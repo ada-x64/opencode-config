@@ -30,6 +30,7 @@ Subagents dispatched via the Task tool. Each is defined in `agents/`:
 | Agent | File | Role |
 |-------|------|------|
 | `@planner` | `agents/planner.md` | Explores codebase, writes schemas, creates GitHub issues |
+| `@project-manager` | `agents/project-manager.md` | GitHub issue lifecycle, project board ops, milestone management, vault project status |
 | `@implementor` | `agents/implementor.md` | Executes schemas step-by-step with manual approval gates |
 | `@auto-implementor` | `agents/auto-implementor.md` | Executes schemas autonomously with a bounded review loop |
 | `@reviewer` | `agents/reviewer.md` | Structured code review; writes findings to the vault |

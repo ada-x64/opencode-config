@@ -107,12 +107,12 @@ frontmatter block that declares its permissions, followed by its system prompt.
 
 ### Workflow roles
 
-The seven agents map to distinct phases of the development workflow:
+The eight agents map to distinct phases of the development workflow:
 
 ```
 Plan ──────► Implement ──────► Review
   @planner    @implementor       @reviewer
-              @auto-implementor
+  @project-manager  @auto-implementor
                                     ↕ (escalations)
                                @triage
                                @designer  (notes / design docs)
@@ -129,6 +129,13 @@ Plan ──────► Implement ──────► Review
 - **Write access:** Full vault mutations (schemas and drafts); GitHub issue
   creation and project board adds (both require user approval via `ask`).
 - **Does not:** Implement anything; write outside the vault.
+
+#### `@project-manager` — issue lifecycle and project board
+- **File:** `agents/project-manager.md`
+- **Role:** Keeps GitHub project state and vault task state synchronized. Closes completed issues, manages milestones, moves project board items, maintains `$AGENT_VAULT/projects/<owner>/<repo>.md` status documents, and runs `vault-gc`/`vault-lint` as part of project cleanup.
+- **Write access:** All `gh issue *`, `gh project *`, `gh label *`, and `gh api repos/*/milestones` mutations; `obsidian` CLI for vault writes; `vault-gc` and `vault-lint` scripts directly.
+- **Does not:** Edit source files; run any git write command; merge or close PRs; create or delete repositories; operate on repos not in the vault.
+- **Modes:** Interactive (bulk-confirm) and status-sync. See `agents/project-manager.md` for full documentation.
 
 #### `@implementor` — manual schema execution
 - **File:** `agents/implementor.md`

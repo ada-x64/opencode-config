@@ -94,7 +94,24 @@ than by another agent.
 Dispatch when the user wants to design a feature but no schema exists yet.
 The planner explores the codebase, discusses the plan with the user, writes a
 schema, and creates a GitHub issue. You do not need to switch to plan mode
-(Tab) to invoke the planner.
+(Tab) to invoke the planner. From that point forward, `@project-manager` owns issue lifecycle management.
+
+### `@project-manager` — issue lifecycle and project board operations
+
+Dispatch when the user wants to:
+- Close completed issues and sync project board columns
+- Assign milestones in bulk or create new milestones
+- Triage the open-issue backlog for a repo
+- Refresh `$AGENT_VAULT/projects/<owner>/<repo>.md` status documents
+- Run vault-gc and vault-lint as part of a project cleanup
+
+PM operates only on repos that are vault-managed (`tasks/<owner>/<repo>/` or
+`repo-notes/<owner>/<repo>/` must exist). It never touches source files or
+merges PRs.
+
+Provide the project manager with:
+- The owner/repo slug(s) to operate on, or "all vault repos"
+- The desired operation (close completed, sync status, triage backlog, etc.)
 
 ### `@designer` — notes and design documents
 

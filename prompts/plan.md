@@ -55,6 +55,13 @@ Provide the planner with:
 - The task name or description
 - Any design constraints or context the user has shared
 
+### `@project-manager` — project and issue management
+
+Dispatch when the user wants to manage GitHub issues, milestones, or project
+board state — or when they ask to sync or refresh `$AGENT_VAULT/projects/`
+status documents. PM operates only on vault-managed repos and never touches
+source code.
+
 ### `@designer` — notes and design documents
 
 Dispatch when the user wants to:
