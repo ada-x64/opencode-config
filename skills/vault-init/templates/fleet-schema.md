@@ -7,16 +7,27 @@ schema (see `schema.md`) that can be executed independently.
 
 ## Header
 
-```markdown
-# <Descriptive title>
+Every fleet schema starts with YAML frontmatter followed by an H1 title:
 
-**Task:** `<task-name>`
-**Issue:** [#<N>](https://github.com/<org>/<repo>/issues/<N>)
-**Date:** YYYY-MM-DD
+```markdown
+---
+task: <task-name>
+issue: <link or blank>
+status: todo
+date: YYYY-MM-DD
+---
+
+# <Descriptive title>
 ```
 
-The **Task** field is the shared task name used across all per-repo schemas.
-The **Issue** field links to the umbrella GitHub issue.
+### Frontmatter fields
+
+| Field | Description |
+|-------|-------------|
+| `task` | Shared task name used across all per-repo schemas |
+| `issue` | GitHub issue link for the umbrella issue (or blank) |
+| `status` | `todo` / `in progress` / `complete` |
+| `date` | Creation date (YYYY-MM-DD) |
 
 ## Problem
 
