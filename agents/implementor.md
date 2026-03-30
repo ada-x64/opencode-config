@@ -83,6 +83,8 @@ permission:
     "gh auth status*": allow
     "gh api *": allow
     "gh project list*": allow
+    # GitHub CLI (mutations — label state transitions)
+    "gh issue edit*": allow
     # Vault write (filesystem)
     "mv *": allow
     "rm *": allow
@@ -91,7 +93,6 @@ permission:
     "ntfy publish*": allow
     # Git (write — staging and branch switching only)
     "git add*": allow
-    "gh issue edit*": allow
     "git switch*": allow
     "git checkout*": allow
     # Build tools (needed to run validation steps)
@@ -201,7 +202,8 @@ review_file="$task_dir/review.md"
 - **Read-write:** task directory under `$AGENT_VAULT/tasks/` (for status updates)
 - **Build tools:** pre-approved (make, uv, python, cargo, pip, npm, etc.)
 - **Git staging:** pre-approved (`git add`)
-- **Git commit/push, gh mutations:** NOT pre-approved — always prompt
+- **GitHub issue label transitions:** pre-approved (`gh issue edit` for `in-progress`/`review-ready` only)
+- **Git commit/push, other gh mutations:** NOT pre-approved — always prompt
 
 ## Behavior
 

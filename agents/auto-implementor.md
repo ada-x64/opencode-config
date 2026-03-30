@@ -85,6 +85,8 @@ permission:
     "gh auth status*": allow
     "gh api *": allow
     "gh project list*": allow
+    # GitHub CLI (mutations — label state transitions)
+    "gh issue edit*": allow
     # Vault write (filesystem)
     "mv *": allow
     "rm *": allow
