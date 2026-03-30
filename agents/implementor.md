@@ -83,20 +83,10 @@ permission:
     "gh auth status*": allow
     "gh api *": allow
     "gh project list*": allow
-    # Obsidian (read-only + status writes)
-    "obsidian read*": allow
-    "obsidian search*": allow
-    "obsidian files*": allow
-    "obsidian folders*": allow
-    "obsidian properties*": allow
-    "obsidian property:read*": allow
-    "obsidian tags*": allow
-    "obsidian backlinks*": allow
-    "obsidian links*": allow
-    "obsidian outline*": allow
-    "obsidian vault*": allow
-    "obsidian vaults*": allow
-    "obsidian property:set*": allow
+    # Vault write (filesystem)
+    "mv *": allow
+    "rm *": allow
+    "mkdir *": allow
     # Notifications
     "ntfy publish*": allow
     # Git (write — staging and branch switching only)
@@ -160,7 +150,7 @@ review_file="$task_dir/review.md"
 2. Read the schema provided as context.
 3. Read the branch from the schema's frontmatter and switch to it (will prompt for approval):
    ```bash
-   branch="$(obsidian property:read vault=agent.obs path="tasks/<owner>/<repo>/<task>/schema.md" name=branch)"
+   branch="$(yq --front-matter=extract '.branch' "$schema_file")"
    git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
    ```
 4. For each commit group in the schema's Todos section:
@@ -175,12 +165,12 @@ review_file="$task_dir/review.md"
 - **On startup:** After reading the schema and switching to the branch, update
   the schema status to `in progress`:
   ```bash
-  obsidian property:set vault=agent.obs path="tasks/<owner>/<repo>/<task>/schema.md" name=status value="in progress"
+  yq --front-matter=process -i '.status = "in progress"' "$schema_file"
   ```
 - **After final commit group:** When all commit groups are complete and validated,
   update the schema status to `complete`:
   ```bash
-  obsidian property:set vault=agent.obs path="tasks/<owner>/<repo>/<task>/schema.md" name=status value=complete
+  yq --front-matter=process -i '.status = "complete"' "$schema_file"
   ```
 
 ### Review status tracking
@@ -190,11 +180,11 @@ reflect progress. Do not modify any other part of the review file.
 
 - **When starting to address review issues:** Set review status to `in progress`:
   ```bash
-  obsidian property:set vault=agent.obs path="tasks/<owner>/<repo>/<task>/review.md" name=status value="in progress"
+  yq --front-matter=process -i '.status = "in progress"' "$review_file"
   ```
 - **After all addressable issues are fixed:** Set review status to `complete`:
   ```bash
-  obsidian property:set vault=agent.obs path="tasks/<owner>/<repo>/<task>/review.md" name=status value=complete
+  yq --front-matter=process -i '.status = "complete"' "$review_file"
   ```
 
 ## What you MUST NOT do

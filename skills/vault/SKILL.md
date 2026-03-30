@@ -31,12 +31,6 @@ find "$AGENT_VAULT" -name "*.md" -path "*/<task>/*" -not -path "*/.obsidian/*"
 
 # Search content across the entire vault
 rg "search term" "$AGENT_VAULT" --glob "*.md" --glob "!.obsidian"
-
-# List all vault content for a specific repo
-find "$AGENT_VAULT" -path "*/<owner>/<repo>/*" -name "*.md" -type f
-
-# Use obsidian CLI for full-text search
-obsidian search vault=agent.obs query="search term"
 ```
 
 ## Repository lookup

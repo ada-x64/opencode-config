@@ -83,20 +83,6 @@ permission:
     "gh auth status*": allow
     "gh api *": allow
     "gh project list*": allow
-    # Obsidian (read-only + review write)
-    "obsidian read*": allow
-    "obsidian search*": allow
-    "obsidian files*": allow
-    "obsidian folders*": allow
-    "obsidian properties*": allow
-    "obsidian property:read*": allow
-    "obsidian tags*": allow
-    "obsidian backlinks*": allow
-    "obsidian links*": allow
-    "obsidian outline*": allow
-    "obsidian vault*": allow
-    "obsidian vaults*": allow
-    "obsidian property:set*": allow
     # Notifications
     "ntfy publish*": allow
     # Test/validation suite (read-only observation, no build mutations)

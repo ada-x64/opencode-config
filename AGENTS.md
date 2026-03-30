@@ -136,7 +136,7 @@ Plan ──────► Implement ──────► Review
   each group** for user review before proceeding. Reads `CONTRIBUTING.md` at
   startup to learn project conventions.
 - **Write access:** Full repository edits, `git add`, `git switch`,
-  `git checkout`, build/test tools, `obsidian property:set` (for status updates).
+  `git checkout`, build/test tools, `yq` (for schema/review status updates).
 - **Does not:** `git commit` (the user does that); push; skip approval gates.
 
 #### `@auto-implementor` — autonomous schema execution
@@ -160,7 +160,7 @@ Plan ──────► Implement ──────► Review
   (`nit/low/medium/high/critical`) and category
   (`bug/performance/design/types/maintenance/security/docs/testing/style`).
   Writes the structured review to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
-- **Write access:** `obsidian property:set`; can run the test/lint suite
+- **Write access:** Write tool (for review file); `yq` (for frontmatter status); can run the test/lint suite
   (`cargo test/clippy`, `pytest`, `jest`, `vitest`, `tsc`) for verification.
 - **Does not:** Run build tools; create PRs or issues; write outside the review file.
 
@@ -170,7 +170,7 @@ Plan ──────► Implement ──────► Review
   - Repo notes at `$AGENT_VAULT/repo-notes/<owner>/<repo>/`
   - Design documents at `$AGENT_VAULT/design/`
   - Work-in-progress drafts at `$AGENT_VAULT/draft/`
-- **Write access:** Full vault mutations (all Obsidian write operations).
+- **Write access:** Full vault mutations (Write/Edit tools, `mv`, `rm`, `mkdir`).
 - **Does not:** Write schemas or reviews; run build tools; mutate git state.
 
 #### `@triage` — triage writes and reports
@@ -181,7 +181,7 @@ Plan ──────► Implement ──────► Review
     to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/triage.md` (auto-numbered).
   - **Report mode** (dispatched by a human): reads all triage files in scope
     and returns a grouped summary of pending items.
-- **Write access:** `obsidian create` and `obsidian property:set`.
+- **Write access:** Write tool (for triage file); `yq` (for frontmatter); `mkdir` (for new task directories).
 - **Does not:** Dispatch other agents; mutate code or git history; overwrite
   existing triage files.
 
@@ -191,7 +191,7 @@ Plan ──────► Implement ──────► Review
   (degrading gracefully when tools are absent), synthesises findings across
   Security/Testing/Architecture/Performance/Maintenance, and writes a structured
   audit report to `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
-- **Write access:** `obsidian create` and `obsidian property:set`; a full
+- **Write access:** Write tool and `yq` (for audit report frontmatter); a full
   suite of static analysis tools (Rust: `cargo clippy/audit/deny/llvm-cov`;
   Node: `npm/pnpm/yarn audit`, `eslint`, `tsc`, `jest`, `vitest`; Python:
   `pip-audit`, `ruff`, `mypy`, `bandit`, `pytest`; cross-language: `semgrep`,
@@ -306,14 +306,15 @@ $AGENT_VAULT/
 
 ### Vault access pattern
 
-All vault interactions go through the `obsidian` CLI tool. Agents never write
-vault files directly via `echo` or the Write tool unless running as the
-designer agent in an opencode session. The `obsidian` CLI operations used are:
+The vault is a plain directory of Markdown files with YAML frontmatter. Agents
+access it directly via standard filesystem tools — no app needs to be running.
 
-- `obsidian read` / `obsidian files` / `obsidian search` — reading
-- `obsidian create` / `obsidian append` / `obsidian prepend` — creating/appending
-- `obsidian property:set` / `obsidian property:read` — frontmatter management
-- `obsidian move` / `obsidian rename` / `obsidian delete` — file lifecycle
+- **Read:** Read tool, `cat`, `find`, `rg` — standard file reads and searches
+- **Create/modify:** Write and Edit tools — agents use these directly for vault file writes
+- **Frontmatter:** `yq --front-matter=extract '.key' file.md` to read; `yq --front-matter=process -i '.key = "value"' file.md` to write
+- **Move/rename:** `mv`
+- **Delete:** `rm`
+- **List:** `find "$AGENT_VAULT" -name "*.md"`
 
 ### Initializing the vault
 

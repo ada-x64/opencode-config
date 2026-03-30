@@ -83,21 +83,10 @@ permission:
     "gh auth status*": allow
     "gh api *": allow
     "gh project list*": allow
-    # Obsidian (read-only + triage vault writes)
-    "obsidian read*": allow
-    "obsidian search*": allow
-    "obsidian files*": allow
-    "obsidian folders*": allow
-    "obsidian properties*": allow
-    "obsidian property:read*": allow
-    "obsidian tags*": allow
-    "obsidian backlinks*": allow
-    "obsidian links*": allow
-    "obsidian outline*": allow
-    "obsidian vault*": allow
-    "obsidian vaults*": allow
-    "obsidian property:set*": allow
-    "obsidian create*": allow
+    # Vault write (filesystem)
+    "mv *": allow
+    "rm *": allow
+    "mkdir *": allow
     # Notifications
     "ntfy publish*": allow
   external_directory:
@@ -137,7 +126,7 @@ The caller provides:
 5. Read the triage format template at `$AGENT_VAULT/templates/triage.md`.
 6. Determine the output filename — list existing triage files and pick the next available:
    ```bash
-   obsidian files vault=agent.obs | grep "^tasks/<owner>/<repo>/<task>/triage"
+   find "$task_dir" -name "triage*.md" | sort
    ```
    Use `triage.md` if none exist, `triage-2.md` if `triage.md` exists, etc.
 7. Write the triage entry (see format below).
@@ -151,7 +140,7 @@ The caller provides either:
 
 **Steps:**
 
-1. Collect all `triage*.md` files in scope using `obsidian files`.
+1. Collect all `triage*.md` files in scope using `find`.
 2. Read each file and extract: `type`, `status`, `date`, `task`, and the first paragraph of the body.
 3. Group entries by type: escalations, design-questions, run-summaries, handoffs.
 4. Filter to `status: pending` by default (include all if the caller requests).

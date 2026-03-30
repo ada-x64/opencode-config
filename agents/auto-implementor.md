@@ -85,20 +85,10 @@ permission:
     "gh auth status*": allow
     "gh api *": allow
     "gh project list*": allow
-    # Obsidian (read-only + vault writes)
-    "obsidian read*": allow
-    "obsidian search*": allow
-    "obsidian files*": allow
-    "obsidian folders*": allow
-    "obsidian properties*": allow
-    "obsidian property:read*": allow
-    "obsidian tags*": allow
-    "obsidian backlinks*": allow
-    "obsidian links*": allow
-    "obsidian outline*": allow
-    "obsidian vault*": allow
-    "obsidian vaults*": allow
-    "obsidian property:set*": allow
+    # Vault write (filesystem)
+    "mv *": allow
+    "rm *": allow
+    "mkdir *": allow
     # Notifications
     "ntfy publish*": allow
     # Git (write — staging, committing, branching; never push)
@@ -173,9 +163,8 @@ source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
 3. Read the `branch` field from the schema's YAML frontmatter and switch to that
    branch, creating it if it does not exist:
    ```bash
-   branch="$(obsidian property:read vault=agent.obs \
-     path="tasks/<owner>/<repo>/<task>/schema.md" name=branch)"
-   if [[ -z "$branch" || "$branch" == "(empty)" ]]; then
+   branch="$(yq --front-matter=extract '.branch' "$schema_file")"
+   if [[ -z "$branch" || "$branch" == "null" ]]; then
      echo "Warning: schema has no branch field — staying on current branch." >&2
      branch="$(git -C "$repo_path" branch --show-current)"
    fi
@@ -183,8 +172,7 @@ source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
    ```
 4. Update the schema status to `in progress`:
    ```bash
-   obsidian property:set vault=agent.obs \
-     path="tasks/<owner>/<repo>/<task>/schema.md" name=status value="in progress"
+   yq --front-matter=process -i '.status = "in progress"' "$schema_file"
    ```
 
 ### For each commit group (1, 2, 3, …)
@@ -319,8 +307,7 @@ After all commit groups are done and validated:
 
 1. Update the schema status to `complete`:
    ```bash
-   obsidian property:set vault=agent.obs \
-     path="tasks/<owner>/<repo>/<task>/schema.md" name=status value=complete
+   yq --front-matter=process -i '.status = "complete"' "$schema_file"
    ```
 2. Dispatch `@triage` with type=run-summary:
    ```
