@@ -176,7 +176,7 @@ permission:
     "source ~/.config/opencode/skills/vault-triage/notify.sh": allow
   external_directory:
     "~/repos/**": allow
-    "~/obsidian/agent.obs/**": allow
+    "~/winhome/obsidian/agent.obs/**": allow
   task:
     "*": allow
 ---
@@ -233,6 +233,17 @@ source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
    ```bash
    yq --front-matter=process -i '.status = "in progress"' "$schema_file"
    ```
+5. Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
+   ```bash
+   _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
+     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
+     _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+     gh issue edit "$_issue_num" -R "$_repo_slug" --add-label "in-progress" 2>/dev/null || true
+   fi
+   unset _issue_field _issue_num _repo_slug
+   ```
+   This is best-effort — it never fails the startup sequence.
 
 ### For each commit group (1, 2, 3, …)
 
@@ -368,7 +379,19 @@ After all commit groups are done and validated:
    ```bash
    yq --front-matter=process -i '.status = "complete"' "$schema_file"
    ```
-2. Dispatch `@triage` with type=run-summary:
+2. Apply the `review-ready` label to the linked GitHub issue (skip if vault-only or blank):
+   ```bash
+   _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
+     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
+     _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+     gh issue edit "$_issue_num" -R "$_repo_slug" \
+       --add-label "review-ready" --remove-label "in-progress" 2>/dev/null || true
+   fi
+   unset _issue_field _issue_num _repo_slug
+   ```
+   This is best-effort — it never fails the completion sequence.
+3. Dispatch `@triage` with type=run-summary:
    ```
    @triage
    Write a run-summary triage entry.
@@ -381,7 +404,7 @@ After all commit groups are done and validated:
    design_decisions: <brief list or "none">
    unresolved_findings: <brief list or "none">
    ```
-3. Send a completion notification:
+4. Send a completion notification:
    ```bash
    notify_triage run-summary "<owner>/<repo>/<task>" "Run complete: <N> groups, <N> reviews, <N> escalations"
    ```
@@ -396,3 +419,4 @@ After all commit groups are done and validated:
 - Stop the run because a review loop is stuck — escalate and continue
 - Dispatch more than 3 reviews for a single commit group
 - Write triage entries directly — always dispatch `@triage` for all triage writes
+- Apply `in-progress` or `review-ready` labels when the schema's `issue:` field is blank, `null`, `(empty)`, or starts with `local-`

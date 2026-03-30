@@ -91,6 +91,7 @@ permission:
     "ntfy publish*": allow
     # Git (write — staging and branch switching only)
     "git add*": allow
+    "gh issue edit*": allow
     "git switch*": allow
     "git checkout*": allow
     # Build tools (needed to run validation steps)
@@ -170,7 +171,7 @@ permission:
     "tsc*": allow
   external_directory:
     "~/repos/**": allow
-    "~/obsidian/agent.obs/**": allow
+    "~/winhome/obsidian/agent.obs/**": allow
 ---
 
 # Implementation Agent
@@ -226,11 +227,34 @@ review_file="$task_dir/review.md"
   ```bash
   yq --front-matter=process -i '.status = "in progress"' "$schema_file"
   ```
+- **After switching to the branch and setting status `in progress`:** Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
+  ```bash
+  _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+  if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
+    _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
+    _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+    gh issue edit "$_issue_num" -R "$_repo_slug" --add-label "in-progress" 2>/dev/null || true
+  fi
+  unset _issue_field _issue_num _repo_slug
+  ```
+  This is best-effort and never blocks the startup sequence.
 - **After final commit group:** When all commit groups are complete and validated,
   update the schema status to `complete`:
   ```bash
   yq --front-matter=process -i '.status = "complete"' "$schema_file"
   ```
+- **After setting status `complete`:** Apply the `review-ready` label and remove `in-progress` (skip if vault-only or blank):
+  ```bash
+  _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+  if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
+    _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
+    _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+    gh issue edit "$_issue_num" -R "$_repo_slug" \
+      --add-label "review-ready" --remove-label "in-progress" 2>/dev/null || true
+  fi
+  unset _issue_field _issue_num _repo_slug
+  ```
+  This is best-effort and never blocks the completion sequence.
 
 ### Review status tracking
 
@@ -254,6 +278,7 @@ reflect progress. Do not modify any other part of the review file.
 - Push to remote (`git push`) — the user handles this
 - Proceed to the next commit group without user approval
 - Make assumptions about ambiguous sub-tasks — ask the user
+- Apply `in-progress` or `review-ready` labels when the schema's `issue:` field is blank, `null`, `(empty)`, or starts with `local-`
 
 ## Triage notifications
 
