@@ -79,7 +79,7 @@ permission:
     "gh release list*": allow
     "gh release view*": allow
     "gh auth status*": allow
-    "gh api *": allow
+    "gh api *": allow  # Note: broad; can technically replicate any gh subcommand via REST — PM must self-enforce the MUST NOT list
     "gh project list*": allow
     # GitHub CLI (mutations — PM's core capability)
     "gh issue close*": allow
@@ -147,7 +147,7 @@ repo_dir="$vault/tasks/$owner/$repo_name"
 notes_dir="$vault/repo-notes/$owner/$repo_name"
 if [[ ! -d "$repo_dir" && ! -d "$notes_dir" ]]; then
   echo "Error: $owner/$repo_name is not vault-managed. No tasks/ or repo-notes/ directory found." >&2
-  # Stop and tell the user — do not attempt any GitHub operations.
+  exit 1
 fi
 ```
 
@@ -240,3 +240,4 @@ gh label create "review-ready" --color "0075ca" -R <owner>/<repo> 2>/dev/null ||
 - Execute bulk operations without presenting a summary and receiving explicit user confirmation
 - Write project status documents outside `$vault/projects/`
 - Apply `in-progress` or `review-ready` labels — that is the implementors' job; PM creates the labels, implementors apply them
+- Use `gh api` to perform operations that are otherwise hard-denied (e.g., do not use `gh api` to merge PRs, push code, or create repositories)
