@@ -16,105 +16,105 @@ pending=() addressed=() dismissed=()
 pending_count=0 addressed_count=0 dismissed_count=0
 escalation_count=0
 
-for triage in "$vault"/tasks/*/*/*/triage.md; do
-  [[ -f "$triage" ]] || continue
-  [[ "$triage" == *"/_fleet/"* ]] && continue
+for triage in "$vault"/tasks/*/*/*/triage*.md; do
+	[[ -f "$triage" ]] || continue
+	[[ "$triage" == *"/_fleet/"* ]] && continue
 
-  rel="${triage#"$vault"/}"
-  status="$(yq --front-matter=extract '.status // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
-  type="$(yq --front-matter=extract '.type // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
-  agent="$(yq --front-matter=extract '.agent // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
-  date="$(yq --front-matter=extract '.date // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
+	rel="${triage#"$vault"/}"
+	status="$(yq --front-matter=extract '.status // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
+	type="$(yq --front-matter=extract '.type // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
+	agent="$(yq --front-matter=extract '.agent // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
+	date="$(yq --front-matter=extract '.date // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
 
-  link="[[${rel%.md}]]"
-  row="| $link | $item_type | $item_agent | $item_date |"
+	link="[[${rel%.md}]]"
+	row="| $link | $type | $agent | $date |"
 
-  case "$status" in
-    pending)
-      pending+=("$row")
-      (( ++pending_count ))
-      [[ "$item_type" == "escalation" ]] && (( ++escalation_count ))
-      ;;
-    addressed)
-      addressed+=("$row")
-      (( ++addressed_count ))
-      ;;
-    dismissed)
-      dismissed+=("$row")
-      (( ++dismissed_count ))
-      ;;
-    *)
-      pending+=("$row")
-      (( ++pending_count ))
-      ;;
-  esac
+	case "$status" in
+	pending)
+		pending+=("$row")
+		((++pending_count))
+		[[ "$type" == "escalation" ]] && ((++escalation_count))
+		;;
+	addressed)
+		addressed+=("$row")
+		((++addressed_count))
+		;;
+	dismissed)
+		dismissed+=("$row")
+		((++dismissed_count))
+		;;
+	*)
+		pending+=("$row")
+		((++pending_count))
+		;;
+	esac
 done
 
 # --notify-summary mode: send counts via ntfy, then exit
 if $notify_summary; then
-  topic="${NTFY_TOPIC:-}"
-  if [[ -z "$topic" && -f "$vault/cache/ntfy-topic.txt" ]]; then
-    topic="$(cat "$vault/cache/ntfy-topic.txt")"
-  fi
-  if [[ -z "$topic" ]]; then
-    echo "No NTFY_TOPIC set and no $vault/cache/ntfy-topic.txt found. Skipping notification." >&2
-    exit 0
-  fi
+	topic="${NTFY_TOPIC:-}"
+	if [[ -z "$topic" && -f "$vault/cache/ntfy-topic.txt" ]]; then
+		topic="$(cat "$vault/cache/ntfy-topic.txt")"
+	fi
+	if [[ -z "$topic" ]]; then
+		echo "No NTFY_TOPIC set and no $vault/cache/ntfy-topic.txt found. Skipping notification." >&2
+		exit 0
+	fi
 
-  summary="${pending_count} pending"
-  [[ $escalation_count -gt 0 ]] && summary="$summary ($escalation_count escalation(s))"
-  summary="$summary, ${addressed_count} addressed, ${dismissed_count} dismissed"
+	summary="${pending_count} pending"
+	[[ $escalation_count -gt 0 ]] && summary="$summary ($escalation_count escalation(s))"
+	summary="$summary, ${addressed_count} addressed, ${dismissed_count} dismissed"
 
-  priority="default"
-  [[ $escalation_count -gt 0 ]] && priority="high"
+	priority="default"
+	[[ $escalation_count -gt 0 ]] && priority="high"
 
-  if command -v ntfy &>/dev/null; then
-    ntfy publish --priority="$priority" --title="Triage Summary" --tags="clipboard" "$topic" "$summary" 2>/dev/null || true
-  elif command -v curl &>/dev/null; then
-    curl -sL -H "Title: Triage Summary" -H "Priority: $priority" -H "Tags: clipboard" \
-      -d "$summary" "https://ntfy.sh/$topic" >/dev/null 2>&1 || true
-  else
-    echo "Neither ntfy nor curl found. Cannot send notification." >&2
-  fi
-  exit 0
+	if command -v ntfy &>/dev/null; then
+		ntfy publish --priority="$priority" --title="Triage Summary" --tags="clipboard" "$topic" "$summary" 2>/dev/null || true
+	elif command -v curl &>/dev/null; then
+		curl -sL -H "Title: Triage Summary" -H "Priority: $priority" -H "Tags: clipboard" \
+			-d "$summary" "https://ntfy.sh/$topic" >/dev/null 2>&1 || true
+	else
+		echo "Neither ntfy nor curl found. Cannot send notification." >&2
+	fi
+	exit 0
 fi
 
 # Dashboard generation mode
 {
-  echo "# Triage Inbox"
-  echo ""
-  echo "_Generated: $(date -u '+%Y-%m-%d %H:%M UTC')_"
-  echo ""
-  echo "## Pending"
-  echo ""
-  if [[ ${#pending[@]} -gt 0 ]]; then
-    echo "| Task | Type | Agent | Date |"
-    echo "|------|------|-------|------|"
-    printf '%s\n' "${pending[@]}"
-  else
-    echo "_No pending triage items._"
-  fi
-  echo ""
-  echo "## Addressed"
-  echo ""
-  if [[ ${#addressed[@]} -gt 0 ]]; then
-    echo "| Task | Type | Agent | Date |"
-    echo "|------|------|-------|------|"
-    printf '%s\n' "${addressed[@]}"
-  else
-    echo "_None._"
-  fi
-  echo ""
-  echo "## Dismissed"
-  echo ""
-  if [[ ${#dismissed[@]} -gt 0 ]]; then
-    echo "| Task | Type | Agent | Date |"
-    echo "|------|------|-------|------|"
-    printf '%s\n' "${dismissed[@]}"
-  else
-    echo "_None._"
-  fi
-} > "$output"
+	echo "# Triage Inbox"
+	echo ""
+	echo "_Generated: $(date -u '+%Y-%m-%d %H:%M UTC')_"
+	echo ""
+	echo "## Pending"
+	echo ""
+	if [[ ${#pending[@]} -gt 0 ]]; then
+		echo "| Task | Type | Agent | Date |"
+		echo "|------|------|-------|------|"
+		printf '%s\n' "${pending[@]}"
+	else
+		echo "_No pending triage items._"
+	fi
+	echo ""
+	echo "## Addressed"
+	echo ""
+	if [[ ${#addressed[@]} -gt 0 ]]; then
+		echo "| Task | Type | Agent | Date |"
+		echo "|------|------|-------|------|"
+		printf '%s\n' "${addressed[@]}"
+	else
+		echo "_None._"
+	fi
+	echo ""
+	echo "## Dismissed"
+	echo ""
+	if [[ ${#dismissed[@]} -gt 0 ]]; then
+		echo "| Task | Type | Agent | Date |"
+		echo "|------|------|-------|------|"
+		printf '%s\n' "${dismissed[@]}"
+	else
+		echo "_None._"
+	fi
+} >"$output"
 
 echo "Dashboard written to $output"
 echo "  ${pending_count} pending, ${addressed_count} addressed, ${dismissed_count} dismissed"
