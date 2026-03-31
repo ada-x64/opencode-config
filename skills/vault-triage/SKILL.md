@@ -284,7 +284,11 @@ To read triage files and generate a summary of pending items:
 
 2. Read each file and extract frontmatter fields:
    ```bash
-   yq --front-matter=extract '.type, .status, .date, .agent' "$file"
+   source ~/.config/opencode/skills/lib/frontmatter.sh
+   fm_read "$file" "type" "unknown"
+   fm_read "$file" "status" "unknown"
+   fm_read "$file" "date" "unknown"
+   fm_read "$file" "agent" "unknown"
    ```
 
 3. Group by type. Filter to `status: pending` by default (unless the human

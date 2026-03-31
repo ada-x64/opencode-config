@@ -32,7 +32,9 @@ permission:
     "tr *": allow
     "awk *": allow
     "jq *": allow
-    "yq *": allow
+    "source */lib/frontmatter.sh*": allow
+    "fm_read *": allow
+    "fm_write *": allow
     "diff *": allow
     "comm *": allow
     "column *": allow
@@ -224,6 +226,7 @@ review_file="$task_dir/review.md"
 Load the notification helper (fails silently if not configured):
 ```bash
 source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
+source ~/.config/opencode/skills/lib/frontmatter.sh 2>/dev/null || true
 ```
 
 ## Behavior
@@ -235,7 +238,7 @@ source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
 3. Read the `branch` field from the schema's YAML frontmatter and switch to that
    branch, creating it if it does not exist:
    ```bash
-   branch="$(yq --front-matter=extract '.branch' "$schema_file")"
+   branch="$(fm_read "$schema_file" "branch" "")"
    if [[ -z "$branch" || "$branch" == "null" ]]; then
      echo "Warning: schema has no branch field — staying on current branch." >&2
      branch="$(git -C "$repo_path" branch --show-current)"
@@ -244,14 +247,14 @@ source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
    ```
 4. Update the schema status to `in progress`:
    ```bash
-   yq --front-matter=process -i '.status = "in progress"' "$schema_file"
+   fm_write "$schema_file" "status" "in progress"
    ```
 5. Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
    ```bash
-   _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+   _issue_field="$(fm_read "$schema_file" "issue" "")"
    if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
      _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-     _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+     _repo_slug="$(fm_read "$schema_file" "repo" "")"
      gh issue edit "$_issue_num" -R "$_repo_slug" --add-label "in-progress" 2>/dev/null || true
    fi
    unset _issue_field _issue_num _repo_slug
@@ -259,10 +262,10 @@ source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
        This is best-effort — it never fails the startup sequence.
 6. Post a start comment on the linked GitHub issue (skip if vault-only or blank):
    ```bash
-   _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+   _issue_field="$(fm_read "$schema_file" "issue" "")"
    if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
      _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-     _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+     _repo_slug="$(fm_read "$schema_file" "repo" "")"
      _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
      gh issue comment "$_issue_num" -R "$_repo_slug" \
        --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
@@ -390,14 +393,14 @@ After all commit groups are done and validated:
 
 1. Update the schema status to `complete`:
    ```bash
-   yq --front-matter=process -i '.status = "complete"' "$schema_file"
+   fm_write "$schema_file" "status" "complete"
    ```
 2. Remove the `in-progress` label from the linked GitHub issue (skip if vault-only or blank):
    ```bash
-   _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+   _issue_field="$(fm_read "$schema_file" "issue" "")"
    if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
      _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-     _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+     _repo_slug="$(fm_read "$schema_file" "repo" "")"
      gh issue edit "$_issue_num" -R "$_repo_slug" --remove-label "in-progress" 2>/dev/null || true
    fi
    unset _issue_field _issue_num _repo_slug
@@ -405,10 +408,10 @@ After all commit groups are done and validated:
     This is best-effort — it never fails the completion sequence.
 3. Post a completion comment on the linked GitHub issue (skip if vault-only or blank):
    ```bash
-   _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+   _issue_field="$(fm_read "$schema_file" "issue" "")"
    if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
      _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-     _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+     _repo_slug="$(fm_read "$schema_file" "repo" "")"
      gh issue comment "$_issue_num" -R "$_repo_slug" \
        --body "Implementation complete on branch \`${branch}\`. ${_groups_completed} commit groups implemented and validated." \
        2>/dev/null || true

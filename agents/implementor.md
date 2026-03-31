@@ -30,7 +30,9 @@ permission:
     "tr *": allow
     "awk *": allow
     "jq *": allow
-    "yq *": allow
+    "source */lib/frontmatter.sh*": allow
+    "fm_read *": allow
+    "fm_write *": allow
     "diff *": allow
     "comm *": allow
     "column *": allow
@@ -225,7 +227,8 @@ review_file="$task_dir/review.md"
 2. Read the schema provided as context.
 3. Read the branch from the schema's frontmatter and switch to it (will prompt for approval):
    ```bash
-   branch="$(yq --front-matter=extract '.branch' "$schema_file")"
+   source ~/.config/opencode/skills/lib/frontmatter.sh
+   branch="$(fm_read "$schema_file" "branch")"
    git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
    ```
 4. For each commit group in the schema's Todos section:
@@ -240,14 +243,14 @@ review_file="$task_dir/review.md"
 - **On startup:** After reading the schema and switching to the branch, update
   the schema status to `in progress`:
   ```bash
-  yq --front-matter=process -i '.status = "in progress"' "$schema_file"
+  fm_write "$schema_file" "status" "in progress"
   ```
 - **After switching to the branch and setting status `in progress`:** Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
   ```bash
-  _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+  _issue_field="$(fm_read "$schema_file" "issue" "")"
   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-    _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+    _repo_slug="$(fm_read "$schema_file" "repo" "")"
     gh issue edit "$_issue_num" -R "$_repo_slug" --add-label "in-progress" 2>/dev/null || true
   fi
   unset _issue_field _issue_num _repo_slug
@@ -255,10 +258,10 @@ review_file="$task_dir/review.md"
   This is best-effort and never blocks the startup sequence.
 - **Also on startup:** Post a start comment on the linked GitHub issue (skip if vault-only or blank):
   ```bash
-  _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+  _issue_field="$(fm_read "$schema_file" "issue" "")"
   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-    _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+    _repo_slug="$(fm_read "$schema_file" "repo" "")"
     _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
     gh issue comment "$_issue_num" -R "$_repo_slug" \
       --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
@@ -270,14 +273,14 @@ review_file="$task_dir/review.md"
 - **After final commit group:** When all commit groups are complete and validated,
   update the schema status to `complete`:
   ```bash
-  yq --front-matter=process -i '.status = "complete"' "$schema_file"
+  fm_write "$schema_file" "status" "complete"
   ```
 - **After setting status `complete`:** Remove the `in-progress` label from the linked GitHub issue (skip if vault-only or blank):
   ```bash
-  _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+  _issue_field="$(fm_read "$schema_file" "issue" "")"
   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-    _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+    _repo_slug="$(fm_read "$schema_file" "repo" "")"
     gh issue edit "$_issue_num" -R "$_repo_slug" --remove-label "in-progress" 2>/dev/null || true
   fi
   unset _issue_field _issue_num _repo_slug
@@ -285,10 +288,10 @@ review_file="$task_dir/review.md"
   This is best-effort and never blocks the completion sequence.
 - **Also on completion:** Post a completion comment on the linked GitHub issue (skip if vault-only or blank):
   ```bash
-  _issue_field="$(yq --front-matter=extract '.issue' "$schema_file" 2>/dev/null || true)"
+  _issue_field="$(fm_read "$schema_file" "issue" "")"
   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-    _repo_slug="$(yq --front-matter=extract '.repo' "$schema_file")"
+    _repo_slug="$(fm_read "$schema_file" "repo" "")"
     gh issue comment "$_issue_num" -R "$_repo_slug" \
       --body "Implementation complete on branch \`${branch}\`. All commit groups implemented and validated." \
       2>/dev/null || true
@@ -304,11 +307,11 @@ reflect progress. Do not modify any other part of the review file.
 
 - **When starting to address review issues:** Set review status to `in progress`:
   ```bash
-  yq --front-matter=process -i '.status = "in progress"' "$review_file"
+  fm_write "$review_file" "status" "in progress"
   ```
 - **After all addressable issues are fixed:** Set review status to `complete`:
   ```bash
-  yq --front-matter=process -i '.status = "complete"' "$review_file"
+  fm_write "$review_file" "status" "complete"
   ```
 
 ## What you MUST NOT do

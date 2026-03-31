@@ -192,7 +192,7 @@ Plan ──────► Implement ──────► Review
   and posts a start comment on the linked GitHub issue. On completion: removes
   `in-progress` label and posts a completion comment.
 - **Write access:** Full repository edits, `git add`, `git switch`,
-  `git checkout`, build/test tools, `yq` (for schema/review status updates),
+  `git checkout`, build/test tools, `fm_read`/`fm_write` (frontmatter helpers for schema/review status updates),
   `gh issue edit`/`comment` (label transitions and issue comments), `curl`
   (for notify.sh), `source`/`notify_triage`/`triage-dashboard.sh` (for triage).
 - **Does not:** `git commit` (the user does that); push; skip approval gates;
@@ -222,7 +222,7 @@ Plan ──────► Implement ──────► Review
   (`nit/low/medium/high/critical`) and category
   (`bug/performance/design/types/maintenance/security/docs/testing/style`).
   Writes the structured review to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
-- **Write access:** Write tool (for review file); `yq` (for frontmatter status); can run the test/lint suite
+- **Write access:** Write tool (for review file); `fm_read`/`fm_write` (frontmatter helpers for review status updates); can run the test/lint suite
   (`cargo test/clippy`, `pytest`, `jest`, `vitest`, `tsc`) for verification;
   `curl`, `source`/`notify_triage`/`triage-dashboard.sh` (for triage).
 - **Does not:** Run build tools; create PRs or issues; write outside the review file.
@@ -242,7 +242,7 @@ Plan ──────► Implement ──────► Review
   (degrading gracefully when tools are absent), synthesises findings across
   Security/Testing/Architecture/Performance/Maintenance, and writes a structured
   audit report to `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
-- **Write access:** Write tool and `yq` (for audit report frontmatter); a full
+- **Write access:** Write tool and `yq` (for audit report frontmatter — plain YAML, not frontmatter syntax); a full
   suite of static analysis tools (Rust: `cargo clippy/audit/deny/llvm-cov`;
   Node: `npm/pnpm/yarn audit`, `eslint`, `tsc`, `jest`, `vitest`; Python:
   `pip-audit`, `ruff`, `mypy`, `bandit`, `pytest`; cross-language: `semgrep`,
@@ -367,7 +367,7 @@ access it directly via standard filesystem tools — no app needs to be running.
 
 - **Read:** Read tool, `cat`, `find`, `rg` — standard file reads and searches
 - **Create/modify:** Write and Edit tools — agents use these directly for vault file writes
-- **Frontmatter:** `yq --front-matter=extract '.key' file.md` to read; `yq --front-matter=process -i '.key = "value"' file.md` to write
+- **Frontmatter:** `source ~/.config/opencode/skills/lib/frontmatter.sh` then `fm_read file.md "key"` to read; `fm_write file.md "key" "value"` to write
 - **Move/rename:** `mv`
 - **Delete:** `rm`
 - **List:** `find "$AGENT_VAULT" -name "*.md"`

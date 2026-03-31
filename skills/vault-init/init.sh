@@ -170,13 +170,15 @@ No app needs to be running to read or write it.
 find "$AGENT_VAULT" -name "*.md"                          # List all files
 rg "search term" "$AGENT_VAULT" --glob "*.md"             # Search vault
 cat "$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md"  # Read file
-yq --front-matter=extract '.status' <file>                # Read frontmatter field
+source ~/.config/opencode/skills/lib/frontmatter.sh       # Load helpers
+fm_read <file> "status"                                   # Read frontmatter field
+fm_read <file> "status" "default-value"                   # Read with fallback
 
 # Mutation operations
 mv <src> <dst>                                            # Move/rename
 rm <file>                                                 # Delete
 # Create/edit: use the Write and Edit tools, or standard redirection
-yq --front-matter=process -i '.status = "complete"' <file>  # Set frontmatter field
+fm_write <file> "status" "complete"                       # Set frontmatter field
 ```
 AGENTS_EOF
 	echo "  created: $vault/AGENTS.md"

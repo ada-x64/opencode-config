@@ -30,7 +30,9 @@ permission:
     "tr *": allow
     "awk *": allow
     "jq *": allow
-    "yq *": allow
+    "source */lib/frontmatter.sh*": allow
+    "fm_read *": allow
+    "fm_write *": allow
     "diff *": allow
     "comm *": allow
     "column *": allow
