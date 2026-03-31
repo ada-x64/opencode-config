@@ -104,6 +104,13 @@ permission:
     "bash ~/.config/opencode/skills/vault-lint/lint.sh*": allow
     # Vault directory creation
     "mkdir *": allow
+    # Notifications
+    "ntfy publish*": allow
+    # Triage skill (write + notify + inbox)
+    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    "notify_triage *": allow
+    "curl *": allow
+    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
     # Hard denies — PM never touches code or git history
     "git add*": deny
     "git commit*": deny
@@ -228,6 +235,22 @@ The `in-progress` and `review-ready` labels must exist on each repo before imple
 gh label create "in-progress" --color "fbca04" -R <owner>/<repo> 2>/dev/null || true
 gh label create "review-ready" --color "0075ca" -R <owner>/<repo> 2>/dev/null || true
 ```
+
+## Triage & Notifications
+
+After completing significant operations, load the `vault-triage` skill and
+follow its **Write Mode** instructions. The three post-work steps are
+**mandatory**:
+
+1. Write a triage entry to the relevant task directory (or to
+   `$AGENT_VAULT/tasks/_activity/project-manager/` for cross-repo operations)
+2. Send a push notification via `notify_triage`
+3. Regenerate the triage inbox via `triage-dashboard.sh`
+
+**Events requiring triage entries:**
+- Bulk issue operations completed (type: `activity` — include count and repo)
+- Project status synced (type: `activity`)
+- Vault cleanup completed (type: `activity` — include archive count)
 
 ## What you MUST NOT do
 

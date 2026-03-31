@@ -86,6 +86,10 @@ permission:
     "gh project list*": allow
     # Notifications
     "ntfy publish*": allow
+    # Triage skill (write + notify + inbox)
+    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    "notify_triage *": allow
+    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
     # curl (for fetching advisory databases, documentation)
     "curl*": allow
     # Rust static analysis + coverage
@@ -265,6 +269,19 @@ is created implicitly when writing the first file.
 
 Return a one-paragraph summary to the caller: path written, overall health
 (e.g. "N critical, N high findings"), and the top recommended action.
+
+## Triage & Notifications
+
+After writing the audit report, load the `vault-triage` skill and follow its
+**Write Mode** instructions. The three post-work steps are **mandatory**:
+
+1. Write a triage entry to the relevant task directory (if one exists for the
+   repo being audited) or to `$AGENT_VAULT/tasks/_activity/auto-auditor/`
+2. Send a push notification via `notify_triage`
+3. Regenerate the triage inbox via `triage-dashboard.sh`
+
+**Events requiring triage entries:**
+- Audit report completed (type: `activity` — include critical/high finding counts and top recommendation)
 
 ## Severity Reference
 

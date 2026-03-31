@@ -177,10 +177,10 @@ permission:
     "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
     # notify_triage function (called standalone after sourcing)
     "notify_triage *": allow
-    # notify_triage with inline env-var priority override (e.g. NOTIFY_TRIAGE_PRIORITY=low notify_triage ...)
-    "NOTIFY_TRIAGE_PRIORITY=* notify_triage *": allow
     # curl (used by notify.sh send path)
     "curl *": allow
+    # Triage skill (inbox regeneration)
+    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
   external_directory:
     "~/repos/**": allow
     "~/winhome/obsidian/agent.obs/**": allow
@@ -319,16 +319,16 @@ reflect progress. Do not modify any other part of the review file.
 - Make assumptions about ambiguous sub-tasks — ask the user
 - Apply `in-progress` label when the schema's `issue:` field is blank, `null`, `(empty)`, or starts with `local-`
 
-## Triage notifications
+## Triage & Notifications
 
-If you write a triage entry (rare for the manual implementor), you can optionally
-notify the user:
+After completing each commit group and after final completion, load the
+`vault-triage` skill and follow its **Write Mode** instructions. The three
+post-work steps are **mandatory**:
 
-```bash
-source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
-NOTIFY_TRIAGE_PRIORITY=low notify_triage "<type>" "<owner>/<repo>/<task>" "<summary>"
-```
+1. Write a triage entry to the task directory
+2. Send a push notification via `notify_triage`
+3. Regenerate the triage inbox via `triage-dashboard.sh`
 
-The `NOTIFY_TRIAGE_PRIORITY=low` override ensures manual-implementor notifications
-are always low priority (non-audible), since the user is already watching the session.
-This is entirely optional and fails silently if not configured.
+**Events requiring triage entries:**
+- Commit group completed (type: `activity` — include group number and validation result)
+- Full implementation complete (type: `activity` — include total groups and branch name)

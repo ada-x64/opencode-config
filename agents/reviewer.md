@@ -87,6 +87,11 @@ permission:
     "gh project list*": allow
     # Notifications
     "ntfy publish*": allow
+    # Triage skill (write + notify + inbox)
+    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    "notify_triage *": allow
+    "curl *": allow
+    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
     # Test/validation suite (read-only observation, no build mutations)
     "cargo test*": allow
     "cargo clippy*": allow
@@ -127,6 +132,18 @@ in a repository and write a structured review document.
 5. Be thorough but only flag real issues — do not pad the review.
 6. Write the full review to the specified review file, overwriting any existing content.
 7. When writing the review, set the `status` frontmatter field to `todo`.
+
+## Triage & Notifications
+
+After writing the review file, load the `vault-triage` skill and follow its
+**Write Mode** instructions. The three post-work steps are **mandatory**:
+
+1. Write a triage entry to the task directory
+2. Send a push notification via `notify_triage`
+3. Regenerate the triage inbox via `triage-dashboard.sh`
+
+**Events requiring triage entries:**
+- Review completed (type: `activity` — include total finding count and max severity)
 
 ## What you MUST NOT do
 

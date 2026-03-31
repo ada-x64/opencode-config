@@ -93,6 +93,11 @@ permission:
     "mkdir *": allow
     # Notifications
     "ntfy publish*": allow
+    # Triage skill (write + notify + inbox)
+    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    "notify_triage *": allow
+    "curl *": allow
+    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
   external_directory:
     "~/repos/**": allow
     "~/obsidian/agent.obs/**": allow
@@ -165,6 +170,19 @@ a draft review), **verify the output before proceeding**. Specifically:
 - If the output is incomplete or off-target, dispatch the subagent again with
   a corrected prompt rather than proceeding with bad data.
 - Do **not** assume a subagent succeeded just because it returned without error.
+
+## Triage & Notifications
+
+After completing significant work, load the `vault-triage` skill and follow
+its **Write Mode** instructions. The three post-work steps are **mandatory**:
+
+1. Write a triage entry to the task directory
+2. Send a push notification via `notify_triage`
+3. Regenerate the triage inbox via `triage-dashboard.sh`
+
+**Events requiring triage entries:**
+- Schema written to the vault (type: `activity`)
+- GitHub issue created for the schema (type: `activity`)
 
 ## What you MUST NOT do
 

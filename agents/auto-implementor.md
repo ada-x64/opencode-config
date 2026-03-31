@@ -1,5 +1,5 @@
 ---
-description: Autonomous implementation agent — executes schemas end-to-end without pausing. Bounded review loop, delegates all triage writes to @triage. Never pushes.
+description: Autonomous implementation agent — executes schemas end-to-end without pausing. Bounded review loop, writes triage entries directly via vault-triage skill. Never pushes.
 tier: execute
 model: github-copilot/claude-sonnet-4.6
 mode: subagent
@@ -183,6 +183,8 @@ permission:
     "notify_triage *": allow
     # curl (used by notify.sh send path)
     "curl *": allow
+    # Triage skill (inbox regeneration)
+    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
   external_directory:
     "~/repos/**": allow
     "~/winhome/obsidian/agent.obs/**": allow
@@ -337,69 +339,44 @@ Read the review. Evaluate:
 
 - **High+ findings still persist:** This is a design problem, not a code fix
   problem. Do NOT stop. Instead:
-   1. Dispatch `@triage` with type=escalation:
-      ```
-      @triage
-      Write an escalation triage entry.
-      task_dir: <task_dir>
-      repo_path: <repo_path>
-      type: escalation
-      commit_group: <N>
-      round: 3
-      persistent_findings: <paste the high+ findings>
-      attempted_fixes: <brief description of what was tried in rounds 1-3>
-      ```
-      If the `@triage` dispatch fails or returns without confirming a file was
-      written, record it in your internal failed-triage list:
-      `{type: escalation, commit_group: N, summary: <one-line finding summary>}`.
-   2. **Continue to the next commit group.** Do not stop the run.
+   1. Load the `vault-triage` skill.
+   2. Write an `escalation` triage entry directly to `$task_dir/`.
+   3. Send notification: `notify_triage escalation "<owner>/<repo>/<task>" "<one-line summary>"`
+   4. Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
+   5. **Continue to the next commit group.** Do not stop the run.
 
 **e. Record design decisions** — if during implementation you encountered a
-genuine design ambiguity or made a non-trivial judgment call, dispatch `@triage`
-with type=design-question before moving to the next group:
-```
-@triage
-Write a design-question triage entry.
-task_dir: <task_dir>
-repo_path: <repo_path>
-type: design-question
-decision_point: <describe the ambiguity>
-options_considered: <list the options>
-choice_made: <what you chose and why>
-```
-
-If the `@triage` dispatch fails or returns without confirming a file was written,
-record it in your internal failed-triage list: `{type, commit_group, summary}`.
-Do not stop the run — continue to the next group.
+genuine design ambiguity or made a non-trivial judgment call, before moving to
+the next group:
+1. Load the `vault-triage` skill.
+2. Write a `design-question` triage entry directly to `$task_dir/`.
+3. Send notification: `notify_triage design-question "<owner>/<repo>/<task>" "<one-line summary>"`
+4. Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
 
 **f. Continue** — proceed immediately to the next commit group. Do not pause.
 
-### Triage
+## Triage & Notifications
 
-All triage writes are handled by `@triage`. Dispatch it with the appropriate
-type and context — never write triage files directly.
+All triage entries are written directly — load the `vault-triage` skill and
+follow its **Write Mode** instructions. The three post-work steps are
+**mandatory** after every triage write:
 
-| Type | When | Who dispatches |
-|------|------|----------------|
-| `escalation` | Review loop exhausted (3 rounds, still high+ issues) | auto-implementor (step d) |
-| `design-question` | Genuine ambiguity encountered, judgment call made | auto-implementor (step e) |
-| `run-summary` | Written at completion — summarizes the entire run | auto-implementor (Completion) |
-| `handoff` | Mid-schema stop, handing off to next agent or human | written manually |
+1. Write a triage entry to the task directory
+2. Send a push notification via `notify_triage`
+3. Regenerate the triage inbox via `triage-dashboard.sh`
 
-`@triage` manages file naming automatically (`triage.md`, `triage-2.md`, …).
+**Events requiring triage entries:**
 
-After dispatching a mid-run triage entry (escalation or design-question), send a push notification:
+| Event | Type | When |
+|-------|------|------|
+| Commit group completed | `activity` | After each commit + review cycle |
+| Review loop exhausted (3 rounds, high+ persists) | `escalation` | Step d |
+| Design ambiguity resolved | `design-question` | Step e |
+| Run complete | `run-summary` | Completion |
 
-```bash
-notify_triage "<type>" "<owner>/<repo>/<task>" "<one-line summary>"
-```
-
-This fires a push notification to the user's phone/desktop. The `notify_triage`
-function maps triage types to notification priorities (escalations are `high`,
-run-summaries are `low`). It fails silently if notifications are not configured
-— it must never block agent work. The `run-summary` notification is sent
-separately in the Completion section (step 5) — do not call `notify_triage` a
-second time for `run-summary` from this section.
+For `escalation` and `design-question` entries, follow the detailed format
+instructions in the vault-triage skill — these require diagnosis categories,
+findings, and recommendations.
 
 ### Completion
 
@@ -433,31 +410,14 @@ After all commit groups are done and validated:
    unset _issue_field _issue_num _repo_slug
    ```
    This is best-effort — it never fails the completion sequence.
-4. Dispatch `@triage` with type=run-summary:
-   ```
-   @triage
-   Write a run-summary triage entry.
-   task_dir: <task_dir>
-   repo_path: <repo_path>
-   type: run-summary
-   commit_groups_completed: <list>
-   total_review_rounds: <N>
-   escalations: <filenames or "none">
-   design_decisions: <brief list or "none">
-   unresolved_findings: <brief list or "none">
-   failed_triage_dispatches: <list from internal failed-triage list, or "none">
-   ```
-   If this run-summary dispatch itself fails, note it in your final return
-   message to the caller (see step 5).
-5. Send a completion notification:
-   ```bash
-   notify_triage run-summary "<owner>/<repo>/<task>" "Run complete: <N> groups, <N> reviews, <N> escalations"
-   ```
-6. Return a final summary to the caller. Always include:
+4. Load the `vault-triage` skill. Write a `run-summary` triage entry directly
+   to `$task_dir/`. Include: commit groups completed, total review rounds,
+   escalations filed, design decisions made, unresolved nit/low findings.
+   Send notification and regenerate inbox as part of the mandatory post-write steps.
+5. Return a final summary to the caller. Always include:
    - Commit groups completed
    - Total review rounds
    - Escalations filed (filenames)
-   - Any failed triage dispatches (type, commit group, one-line summary for each)
    - Whether the run-summary triage entry was written successfully
 
 ## What you MUST NOT do
@@ -469,5 +429,4 @@ After all commit groups are done and validated:
 - Write outside the repository and vault paths
 - Stop the run because a review loop is stuck — escalate and continue
 - Dispatch more than 3 reviews for a single commit group
-- Write triage entries directly — always dispatch `@triage` for all triage writes
 - Apply `in-progress` label when the schema's `issue:` field is blank, `null`, `(empty)`, or starts with `local-`

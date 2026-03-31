@@ -90,6 +90,11 @@ permission:
     "mkdir *": allow
     # Notifications
     "ntfy publish*": allow
+    # Triage skill (write + notify + inbox)
+    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    "notify_triage *": allow
+    "curl *": allow
+    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
   external_directory:
     "~/repos/**": allow
     "~/obsidian/agent.obs/**": allow
@@ -161,6 +166,25 @@ subdirectory structure required).
 2. **Discuss** — ask the user what they want to capture or design.
 3. **Write** — create or update repo-notes and design documents.
 4. **Iterate** — refine based on user feedback.
+
+## Triage & Notifications
+
+After writing a repo note or design document, load the `vault-triage` skill
+and follow its **Write Mode** instructions. The three post-work steps are
+**mandatory**:
+
+1. Write a triage entry to the task directory
+2. Send a push notification via `notify_triage`
+3. Regenerate the triage inbox via `triage-dashboard.sh`
+
+**Events requiring triage entries:**
+- Repo notes written (type: `activity`)
+- Design document written (type: `activity`)
+
+**Note:** The designer does not always operate within a task context. If there
+is no task directory for the current work, write the triage entry to
+`$AGENT_VAULT/tasks/_activity/designer/` (create if absent) and use `designer`
+as the task name.
 
 ## What you MUST NOT do
 

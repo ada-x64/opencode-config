@@ -52,6 +52,9 @@ running a standalone audit), use the agent-specific fallback:
 - `@auto-auditor` → `$AGENT_VAULT/tasks/_activity/auto-auditor/`
 - `@project-manager` → `$AGENT_VAULT/tasks/_activity/project-manager/`
 
+Task-bound agents (`@planner`, `@reviewer`, `@implementor`, `@auto-implementor`)
+always have a task context and do not need a fallback.
+
 Create the directory if it does not exist:
 
 ```bash
@@ -186,9 +189,45 @@ a non-trivial judgment call was made that the schema did not resolve.
 - **Choice made and rationale** — what was chosen and why
 - **Recommendation for human review** — whether the choice should be revisited
 
+**Example:**
+```yaml
+---
+type: design-question
+agent: auto-implementor
+task: my-task
+date: 2026-03-31
+status: pending
 ---
 
-### `run-summary` — end-of-run summary (auto-implementor only)
+## Decision Point
+
+The schema specifies "add retry logic" but does not define the retry strategy
+(fixed delay vs. exponential backoff vs. jitter).
+
+## Options Considered
+
+1. Fixed delay (simple, predictable)
+2. Exponential backoff (standard for network retries)
+3. Exponential backoff with jitter (avoids thundering herd)
+
+## Why Agent Couldn't Resolve Autonomously
+
+Schema §2c says "handle transient errors with retries" with no further detail.
+Existing code in this repo uses fixed delays (see `src/http.rs:44`).
+
+## Choice Made
+
+Exponential backoff with jitter, matching the project's other HTTP client
+(`src/api_client.rs:88`). Avoids introducing a second retry pattern.
+
+## Recommendation
+
+Review whether this is consistent with the team's preferred pattern.
+```
+
+---
+
+### `run-summary` — end-of-run summary
 
 **When:** At completion of a full autonomous implementation run.
 
