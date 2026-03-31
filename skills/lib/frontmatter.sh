@@ -21,7 +21,7 @@ fm_read() {
 		head -1 |
 		sed "s/^${key}:[[:space:]]*//")"
 	# Strip surrounding quotes (single or double)
-	value="$(echo "$value" | sed "s/^\([\"']\)\(.*\)\1$/\2/")"
+	value="$(printf '%s\n' "$value" | sed "s/^\([\"']\)\(.*\)\1$/\2/")"
 	if [ -z "$value" ]; then
 		echo "$default"
 	else
@@ -33,10 +33,17 @@ fm_read() {
 # Replaces the first occurrence of <key>: ... in <file> with <key>: <value>.
 # Only modifies the frontmatter (first match = inside the --- block).
 # If the key does not exist, this is a silent no-op.
+# Requires GNU sed (Linux) for 0,/addr/ first-match addressing.
 fm_write() {
 	local file="$1" key="$2" value="$3"
+	if [[ ! -f "$file" ]]; then
+		echo "fm_write: file not found: $file" >&2
+		return 1
+	fi
+	# Escape | in value to avoid sed delimiter collision (| is our delimiter)
+	local escaped_value="${value//|/\\|}"
 	# Replace only the first occurrence (inside frontmatter, before body)
-	sed -i "0,/^${key}:.*$/s/^${key}:.*$/${key}: ${value}/" "$file"
+	sed -i "0,/^${key}:.*$/s|^${key}:.*$|${key}: ${escaped_value}|" "$file"
 }
 
 # Self-test: run with `bash frontmatter.sh`
@@ -67,6 +74,10 @@ TESTDOC
 	# Test fm_write
 	fm_write "$tmp" "status" "in progress"
 	assert_eq "$(fm_read "$tmp" "status")" "in progress"
+
+	# Test fm_write with slash-containing value (repo field)
+	fm_write "$tmp" "repo" "new-owner/new-repo"
+	assert_eq "$(fm_read "$tmp" "repo")" "new-owner/new-repo"
 
 	# Verify body not corrupted
 	grep -q "^Body text with status: not-this$" "$tmp" || {
