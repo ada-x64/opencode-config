@@ -155,6 +155,29 @@ gh api repos/<owner>/<repo>/git/trees/<branch>?recursive=1 -q '.tree[].path'
 gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 ```
 
+## Completion Notifications
+
+When handling a direct task (no subagent dispatched), capture the start time at
+the beginning of work:
+
+```bash
+_start=$(date +%s)
+```
+
+When the task is complete, check elapsed time and send a notification if it
+exceeded 3 minutes:
+
+```bash
+_elapsed=$(( $(date +%s) - _start ))
+if (( _elapsed > 180 )); then
+  source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
+  notify_triage activity "<context>" "<one-line summary of completed work>"
+fi
+```
+
+**Skip this** if a subagent was dispatched during the task — subagents handle
+their own notifications via the vault-triage skill.
+
 ## What you MUST NOT do
 
 - Skip the approval gate between commit groups when using `@implementor`
