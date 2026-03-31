@@ -27,7 +27,6 @@ Model configuration is managed via `build.yaml` + `build.sh` (see
 │   ├── auto-implementor.md
 │   ├── reviewer.md
 │   ├── designer.md
-│   ├── triage.md
 │   └── auto-auditor.md
 ├── prompts/               # Mode system prompts (build, plan, audit)
 │   ├── build.md
@@ -95,7 +94,6 @@ Each agent declares its tier via a `tier:` field in its YAML frontmatter.
 | `@implementor` | `execute` |
 | `@auto-implementor` | `execute` |
 | `@reviewer` | `execute` |
-| `@triage` | `execute` |
 
 ### `build.sh`
 
@@ -158,16 +156,14 @@ frontmatter block that declares its permissions, followed by its system prompt.
 
 ### Workflow roles
 
-The eight agents map to distinct phases of the development workflow:
+The seven agents map to distinct phases of the development workflow:
 
 ```
 Plan ──────► Implement ──────► Review
   @planner    @implementor       @reviewer
   @project-manager  @auto-implementor
-                                    ↕ (escalations)
-                               @triage
-                               @designer  (notes / design docs)
-                               @auto-auditor (quality audits)
+                                 @designer  (notes / design docs)
+                                 @auto-auditor (quality audits)
 ```
 
 ### Agent reference
@@ -206,17 +202,18 @@ Plan ──────► Implement ──────► Review
 - **File:** `agents/auto-implementor.md`
 - **Role:** Executes a schema **end-to-end without pausing**. After each commit
   group it stages, commits, then runs a bounded review loop (max 3 rounds of
-  `@reviewer`). Escalations and design-question decisions are handed off to
-  `@triage`. Sends push notifications at key milestones. On startup: applies
-  `in-progress` label and posts a start comment on the linked GitHub issue. On
-  completion: removes `in-progress` label and posts a completion comment.
+  `@reviewer`). Escalations and design-question decisions are recorded directly
+  via the vault-triage skill. Sends push notifications at key milestones. On
+  startup: applies `in-progress` label and posts a start comment on the linked
+  GitHub issue. On completion: removes `in-progress` label and posts a
+  completion comment.
 - **Write access:** Everything `@implementor` has, plus `git commit`,
   `git stash`.
-- **Does not:** Push to remote (hard rule, no exceptions); write triage files
-  directly (always delegates to `@triage`); apply `review-ready` label (manual/PM only).
+- **Does not:** Push to remote (hard rule, no exceptions); apply `review-ready`
+  label (manual/PM only).
 - **Review loop:** After each commit, runs up to 3 review rounds. If high+
-  findings persist after round 3, escalates via `@triage` and continues — it
-  never stops the run.
+  findings persist after round 3, escalates via the vault-triage skill and
+  continues — it never stops the run.
 
 #### `@reviewer` — structured code review
 - **File:** `agents/reviewer.md`
@@ -237,18 +234,6 @@ Plan ──────► Implement ──────► Review
   - Work-in-progress drafts at `$AGENT_VAULT/draft/`
 - **Write access:** Full vault mutations (Write/Edit tools, `mv`, `rm`, `mkdir`).
 - **Does not:** Write schemas or reviews; run build tools; mutate git state.
-
-#### `@triage` — triage writes and reports
-- **File:** `agents/triage.md`
-- **Role:** Operates in two modes:
-  - **Write mode** (dispatched by `@auto-implementor`): writes structured triage
-    entries — `escalation`, `design-question`, `run-summary`, or `handoff` —
-    to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/triage.md` (auto-numbered).
-  - **Report mode** (dispatched by a human): reads all triage files in scope
-    and returns a grouped summary of pending items.
-- **Write access:** Write tool (for triage file); `yq` (for frontmatter); `mkdir` (for new task directories).
-- **Does not:** Dispatch other agents; mutate code or git history; overwrite
-  existing triage files.
 
 #### `@auto-auditor` — headless quality audit
 - **File:** `agents/auto-auditor.md`
@@ -275,7 +260,7 @@ independently auditable without cross-referencing the global config.
 
 **Orchestrators vs. leaf agents:** `@planner` and `@auto-implementor` carry
 `task: allow` and may dispatch subagents. All other agents (`@implementor`,
-`@project-manager`, `@reviewer`, `@designer`, `@triage`, `@auto-auditor`) are **leaf agents** —
+`@project-manager`, `@reviewer`, `@designer`, `@auto-auditor`) are **leaf agents** —
 they have no `task:` permission and cannot spawn further subagents.
 
 For full details — including the complete read-only baseline, the per-agent
@@ -319,7 +304,7 @@ detailed instructions and references to bundled scripts.
 | `vault-gc` | `skills/vault-gc/` | Archive completed schemas and reviews; supports `--dry-run` |
 | `vault-init` | `skills/vault-init/` | Initialize or verify the vault directory structure; runs `init.sh` |
 | `vault-lint` | `skills/vault-lint/` | Validate schemas and reviews against format templates |
-| `vault-triage` | `skills/vault-triage/` | Generate the triage dashboard (`triage-dashboard.sh`), send push notifications (`notify.sh`), first-time setup (`setup.sh`) |
+| `vault-triage` | `skills/vault-triage/` | Full triage skill for all agents — write triage entries, send push notifications, regenerate the inbox. Load after any significant work. |
 
 ### Skills with bundled scripts
 
@@ -424,8 +409,8 @@ Choose based on how much oversight is needed:
   "continue". Good for unfamiliar codebases, risky changes, or when the user
   wants granular control.
 - `@auto-implementor` — runs end-to-end; uses a bounded review loop per commit
-  group; escalates persistent problems via `@triage`. Good for well-specified
-  schemas in repos with good test coverage.
+  group; escalates persistent problems via the vault-triage skill. Good for
+  well-specified schemas in repos with good test coverage.
 
 ### Phase 3 — Review
 
@@ -493,12 +478,17 @@ Push notifications to phone/desktop are sent via ntfy.sh. The
 
 ```bash
 source ~/.config/opencode/skills/vault-triage/notify.sh
-notify_triage escalation "owner/repo/task" "One-line summary"
+notify_triage activity "owner/repo/task" "Commit group 2 complete — all tests passing"
+notify_triage escalation "owner/repo/task" "Review loop exhausted on group 3"
 ```
 
+All 7 agents load the `vault-triage` skill after completing significant work,
+write a triage entry, send a notification, and regenerate the inbox. These
+three post-work steps are mandatory — see the skill's Write Mode instructions.
+
 Notification priorities: escalation/design-question → high (audible);
-handoff → default; run-summary → low (silent). All calls fail silently
-if ntfy is not configured, so they never block agent work.
+activity/handoff → default (non-audible); run-summary → low (silent). All
+calls fail silently if ntfy is not configured, so they never block agent work.
 
 ---
 

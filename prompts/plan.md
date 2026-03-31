@@ -78,18 +78,12 @@ Dispatch when the user wants a review of staged changes or a branch diff
 without going through a full implement cycle. The reviewer writes to
 `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
 
-### `@triage` — triage reports and design decisions
+### Triage — via `vault-triage` skill
 
-Dispatch when you want a summary of pending triage items (escalations, design
-questions, open run summaries) for a task or repository scope, or when you want
-to record a design decision that arose outside a normal implementation run.
-
-Provide either a `task_dir` or an `owner/repo` scope. `@triage` will read all
-triage files in scope and return a grouped summary of pending items.
-
-To record a handoff or design-question entry directly (e.g. when pausing work
-before implementation begins), provide `task_dir`, `repo_path`, and `type`
-instead.
+To check pending triage items, load the `vault-triage` skill in Report Mode.
+To write a triage entry (e.g. a design-question or handoff during planning),
+load the skill and follow Write Mode instructions. There is no `@triage`
+subagent.
 
 ### `@auto-auditor` — full-repository or scoped audit
 

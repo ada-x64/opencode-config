@@ -51,7 +51,7 @@ between commit groups**. The auto-implementor will:
 - Read the schema and switch to the correct branch
 - Work through each commit group autonomously
 - Run a bounded review loop (max 3 reviews per group) after each commit
-- Dispatch `@triage` for escalations, design questions, and the run summary
+- Writes triage entries directly via the vault-triage skill
 
 Provide the auto-implementor with:
 - The repository path (e.g. `$AGENT_REPOS/<owner>/<repo>`)
@@ -70,24 +70,16 @@ implementor commit group. The reviewer:
   category (bug/performance/design/types/maintenance/security/docs/testing/style)
 - Writes the structured review to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`
 
-### `@triage` — triage writes and reporting
+### Triage — via `vault-triage` skill
 
-Dispatch when an implementor agent needs to record a triage entry (escalation,
-design question, run summary, handoff), or when you want a summary of pending
-triage items for a task or repository.
+To write triage entries, send notifications, or regenerate the triage inbox,
+agents use the `vault-triage` skill directly — there is no `@triage` subagent.
+Any agent can load the skill and follow its Write Mode instructions. See the
+skill for entry types, notification events, and the mandatory post-write steps.
 
-**Write mode** — provide:
-- `task_dir`, `repo_path`, `type` (escalation | design-question | run-summary | handoff)
-- Type-specific context (findings, decisions made, run statistics, etc.)
-
-**Report mode** — provide:
-- A `task_dir` path or `owner/repo` scope
-- Optionally: include addressed/dismissed entries (default: pending only)
-
-Report mode is typically invoked directly by a human (in build mode) rather
-than by another agent.
-
-`@triage` manages file naming automatically and never overwrites existing entries.
+To check pending triage items, load the `vault-triage` skill in Report Mode,
+or run `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh` to
+regenerate `$AGENT_VAULT/triage-inbox.md`.
 
 ### `@planner` — schema authoring
 
