@@ -7,7 +7,8 @@
 set -euo pipefail
 
 # shellcheck source=../lib/frontmatter.sh
-source "$(dirname "$0")/../lib/frontmatter.sh"
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${_SCRIPT_DIR}/../lib/frontmatter.sh"
 
 vault="${AGENT_VAULT:?AGENT_VAULT is not set}"
 output="$vault/triage-inbox.md"
@@ -21,6 +22,7 @@ escalation_count=0
 
 shopt -s nullglob
 triages=("$vault"/tasks/*/*/*/triage*.md "$vault"/tasks/_activity/*/triage*.md)
+shopt -u nullglob
 for triage in "${triages[@]}"; do
 	[[ -f "$triage" ]] || continue
 	[[ "$triage" == *"/_fleet/"* ]] && continue

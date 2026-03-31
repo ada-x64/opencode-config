@@ -19,7 +19,9 @@ notify_triage() {
 	local priority="default"
 	local tag="information_source"
 
-	# Default file path when not provided
+	# Default file path when not provided.
+	# NOTE: agents writing triage-2.md, triage-3.md etc. must pass the file arg
+	# explicitly for the click URL to point to the correct file.
 	[[ -z "$file" ]] && file="tasks/${task}/triage.md"
 
 	case "$type" in
@@ -69,31 +71,23 @@ notify_triage() {
 	fi
 
 	# Send notification — fail silently, never block agent work
+	local -a ntfy_click=() curl_click=()
+	if [[ -n "$click_url" ]]; then
+		ntfy_click=(--click="$click_url")
+		curl_click=(-H "Click: $click_url")
+	fi
+
 	if command -v ntfy &>/dev/null; then
-		if [[ -n "$click_url" ]]; then
-			ntfy publish --priority="$priority" --title="[$type] $task" --tags="$tag" \
-				--click="$click_url" "$topic" "$body" 2>/dev/null || true
-		else
-			ntfy publish --priority="$priority" --title="[$type] $task" --tags="$tag" \
-				"$topic" "$body" 2>/dev/null || true
-		fi
+		ntfy publish --priority="$priority" --title="[$type] $task" --tags="$tag" \
+			"${ntfy_click[@]}" "$topic" "$body" 2>/dev/null || true
 	elif command -v curl &>/dev/null; then
-		if [[ -n "$click_url" ]]; then
-			curl -sL \
-				-H "Title: [$type] $task" \
-				-H "Priority: $priority" \
-				-H "Tags: $tag" \
-				-H "Click: $click_url" \
-				-d "$body" \
-				"https://ntfy.sh/$topic" >/dev/null 2>&1 || true
-		else
-			curl -sL \
-				-H "Title: [$type] $task" \
-				-H "Priority: $priority" \
-				-H "Tags: $tag" \
-				-d "$body" \
-				"https://ntfy.sh/$topic" >/dev/null 2>&1 || true
-		fi
+		curl -sL \
+			-H "Title: [$type] $task" \
+			-H "Priority: $priority" \
+			-H "Tags: $tag" \
+			"${curl_click[@]}" \
+			-d "$body" \
+			"https://ntfy.sh/$topic" >/dev/null 2>&1 || true
 	fi
 	# If neither ntfy nor curl is available, silently do nothing
 	return 0

@@ -7,7 +7,8 @@
 set -euo pipefail
 
 # shellcheck source=../lib/frontmatter.sh
-source "$(dirname "$0")/../lib/frontmatter.sh"
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${_SCRIPT_DIR}/../lib/frontmatter.sh"
 
 vault="${AGENT_VAULT:?AGENT_VAULT is not set}"
 dry_run=false
