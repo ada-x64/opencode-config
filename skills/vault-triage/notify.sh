@@ -2,15 +2,25 @@
 # vault-triage/notify.sh — Notification helper for agents.
 # Source this file to get the notify_triage function.
 # Usage: source ~/.config/opencode/skills/vault-triage/notify.sh
-#        notify_triage <type> <task> <body>
+#        notify_triage <type> <task> <body> [file]
 #
-# Requires: AGENT_VAULT (for topic file fallback)
+# Parameters:
+#   type  — triage type (activity, escalation, design-question, handoff, run-summary)
+#   task  — owner/repo/task path (used in notification title and click URL)
+#   body  — notification body text
+#   file  — vault-relative path to the triage file (default: tasks/<task>/triage.md)
+#           used to compute the Obsidian click URL
+#
+# Requires: AGENT_VAULT (for topic file fallback and Obsidian URI)
 # Optional: NTFY_TOPIC env var or $AGENT_VAULT/cache/ntfy-topic.txt
 
 notify_triage() {
-	local type="${1:-}" task="${2:-}" body="${3:-}"
+	local type="${1:-}" task="${2:-}" body="${3:-}" file="${4:-}"
 	local priority="default"
 	local tag="information_source"
+
+	# Default file path when not provided
+	[[ -z "$file" ]] && file="tasks/${task}/triage.md"
 
 	case "$type" in
 	escalation)
@@ -49,17 +59,41 @@ notify_triage() {
 	# No topic = silently skip
 	[[ -z "$topic" ]] && return 0
 
+	# Compute Obsidian click URL (vault-relative file path without .md extension)
+	local vault_name click_url
+	vault_name="$(basename "${AGENT_VAULT:-}")"
+	click_url=""
+	if [[ -n "$vault_name" ]]; then
+		local file_no_ext="${file%.md}"
+		click_url="obsidian://open?vault=${vault_name}&file=${file_no_ext}"
+	fi
+
 	# Send notification — fail silently, never block agent work
 	if command -v ntfy &>/dev/null; then
-		ntfy publish --priority="$priority" --title="[$type] $task" --tags="$tag" \
-			"$topic" "$body" 2>/dev/null || true
+		if [[ -n "$click_url" ]]; then
+			ntfy publish --priority="$priority" --title="[$type] $task" --tags="$tag" \
+				--click="$click_url" "$topic" "$body" 2>/dev/null || true
+		else
+			ntfy publish --priority="$priority" --title="[$type] $task" --tags="$tag" \
+				"$topic" "$body" 2>/dev/null || true
+		fi
 	elif command -v curl &>/dev/null; then
-		curl -sL \
-			-H "Title: [$type] $task" \
-			-H "Priority: $priority" \
-			-H "Tags: $tag" \
-			-d "$body" \
-			"https://ntfy.sh/$topic" >/dev/null 2>&1 || true
+		if [[ -n "$click_url" ]]; then
+			curl -sL \
+				-H "Title: [$type] $task" \
+				-H "Priority: $priority" \
+				-H "Tags: $tag" \
+				-H "Click: $click_url" \
+				-d "$body" \
+				"https://ntfy.sh/$topic" >/dev/null 2>&1 || true
+		else
+			curl -sL \
+				-H "Title: [$type] $task" \
+				-H "Priority: $priority" \
+				-H "Tags: $tag" \
+				-d "$body" \
+				"https://ntfy.sh/$topic" >/dev/null 2>&1 || true
+		fi
 	fi
 	# If neither ntfy nor curl is available, silently do nothing
 	return 0

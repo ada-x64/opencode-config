@@ -6,6 +6,9 @@
 # Optional: NTFY_TOPIC or $AGENT_VAULT/cache/ntfy-topic.txt (for --notify-summary)
 set -euo pipefail
 
+# shellcheck source=../lib/frontmatter.sh
+source "$(dirname "$0")/../lib/frontmatter.sh"
+
 vault="${AGENT_VAULT:?AGENT_VAULT is not set}"
 output="$vault/triage-inbox.md"
 notify_summary=false
@@ -16,15 +19,17 @@ pending=() addressed=() dismissed=()
 pending_count=0 addressed_count=0 dismissed_count=0
 escalation_count=0
 
-for triage in "$vault"/tasks/*/*/*/triage*.md; do
+shopt -s nullglob
+triages=("$vault"/tasks/*/*/*/triage*.md "$vault"/tasks/_activity/*/triage*.md)
+for triage in "${triages[@]}"; do
 	[[ -f "$triage" ]] || continue
 	[[ "$triage" == *"/_fleet/"* ]] && continue
 
 	rel="${triage#"$vault"/}"
-	status="$(yq --front-matter=extract '.status // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
-	type="$(yq --front-matter=extract '.type // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
-	agent="$(yq --front-matter=extract '.agent // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
-	date="$(yq --front-matter=extract '.date // "unknown"' "$triage" 2>/dev/null || echo "unknown")"
+	status="$(fm_read "$triage" "status" "unknown")"
+	type="$(fm_read "$triage" "type" "unknown")"
+	agent="$(fm_read "$triage" "agent" "unknown")"
+	date="$(fm_read "$triage" "date" "unknown")"
 
 	link="[[${rel%.md}]]"
 	row="| $link | $type | $agent | $date |"
@@ -68,10 +73,15 @@ if $notify_summary; then
 	priority="default"
 	[[ $escalation_count -gt 0 ]] && priority="high"
 
+	vault_name="$(basename "$vault")"
+	click_url="obsidian://open?vault=${vault_name}&file=triage-inbox"
+
 	if command -v ntfy &>/dev/null; then
-		ntfy publish --priority="$priority" --title="Triage Summary" --tags="clipboard" "$topic" "$summary" 2>/dev/null || true
+		ntfy publish --priority="$priority" --title="Triage Summary" --tags="clipboard" \
+			--click="$click_url" "$topic" "$summary" 2>/dev/null || true
 	elif command -v curl &>/dev/null; then
 		curl -sL -H "Title: Triage Summary" -H "Priority: $priority" -H "Tags: clipboard" \
+			-H "Click: $click_url" \
 			-d "$summary" "https://ntfy.sh/$topic" >/dev/null 2>&1 || true
 	else
 		echo "Neither ntfy nor curl found. Cannot send notification." >&2
