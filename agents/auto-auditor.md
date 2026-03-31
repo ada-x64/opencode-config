@@ -120,7 +120,9 @@ permission:
     "trivy*": allow
   external_directory:
     "~/repos/**": allow
-    "~/obsidian/agent.obs/**": allow
+    "~/winhome/obsidian/agent.obs/**": allow
+    "~/.config/opencode/**": allow
+    "/tmp/**": allow
 ---
 
 # Auto-Audit Agent

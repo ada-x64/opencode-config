@@ -124,8 +124,10 @@ permission:
     "gh repo delete*": deny
     "gh repo create*": deny
   external_directory:
-    "~/winhome/obsidian/agent.obs/**": allow
     "~/repos/**": allow
+    "~/winhome/obsidian/agent.obs/**": allow
+    "~/.config/opencode/**": allow
+    "/tmp/**": allow
 ---
 
 # Project Manager Agent

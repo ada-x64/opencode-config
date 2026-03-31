@@ -188,6 +188,8 @@ permission:
   external_directory:
     "~/repos/**": allow
     "~/winhome/obsidian/agent.obs/**": allow
+    "~/.config/opencode/**": allow
+    "/tmp/**": allow
   task:
     "*": allow
 ---

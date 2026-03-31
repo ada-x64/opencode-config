@@ -1,8 +1,16 @@
-# Model build configuration
+# Build configuration — single source of truth for model + path assignment
 # Run `./build.sh` after editing to apply changes
 
 global:
   model: github-copilot/claude-opus-4.6
+
+  # Stamped into every agent's permission.external_directory block.
+  # All entries get ": allow". Order is preserved.
+  external_directory:
+    - "~/repos/**"                       # $AGENT_REPOS default
+    - "~/winhome/obsidian/agent.obs/**"  # $AGENT_VAULT default
+    - "~/.config/opencode/**"            # opencode config
+    - "/tmp/**"                          # scratch / temp files
 
 tiers:
   design:

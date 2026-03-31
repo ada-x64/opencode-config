@@ -100,7 +100,9 @@ permission:
     "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
   external_directory:
     "~/repos/**": allow
-    "~/obsidian/agent.obs/**": allow
+    "~/winhome/obsidian/agent.obs/**": allow
+    "~/.config/opencode/**": allow
+    "/tmp/**": allow
   task:
     "*": allow
 ---
