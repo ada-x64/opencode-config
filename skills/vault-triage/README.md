@@ -14,9 +14,11 @@ When agents run autonomously overnight they write `triage.md` files deep inside
    wiki-links.
 
 2. **Push notifications** — agents call `notify_triage` after writing a triage
-   entry. Escalations and design questions ring your phone (high priority);
-   run summaries are silent. A scheduled daily digest sends a count summary at
-   9am and 5pm.
+   entry. All notifications produce desktop toasts (via ntfy subscriber →
+   BurntToast / notify-send / osascript) and phone alerts. Escalations and
+   design questions ring audibly (high priority); activity and handoff are
+   silent; run summaries are low priority. A scheduled daily digest sends a
+   count summary at 9am and 5pm.
 
 Notifications travel via **ntfy.sh**: the agent does a plain `curl` POST, and
 you receive it on your phone (ntfy app) and desktop (ntfy client daemon →
@@ -48,9 +50,9 @@ No `sudo` required.
 
 ### 3. Install the ntfy CLI (for desktop notifications)
 
-The ntfy CLI runs as a background subscriber and forwards high-priority messages
-to your OS notification system. If you skip this step you still get phone
-notifications; you just won't get desktop pop-ups.
+The ntfy CLI runs as a background subscriber and forwards all messages to your
+OS notification system. If you skip this step you still get phone notifications;
+you just won't get desktop pop-ups.
 
 | Platform | Install |
 |----------|---------|
@@ -68,8 +70,9 @@ ntfy subscribe --from-config
 For it to start automatically on login, add that line to your shell profile or
 run `ntfy subscribe --from-config &` in a startup script.
 
-> **WSL note:** Desktop notifications use `New-BurntToastNotification`. Install
-> BurntToast on the Windows side first:
+> **WSL note:** Desktop notifications use `New-BurntToastNotification` via
+> `pwsh.exe` (PowerShell 7). `setup.sh` auto-detects the absolute path so
+> systemd services can find it. Install BurntToast on the Windows side first:
 > ```powershell
 > Install-Module BurntToast -Scope CurrentUser
 > ```

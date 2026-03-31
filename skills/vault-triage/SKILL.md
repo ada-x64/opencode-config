@@ -343,8 +343,11 @@ Dismissed. Each row has a wiki-link to the triage file, type, agent, and date.
 
 ## Notification priorities
 
-| Triage type | ntfy priority | Audible |
-|-------------|---------------|---------|
+All triage types produce desktop toasts (via ntfy subscriber) and phone
+notifications. Priority controls audible alerts on mobile:
+
+| Triage type | ntfy priority | Phone audible |
+|-------------|---------------|---------------|
 | `escalation` | high | Yes |
 | `design-question` | high | Yes |
 | `activity` | default | No |
