@@ -330,5 +330,5 @@ post-work steps are **mandatory**:
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
 **Events requiring triage entries:**
-- Commit group completed (type: `activity` — include group number and validation result)
+- Commit group completed (type: `activity` — include group number and validation result; `activity` fires at default/non-audible priority since the user is watching)
 - Full implementation complete (type: `activity` — include total groups and branch name)

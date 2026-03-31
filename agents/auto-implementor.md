@@ -353,7 +353,11 @@ the next group:
 3. Send notification: `notify_triage design-question "<owner>/<repo>/<task>" "<one-line summary>"`
 4. Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
 
-**f. Continue** — proceed immediately to the next commit group. Do not pause.
+**f. Activity entry** — after the review loop completes for this group, load
+the `vault-triage` skill and write an `activity` triage entry to `$task_dir/`.
+Send notification and regenerate inbox as part of the mandatory post-write steps.
+
+**g. Continue** — proceed immediately to the next commit group. Do not pause.
 
 ## Triage & Notifications
 

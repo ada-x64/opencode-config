@@ -195,7 +195,7 @@ a non-trivial judgment call was made that the schema did not resolve.
 type: design-question
 agent: auto-implementor
 task: my-task
-date: 2026-03-31
+date: YYYY-MM-DD
 status: pending
 ---
 
