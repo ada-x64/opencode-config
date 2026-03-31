@@ -33,7 +33,7 @@ for triage in "$vault"/tasks/*/*/*/triage*.md; do
 	pending)
 		pending+=("$row")
 		((++pending_count))
-		[[ "$type" == "escalation" ]] && ((++escalation_count))
+		[[ "$type" == "escalation" ]] && ((++escalation_count)) # pending-only; drives --notify-summary priority
 		;;
 	addressed)
 		addressed+=("$row")
