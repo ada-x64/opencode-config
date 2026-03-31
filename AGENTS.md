@@ -194,7 +194,7 @@ Plan ──────► Implement ──────► Review
 - **Write access:** Full repository edits, `git add`, `git switch`,
   `git checkout`, build/test tools, `yq` (for schema/review status updates),
   `gh issue edit`/`comment` (label transitions and issue comments), `curl`
-  (for notify.sh), `source`/`notify_triage` (for triage notifications).
+  (for notify.sh), `source`/`notify_triage`/`triage-dashboard.sh` (for triage).
 - **Does not:** `git commit` (the user does that); push; skip approval gates;
   apply `review-ready` label (that is manual/PM-agent only).
 
@@ -223,7 +223,8 @@ Plan ──────► Implement ──────► Review
   (`bug/performance/design/types/maintenance/security/docs/testing/style`).
   Writes the structured review to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
 - **Write access:** Write tool (for review file); `yq` (for frontmatter status); can run the test/lint suite
-  (`cargo test/clippy`, `pytest`, `jest`, `vitest`, `tsc`) for verification.
+  (`cargo test/clippy`, `pytest`, `jest`, `vitest`, `tsc`) for verification;
+  `curl`, `source`/`notify_triage`/`triage-dashboard.sh` (for triage).
 - **Does not:** Run build tools; create PRs or issues; write outside the review file.
 
 #### `@designer` — repo notes and design documents
@@ -245,7 +246,7 @@ Plan ──────► Implement ──────► Review
   suite of static analysis tools (Rust: `cargo clippy/audit/deny/llvm-cov`;
   Node: `npm/pnpm/yarn audit`, `eslint`, `tsc`, `jest`, `vitest`; Python:
   `pip-audit`, `ruff`, `mypy`, `bandit`, `pytest`; cross-language: `semgrep`,
-  `trivy`); `curl`.
+  `trivy`); `curl`, `source`/`notify_triage`/`triage-dashboard.sh` (for triage).
 - **Does not:** Run build/install tools; modify the repository; commit; push;
   get dispatched by implementor agents (only by audit mode or a human in
   build/plan mode).

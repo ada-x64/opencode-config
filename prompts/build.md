@@ -159,4 +159,4 @@ gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 
 - Skip the approval gate between commit groups when using `@implementor`
 - Commit or push without explicit user confirmation
-- Write to the vault directly — vault writes go through the appropriate subagent
+- Write to the vault directly — vault writes go through the appropriate subagent (exception: triage entries written via the `vault-triage` skill are sanctioned)
