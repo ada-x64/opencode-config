@@ -35,8 +35,6 @@ Subagents dispatched via the Task tool. Each is defined in `agents/`:
 | `@implementor` | `agents/implementor.md` | Executes schemas step-by-step with manual approval gates |
 | `@auto-implementor` | `agents/auto-implementor.md` | Executes schemas autonomously with a bounded review loop |
 | `@reviewer` | `agents/reviewer.md` | Structured code review; writes findings to the vault |
-| `@designer` | `agents/designer.md` | Repo notes, design documents, vault drafts |
-| `@triage` | `agents/triage.md` | Writes triage entries (escalations, design questions, run summaries); produces triage reports |
 | `@auto-auditor` | `agents/auto-auditor.md` | Headless audit agent — static analysis, coverage, vault report |
 
 ## Skills

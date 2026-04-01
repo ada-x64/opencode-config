@@ -360,6 +360,7 @@ $AGENT_VAULT/
 │   └── <owner>/<repo>/       # Reference documentation per repo
 ├── design/                   # Cross-cutting design documents
 ├── draft/                    # Work-in-progress staging area
+├── projects/                 # Per-repo project status documents
 ├── triage-inbox.md           # Generated triage dashboard
 └── AGENTS.md                 # Vault conventions document
 ```
@@ -499,7 +500,11 @@ gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 ### Notifications
 
 Push notifications to phone/desktop are sent via ntfy.sh. The
-`vault-triage/notify.sh` helper provides a `notify_triage` bash function:
+`vault-triage/notify.sh` helper provides a `notify_triage` bash function.
+The 6th argument is the icon name (e.g. `"implementor"`, `"reviewer"`) and the
+optional 7th argument is a semantic key that `notify.sh` resolves to an emoji
+prefix (e.g. `"auto-activity"` → ⚙️📋, `"clean"` → 🟢). Full key table in
+`skills/vault-triage/SKILL.md`.
 
 ```bash
 source ~/.config/opencode/skills/vault-triage/notify.sh
