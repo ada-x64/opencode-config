@@ -102,6 +102,7 @@ notify_triage() {
 	if [[ -n "$vault_name" ]]; then
 		local file_no_ext="${file%.md}"
 		click_url="obsidian://open?vault=${vault_name}&file=${file_no_ext}"
+		click_url="${click_url//$'\n'/ }"
 	fi
 
 	# Send notification — fail silently, never block agent work
