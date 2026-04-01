@@ -140,7 +140,7 @@ explorations, trade-off analyses, roadmaps, cross-cutting concerns. These
 are flat files (no `<owner>/<repo>/` subdirectories) because they often
 span multiple repositories.
 
-Follow the format template at `$AGENT_VAULT/templates/design.md`. The
+Follow the format template at `$AGENT_VAULT/_misc/templates/design.md`. The
 template is a suggested structure — adapt it to fit the document — but these
 sections are **required**:
 
@@ -189,6 +189,11 @@ and follow its **Write Mode** instructions. The three post-work steps are
 is no task directory for the current work, write the triage entry to
 `$AGENT_VAULT/tasks/_activity/designer/` (create if absent) and use `designer`
 as the task name.
+
+**Icon selection:** When calling `notify_triage`, pass `designer` as the icon:
+```bash
+notify_triage activity "<owner>/<repo>/<task>" "Notes Updated" $'• Added repo-notes for <repo>' "" "designer"
+```
 
 ## What you MUST NOT do
 

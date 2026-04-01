@@ -29,8 +29,8 @@ platform="$(detect_platform)"
 echo "Detected platform: $platform"
 
 # ── Topic generation ────────────────────────────────────────────────
-topic_file="$vault/cache/ntfy-topic.txt"
-mkdir -p "$vault/cache"
+topic_file="$vault/_misc/cache/ntfy-topic.txt"
+mkdir -p "$vault/_misc/cache"
 
 if [[ -f "$topic_file" ]]; then
 	topic="$(cat "$topic_file")"
@@ -52,25 +52,11 @@ mkdir -p "$ntfy_config_dir"
 ntfy_config="$ntfy_config_dir/client.yml"
 
 case "$platform" in
-linux)
-	notify_cmd='notify-send "$t" "$m"'
-	;;
-macos)
-	notify_cmd='osascript -e '"'"'display notification "$m" with title "$t"'"'"''
-	;;
-wsl | wsl-systemd)
-	# Use absolute path — systemd services don't have Windows interop paths in PATH.
-	# Prefer pwsh.exe (PowerShell 7); fall back to powershell.exe (5.1).
-	if pwsh_path="$(command -v pwsh.exe 2>/dev/null)"; then
-		:
-	elif pwsh_path="$(command -v powershell.exe 2>/dev/null)"; then
-		:
-	else
-		pwsh_path="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
-		echo "Warning: could not locate pwsh.exe or powershell.exe — using fallback path"
-	fi
-	# Double-quote the full command for YAML; inner path quotes are escaped for the shell.
-	notify_cmd="\"$pwsh_path\" -Command \"New-BurntToastNotification -Text '\$t', '\$m'\""
+linux | macos | wsl | wsl-systemd)
+	# All platforms use the toast handler script for rich notifications with icon support.
+	# toast-handler.sh detects platform internally and dispatches to the correct mechanism.
+	handler_path="$skill_dir/toast-handler.sh"
+	notify_cmd="/bin/bash \"$handler_path\""
 	;;
 esac
 
@@ -226,7 +212,6 @@ echo "     source $skill_dir/notify.sh"
 echo "     notify_triage escalation test/task 'Hello from setup'"
 if [[ "$platform" == "wsl" || "$platform" == "wsl-systemd" ]]; then
 	echo ""
-	echo "  Note (WSL): Desktop notifications use New-BurntToastNotification."
-	echo "  Install BurntToast on Windows: Install-Module BurntToast -Scope CurrentUser"
-	echo "  Alternatively, install wsl-notify-send if available."
+	echo "  Note (WSL): Desktop notifications are dispatched via toast-handler.sh."
+	echo "  For icon support, install BurntToast on Windows: Install-Module BurntToast -Scope CurrentUser"
 fi

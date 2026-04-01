@@ -22,10 +22,10 @@ inc() { eval "$1=\$(( $1 + 1 ))"; }
 archive_task() {
 	local owner="$1" repo="$2" task="$3" reason="$4"
 	local src="$vault/tasks/$owner/$repo/$task"
-	local dst="$vault/archive/tasks/$owner/$repo/$task"
+	local dst="$vault/_misc/archive/tasks/$owner/$repo/$task"
 	echo "Archiving: ${owner}/${repo}/${task} (${reason})"
 	if $dry_run; then
-		echo "  would move: tasks/$owner/$repo/$task/ → archive/tasks/$owner/$repo/$task/"
+		echo "  would move: tasks/$owner/$repo/$task/ → _misc/archive/tasks/$owner/$repo/$task/"
 	else
 		mkdir -p "$(dirname "$dst")"
 		mv "$src" "$dst"

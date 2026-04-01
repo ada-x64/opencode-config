@@ -3,7 +3,7 @@
 # Usage: bash triage-dashboard.sh [--notify-summary]
 #
 # Requires: AGENT_VAULT set in environment
-# Optional: NTFY_TOPIC or $AGENT_VAULT/cache/ntfy-topic.txt (for --notify-summary)
+# Optional: NTFY_TOPIC or $AGENT_VAULT/_misc/cache/ntfy-topic.txt (for --notify-summary)
 set -euo pipefail
 
 # shellcheck source=../lib/frontmatter.sh
@@ -60,11 +60,11 @@ done
 # --notify-summary mode: send counts via ntfy, then exit
 if $notify_summary; then
 	topic="${NTFY_TOPIC:-}"
-	if [[ -z "$topic" && -f "$vault/cache/ntfy-topic.txt" ]]; then
-		topic="$(cat "$vault/cache/ntfy-topic.txt")"
+	if [[ -z "$topic" && -f "$vault/_misc/cache/ntfy-topic.txt" ]]; then
+		topic="$(cat "$vault/_misc/cache/ntfy-topic.txt")"
 	fi
 	if [[ -z "$topic" ]]; then
-		echo "No NTFY_TOPIC set and no $vault/cache/ntfy-topic.txt found. Skipping notification." >&2
+		echo "No NTFY_TOPIC set and no $vault/_misc/cache/ntfy-topic.txt found. Skipping notification." >&2
 		exit 0
 	fi
 

@@ -74,7 +74,7 @@ find "$task_dir" -name "triage*.md" | sort
 ### Step 5 — Read the format template
 
 ```bash
-cat "$AGENT_VAULT/templates/triage.md"
+cat "$AGENT_VAULT/_misc/templates/triage.md"
 ```
 
 ### Step 6 — Write the triage entry
@@ -85,12 +85,20 @@ entry type (see **Entry Types** below). Set `status: pending`.
 ### Step 7 — MANDATORY: Send notification
 
 ```bash
-notify_triage "<type>" "<owner>/<repo>/<task>" "<one-line summary>"
+notify_triage "<type>" "<owner>/<repo>/<task>" "<headline>" "<body>" "" "<icon>" "<semantic-key>"
 ```
 
 This is not optional. Failing to notify means the human has no real-time
 awareness of completed work. The function fails silently if ntfy is not
 configured — it will never block your work.
+
+The 3rd arg (`headline`) is a short action phrase for the title. The 4th arg
+(`body`) is optional bullet-point detail text. The 5th arg (`file`) can be
+left empty `""` to use the default triage path. The 6th arg (`icon`) selects
+the notification icon (see reference table below). The 7th arg (`semantic-key`)
+controls the emoji prefix — pass a key from the table below; `notify.sh`
+resolves it to the correct emoji. If omitted, a default emoji is derived from
+the triage type.
 
 ### Step 8 — MANDATORY: Regenerate inbox
 
@@ -100,6 +108,79 @@ bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh
 
 This is not optional. The triage inbox must always reflect the current
 state of the vault after every write.
+
+---
+
+## Reference: Notification icons and emoji keys
+
+### Icon names (per agent / mode)
+
+Pass as the 6th argument to `notify_triage`. The icon name maps to a PNG served
+from the opencode-config repo.
+
+| Agent / Mode | Icon argument |
+|--------------|--------------|
+| `@implementor` | `implementor` |
+| `@auto-implementor` | `auto-implementor` |
+| `@auto-auditor` | `auto-auditor` |
+| Audit mode | `auditor` |
+| `@reviewer` | `reviewer` |
+| `@planner` | `planner` |
+| `@designer` | `designer` |
+| `@project-manager` | `project-manager` |
+| Build mode | `build` |
+| Plan mode | `plan` |
+| Fallback | `default` |
+
+### Semantic keys (7th argument — emoji resolution)
+
+Pass a semantic key as the 7th argument. `notify.sh` resolves it to the
+correct emoji. **Always use semantic keys** — they are readable and their
+mappings are centrally managed. Unknown keys are ignored and fall back to the
+type-based default emoji.
+If the 7th argument is omitted, a default emoji is derived from the triage type.
+
+#### Type-based defaults (when 7th arg is omitted)
+
+| Triage type | Emoji |
+|-------------|-------|
+| `escalation` | ❗ |
+| `design-question` | ❓ |
+| `activity` | 📋 |
+| `handoff` | 📋 |
+| `run-summary` | 📋 |
+
+#### Explicit semantic keys
+
+| Key | Emoji | Used when |
+|-----|-------|-----------|
+| `activity` | 📋 | General work completion |
+| `clean` | 🟢 | Review/audit: 0 high+ findings |
+| `warn` | 🟡 | Review/audit: nit/low findings only |
+| `reject` | 🔴 | Review/audit: high or critical findings |
+| `escalation` | ❗ | Review loop exhausted or blocking issue |
+| `design-question` | ❓ | Design ambiguity needing human input |
+
+**Auto-agent prefix:** When the `icon` parameter starts with `auto-` (e.g.
+`"auto-implementor"`), `notify.sh` strips the prefix for the PNG URL lookup
+and prepends ⚙️ to the resolved emoji. Agents do not use separate `auto-*`
+semantic keys — the ⚙️ prefix is derived automatically from the agent name.
+
+**Example calls with icon and semantic key:**
+
+```bash
+# Reviewer — clean result
+notify_triage activity "ada-x64/qproj/fix-tests" "Review Complete" "• 0 high findings" "" "reviewer" "clean"
+
+# Auto-implementor — commit group complete (⚙️ prefix added automatically)
+notify_triage activity "ada-x64/qproj/fix-tests" "Commit Group 1 Finished" "• All tests passing" "" "auto-implementor" "activity"
+
+# Auto-auditor — warnings (⚙️ prefix added automatically)
+notify_triage activity "ada-x64/qproj/audit" "Audit Complete" "• 2 medium warnings" "" "auto-auditor" "warn"
+
+# Auto-implementor escalation (⚙️ prefix added automatically)
+notify_triage escalation "ada-x64/qproj/fix-tests" "Review Loop Exhausted" "• High findings persist" "" "auto-implementor" "escalation"
+```
 
 ---
 
@@ -319,8 +400,8 @@ bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh --notify-summary
 
 ```bash
 source ~/.config/opencode/skills/vault-triage/notify.sh
-notify_triage escalation "ada-x64/qproj/fix-tests" "Review loop exhausted on commit group 2"
-notify_triage activity "ada-x64/qproj/fix-tests" "Commit group 1 complete — all tests passing"
+notify_triage escalation "ada-x64/qproj/fix-tests" "Review loop exhausted on commit group 2" "" "" "auto-implementor" "escalation"
+notify_triage activity "ada-x64/qproj/fix-tests" "Commit group 1 complete" "• All tests passing" "" "auto-implementor" "activity"
 ```
 
 ### First-time setup
@@ -338,7 +419,7 @@ bash ~/.config/opencode/skills/vault-triage/setup.sh
 | Variable | Required | Source |
 |----------|----------|--------|
 | `AGENT_VAULT` | Yes | Agent environment |
-| `NTFY_TOPIC` | No | Falls back to `$AGENT_VAULT/cache/ntfy-topic.txt` |
+| `NTFY_TOPIC` | No | Falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
 ## Dashboard output
 

@@ -17,7 +17,7 @@ A task is considered complete if either:
 1. Its schema's `status` frontmatter field is `complete`, or
 2. It has an `issue` frontmatter link and that GitHub issue is `closed`
 
-Archiving moves the entire task directory from `tasks/` into `archive/tasks/`.
+Archiving moves the entire task directory from `tasks/` into `_misc/archive/tasks/`.
 
 ## How to Invoke
 
@@ -33,7 +33,7 @@ bash ~/.config/opencode/skills/vault-gc/gc.sh
 
 | From | To |
 |------|----|
-| `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/` | `$AGENT_VAULT/archive/tasks/<owner>/<repo>/<task>/` |
+| `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/` | `$AGENT_VAULT/_misc/archive/tasks/<owner>/<repo>/<task>/` |
 
 The entire task directory (schema.md, review.md, triage.md) is moved as a unit.
 Fleet schemas (`tasks/_fleet/`) are skipped.

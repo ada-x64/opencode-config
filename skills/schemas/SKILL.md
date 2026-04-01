@@ -56,4 +56,4 @@ See the `fleet-schemas` skill for details.
 
 ## Format template
 
-The canonical format is at `$AGENT_VAULT/templates/schema.md`.
+The canonical format is at `$AGENT_VAULT/_misc/templates/schema.md`.

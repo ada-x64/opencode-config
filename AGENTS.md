@@ -45,6 +45,7 @@ Model configuration is managed via `build.yaml` + `build.sh` (see
 │   ├── vault-init/
 │   ├── vault-lint/
 │   └── vault-triage/
+├── images/                # Notification icons (64x64 PNG)
 ├── AGENTS.md              # This file
 └── README.md              # Short public summary
 ```
@@ -181,7 +182,7 @@ Plan ──────► Implement ──────► Review
 #### `@project-manager` — issue lifecycle and project board
 - **File:** `agents/project-manager.md`
 - **Role:** Keeps GitHub project state and vault task state synchronized. Closes completed issues, manages milestones, moves project board items, maintains `$AGENT_VAULT/projects/<owner>/<repo>.md` status documents, and runs `vault-gc`/`vault-lint` as part of project cleanup.
-- **Write access:** All `gh issue *`, `gh project *`, `gh label *`, and `gh api repos/*/milestones` mutations; `gh pr comment*` (to cross-reference PRs when creating related issues); `obsidian` CLI for vault writes; `vault-gc` and `vault-lint` scripts directly.
+- **Write access:** All `gh issue *`, `gh project *`, `gh label *`, and `gh api repos/*/milestones` mutations; `gh pr comment*` (to cross-reference PRs when creating related issues); `vault-gc` and `vault-lint` scripts directly.
 - **Does not:** Edit source files; run any git write command; merge or close PRs; create or delete repositories; operate on repos not in the vault.
 - **Modes:** Interactive (bulk-confirm) and status-sync. See `agents/project-manager.md` for full documentation.
 
@@ -334,7 +335,7 @@ repo. The vault is a git-tracked directory managed with Obsidian.
 | `AGENT_REPOS` | Absolute path to local repo checkouts | `~/repos` |
 | `NTFY_TOPIC` | ntfy.sh topic for push notifications (optional) | `my-topic-abc123` |
 
-`NTFY_TOPIC` falls back to the value in `$AGENT_VAULT/cache/ntfy-topic.txt` if
+`NTFY_TOPIC` falls back to the value in `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` if
 the environment variable is not set.
 
 ### Vault directory layout
@@ -346,8 +347,12 @@ $AGENT_VAULT/
 │       ├── schema.md         # Implementation spec
 │       ├── review.md         # Code review (review-2.md, etc.)
 │       └── triage.md         # Triage entry (triage-2.md, etc.)
-├── archive/
-│   └── tasks/                # Completed/closed tasks
+├── _misc/
+│   ├── archive/
+│   │   └── tasks/            # Completed/closed tasks
+│   ├── cache/                # GitHub metadata cache
+│   ├── templates/            # Format templates (schema, review, triage, audit, ...)
+│   └── images/               # Notification icons and image assets
 ├── audits/
 │   └── <owner>/<repo>/
 │       └── <date>-<label>.md # Audit reports
@@ -355,8 +360,7 @@ $AGENT_VAULT/
 │   └── <owner>/<repo>/       # Reference documentation per repo
 ├── design/                   # Cross-cutting design documents
 ├── draft/                    # Work-in-progress staging area
-├── templates/                # Format templates (schema, review, triage, audit, ...)
-├── cache/                    # GitHub metadata cache
+├── projects/                 # Per-repo project status documents
 ├── triage-inbox.md           # Generated triage dashboard
 └── AGENTS.md                 # Vault conventions document
 ```
@@ -496,12 +500,18 @@ gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 ### Notifications
 
 Push notifications to phone/desktop are sent via ntfy.sh. The
-`vault-triage/notify.sh` helper provides a `notify_triage` bash function:
+`vault-triage/notify.sh` helper provides a `notify_triage` bash function.
+The 6th argument is the icon name (e.g. `"implementor"`, `"reviewer"`,
+`"auto-implementor"`) and the optional 7th argument is a semantic key that
+`notify.sh` resolves to an emoji prefix (e.g. `"clean"` → 🟢, `"escalation"`
+→ ❗). When the icon starts with `auto-` (e.g. `"auto-implementor"`), the
+script strips the prefix for the PNG URL and prepends ⚙️ to the emoji
+automatically. Full key table in `skills/vault-triage/SKILL.md`.
 
 ```bash
 source ~/.config/opencode/skills/vault-triage/notify.sh
-notify_triage activity "owner/repo/task" "Commit group 2 complete — all tests passing"
-notify_triage escalation "owner/repo/task" "Review loop exhausted on group 3"
+notify_triage activity "owner/repo/task" "Commit Group 2 Complete" "• All tests passing" "" "auto-implementor" "activity"
+notify_triage escalation "owner/repo/task" "Review Loop Exhausted on Group 3" "• High findings persist" "" "auto-implementor" "escalation"
 ```
 
 All 7 agents load the `vault-triage` skill after completing significant work,
@@ -520,7 +530,7 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 |----------|----------|-------------|---------- |
 | `AGENT_VAULT` | Yes (for vault ops) | Absolute path to the Obsidian vault | None — must be set |
 | `AGENT_REPOS` | Yes (for repo ops) | Absolute path to local repo checkouts | None — must be set |
-| `NTFY_TOPIC` | No | ntfy.sh topic for push notifications | `$AGENT_VAULT/cache/ntfy-topic.txt` |
+| `NTFY_TOPIC` | No | ntfy.sh topic for push notifications | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
 Both path variables are checked at the top of any agent session that uses
 the vault or operates on a repository. The `vault-init` skill can create and

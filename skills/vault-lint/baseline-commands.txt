@@ -71,17 +71,7 @@ gh release view*
 gh auth status*
 gh api *
 gh project list*
-obsidian read*
-obsidian search*
-obsidian files*
-obsidian folders*
-obsidian properties*
-obsidian property:read*
-obsidian tags*
-obsidian backlinks*
-obsidian links*
-obsidian outline*
-obsidian vault*
-obsidian vaults*
-obsidian property:set*
+fm_read *
+fm_write *
+source */lib/frontmatter.sh*
 ntfy publish*

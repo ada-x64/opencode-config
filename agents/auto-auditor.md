@@ -267,7 +267,7 @@ out_dir="$AGENT_VAULT/audits/$owner_repo"
 out_file="$out_dir/${date_str}-${label}.md"
 ```
 
-Write the full audit report following `$AGENT_VAULT/templates/audit.md`.
+Write the full audit report following `$AGENT_VAULT/_misc/templates/audit.md`.
 Set `status: complete` in the frontmatter. The `audits/` directory structure
 is created implicitly when writing the first file.
 
@@ -299,6 +299,15 @@ After writing the audit report, load the `vault-triage` skill and follow its
 
 Severity uses **roadmap-priority semantics** — a critical audit finding means
 "urgent engineering attention", not "blocks this PR".
+
+**Icon selection:** When calling `notify_triage`, pass `auto-auditor` as the icon (the `auto-` prefix triggers ⚙️ prepending automatically) and use the base semantic key:
+- 0 high+ findings → semantic key `clean` (resolves to ⚙️🟢)
+- Medium findings only → semantic key `warn` (resolves to ⚙️🟡)
+- Any high/critical findings → semantic key `reject` (resolves to ⚙️🔴)
+
+```bash
+notify_triage activity "<owner>/<repo>/<task>" "Audit Complete" $'• 0 high findings\n• 2 medium warnings' "" "auto-auditor" "clean"
+```
 
 ## What you MUST NOT do
 

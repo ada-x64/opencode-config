@@ -12,7 +12,7 @@ description: >
 ## Overview
 
 The vault caches GitHub metadata (projects, milestones, labels) at
-`$AGENT_VAULT/cache/<owner>.json`. This avoids repeated `gh` API calls during
+`$AGENT_VAULT/_misc/cache/<owner>.json`. This avoids repeated `gh` API calls during
 planning sessions. The `refresh.sh` script discovers all repos that have vault
 content and refreshes the cache for each one.
 
@@ -36,7 +36,7 @@ bash ~/.config/opencode/skills/vault-cache/refresh.sh ada-x64/wf
 
 ## Cache Location
 
-`$AGENT_VAULT/cache/<owner>.json` — one file per org. Multiple repos under
+`$AGENT_VAULT/_misc/cache/<owner>.json` — one file per org. Multiple repos under
 the same org share a cache file.
 
 ## When to Refresh
