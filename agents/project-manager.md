@@ -185,6 +185,7 @@ Human-invoked sessions where PM performs GitHub and vault operations on request.
 - "Triage the open issues in owner/repo" / "what's unassigned and has no milestone?"
 - "Sync the project board" / "move in-progress issues to the In Progress column"
 - "Run vault-gc and lint" / "clean up the vault"
+- "What PRs are open?" / "show review status" / "any PRs waiting for review?"
 
 **Bulk-close sequence (most common operation):**
 1. `bash ~/.config/opencode/skills/vault-lint/lint.sh` — surface format violations
@@ -194,6 +195,25 @@ Human-invoked sessions where PM performs GitHub and vault operations on request.
 5. Update `$vault/projects/<owner>/<repo>.md` status documents
 6. `bash ~/.config/opencode/skills/vault-gc/gc.sh` — execute vault archival
 7. Report results
+
+**PR status queries** ("What PRs are open?" etc.) are read-only. No triage entry is required for a pure PR status read — only for operations that mutate GitHub or vault state.
+
+## PR Briefing Format
+
+Included in both roundup output and status-sync documents. For each repo with open PRs, add a "PRs in Review" section:
+
+```
+### PRs in Review
+
+| # | Title | Branch | Review | CI | Schema |
+|---|-------|--------|--------|----|--------|
+| 42 | Fix widget layout | fix/widget | Approved | Passing | widget-fix (in progress) |
+| 43 | Add dark mode | feat/dark-mode | Pending | Failing | — |
+```
+
+- **Review** column: `Approved` / `Changes Requested` / `Pending`
+- **CI** column: `Passing` / `Failing` / `Pending`
+- **Schema** column: matched schema name and status, or `—` if no match
 
 ## Status Sync Mode
 
@@ -205,8 +225,18 @@ gh issue list -R <owner>/<repo> --state open --limit 100 --json number,title,mil
 gh issue list -R <owner>/<repo> --state closed --limit 20 --json number,title,closedAt
 gh api repos/<owner>/<repo>/milestones --jq '.[].title'
 gh project item-list <project-number> --owner <owner> --format json
+gh pr list -R <owner>/<repo> --state open --json number,title,headRefName,baseRefName,reviewDecision,statusCheckRollup,updatedAt
 ```
-Write the Open Issues, Closed Issues, Milestones, and Project Board Columns tables. Set `last_synced` via `obsidian property:set`.
+Write the Open Issues, Closed Issues, Milestones, Project Board Columns, and
+PRs in Review tables. Set `last_synced` via `obsidian property:set`.
+
+**PR–schema cross-reference:** For each open PR, check if its `headRefName`
+matches the `branch:` frontmatter of any active schema in
+`$vault/tasks/<owner>/<repo>/*/schema.md`. Also check if the PR title or
+body references an issue number and compare it against the number embedded in
+each schema's `issue:` frontmatter (which stores a Markdown link like
+`[#5](https://…)` — extract the numeric part before comparing). When a
+match is found, annotate the PR row with the schema name and status.
 
 **For `backend: local` repos:**
 Walk `$vault/tasks/<owner>/<repo>/` and read each schema's `status` and `issue` frontmatter fields. Build the Open Issues table from schemas with `status: todo` or `status: in progress`. Build the Closed Issues table from `status: complete` schemas. Set `last_synced`.

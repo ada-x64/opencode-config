@@ -139,6 +139,35 @@ Handle directly — without dispatching a subagent — when the task is:
 Use your judgment: if the task has multiple commit groups, approval gates, or
 requires vault writes, prefer a subagent.
 
+## Schema Sync (Ad-Hoc Changes)
+
+When making ad-hoc changes to a repository that has an active schema in the
+vault (`$AGENT_VAULT/tasks/<owner>/<repo>/*/schema.md` with `status: todo` or
+`status: in progress`), update the schema to reflect what actually happened:
+
+1. **Before starting:** Check whether an active schema exists for the target
+   repo. Replace `<owner>/<repo>` with the actual owner and repo name, then run:
+   ```bash
+   find "$AGENT_VAULT/tasks/<owner>/<repo>" -name schema.md -exec grep -l 'status: todo\|status: in progress' {} +
+   ```
+   (`status: in progress` in schema frontmatter — note the space, distinct from
+   the `in-progress` GitHub label which uses a hyphen.)
+2. **After making changes:** If an active schema was found and your changes
+   overlap with it, update the *schema file* (not the repo):
+   - Note deviations from planned file changes in the schema's `## Files changed`
+     section
+   - Update commit group descriptions if the scope shifted
+   - Add a `> [!note] Ad-hoc deviation` callout in the affected commit group
+     explaining what was done differently and why
+   - Update `status` fields on completed sub-tasks if applicable
+3. **Skip this** when the ad-hoc change is clearly unrelated to any active
+   schema (different files, different concern). For example: fixing a typo in
+   `README.md` while an active schema targets `src/` — skip schema sync.
+
+This keeps the schema as a living record of what actually happened, not just
+the original plan. Future agents reading the schema will see both the plan and
+the reality.
+
 ## Git & GitHub
 
 - `git add`, `git status`, `git diff`, `git log`, `git show`, `git blame`,
