@@ -12,7 +12,7 @@
 #           used to compute the Obsidian click URL
 #
 # Requires: AGENT_VAULT (for topic file fallback and Obsidian URI)
-# Optional: NTFY_TOPIC env var or $AGENT_VAULT/cache/ntfy-topic.txt
+# Optional: NTFY_TOPIC env var or $AGENT_VAULT/_misc/cache/ntfy-topic.txt
 
 notify_triage() {
 	local type="${1:-}" task="${2:-}" body="${3:-}" file="${4:-}"

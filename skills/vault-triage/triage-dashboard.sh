@@ -3,7 +3,7 @@
 # Usage: bash triage-dashboard.sh [--notify-summary]
 #
 # Requires: AGENT_VAULT set in environment
-# Optional: NTFY_TOPIC or $AGENT_VAULT/cache/ntfy-topic.txt (for --notify-summary)
+# Optional: NTFY_TOPIC or $AGENT_VAULT/_misc/cache/ntfy-topic.txt (for --notify-summary)
 set -euo pipefail
 
 # shellcheck source=../lib/frontmatter.sh
