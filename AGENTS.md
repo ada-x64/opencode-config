@@ -174,7 +174,8 @@ Plan ──────► Implement ──────► Review
   implementation schema to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`,
   creates a GitHub issue, and links it into the schema.
 - **Write access:** Full vault mutations (schemas and drafts); GitHub issue
-  creation and project board adds (both require user approval via `ask`).
+  creation and project board adds (both require user approval via `ask`);
+  `gh pr comment*` (ask — to cross-reference PRs when creating a related issue).
 - **Does not:** Implement anything; write outside the vault.
 
 #### `@project-manager` — issue lifecycle and project board
@@ -208,7 +209,7 @@ Plan ──────► Implement ──────► Review
   GitHub issue. On completion: removes `in-progress` label and posts a
   completion comment.
 - **Write access:** Everything `@implementor` has, plus `git commit`,
-  `git stash`.
+  `git stash`, `gh pr comment*` (allow — to cross-reference PRs when an escalation creates an issue).
 - **Does not:** Push to remote (hard rule, no exceptions); apply `review-ready`
   label (manual/PM only).
 - **Review loop:** After each commit, runs up to 3 review rounds. If high+
@@ -458,6 +459,20 @@ The vault and this repo evolve together. When you add or rename an agent:
 - Update the vault note at `repo-notes/ada-x64/opencode-config/agent-permissions.md`
 - The vault's `AGENTS.md` (at `$AGENT_VAULT/AGENTS.md`) documents vault
   conventions independently — it is not the same document as this file.
+
+### PR-Issue cross-reference
+
+When an agent creates a GitHub issue that relates to an open PR, it must
+immediately post a comment on the PR using the format:
+
+```
+Opened #<number> to track <short description>.
+```
+
+This applies to `@planner` (ask), `@project-manager` (allow), and
+`@auto-implementor` (allow). `@reviewer` does not create issues and is
+therefore exempt. See the individual agent prompts for the exact insertion
+point in each agent's workflow.
 
 ### Reading remote source code
 
