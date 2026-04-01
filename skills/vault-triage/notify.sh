@@ -15,9 +15,10 @@
 #              maps to https://raw.githubusercontent.com/ada-x64/opencode-config/main/images/<icon>.png
 #              if omitted, defaults to "default"
 #   emoji    — optional semantic key or literal emoji prefix for notification title
-#              notify.sh resolves semantic keys to emoji; unknown keys pass through literally
+#              prefer semantic keys (resolved to emoji by notify.sh) over raw emoji
 #              known semantic keys: clean, warn, reject, auto-activity, auto-clean,
 #              auto-warn, auto-reject, auto-escalation, auto-design-question
+#              unknown keys (including raw emoji) pass through literally
 #              if omitted, derived from triage type (❗ escalation, ❓ design-question, 📋 others)
 #
 # Requires: AGENT_VAULT (for topic file fallback and Obsidian URI)

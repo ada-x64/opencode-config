@@ -434,17 +434,17 @@ After all commit groups are done and validated:
    - Escalations filed (filenames)
    - Whether the run-summary triage entry was written successfully
 
-**Icon selection:** When calling `notify_triage`, pass `implementor` as the icon and combine ⚙️ with a type emoji:
-- Commit group completed → emoji `⚙️📋`
-- Review loop exhausted → emoji `⚙️❗`
-- Design ambiguity → emoji `⚙️❓`
-- Run summary → emoji `⚙️📋`
+**Icon selection:** When calling `notify_triage`, pass `implementor` as the icon and use the appropriate semantic key:
+- Commit group completed → semantic key `auto-activity` (resolves to ⚙️📋)
+- Review loop exhausted → semantic key `auto-escalation` (resolves to ⚙️❗)
+- Design ambiguity → semantic key `auto-design-question` (resolves to ⚙️❓)
+- Run summary → semantic key `auto-activity` (resolves to ⚙️📋)
 
 ```bash
 # Examples:
-notify_triage activity "<owner>/<repo>/<task>" "Commit Group 1 Finished" $'• Updated 6 scripts\n• Tests passing ✓' "" "implementor" "⚙️📋"
-notify_triage escalation "<owner>/<repo>/<task>" "Review Loop Exhausted" $'• High findings persist in module X\n• 3 rounds attempted' "" "implementor" "⚙️❗"
-notify_triage run-summary "<owner>/<repo>/<task>" "Run Complete" $'• 5/5 commit groups done\n• 2 escalations logged' "" "implementor" "⚙️📋"
+notify_triage activity "<owner>/<repo>/<task>" "Commit Group 1 Finished" $'• Updated 6 scripts\n• Tests passing ✓' "" "implementor" "auto-activity"
+notify_triage escalation "<owner>/<repo>/<task>" "Review Loop Exhausted" $'• High findings persist in module X\n• 3 rounds attempted' "" "implementor" "auto-escalation"
+notify_triage run-summary "<owner>/<repo>/<task>" "Run Complete" $'• 5/5 commit groups done\n• 2 escalations logged' "" "implementor" "auto-activity"
 ```
 
 ## What you MUST NOT do

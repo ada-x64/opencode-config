@@ -149,13 +149,13 @@ After writing the review file, load the `vault-triage` skill and follow its
 **Events requiring triage entries:**
 - Review completed (type: `activity` — include total finding count and max severity)
 
-**Icon selection:** When calling `notify_triage`, pass `reviewer` as the icon and an outcome emoji:
-- 0 high+ findings → emoji `🟢`
-- Only nit/low findings → emoji `🟡`
-- Any high/critical findings → emoji `🔴`
+**Icon selection:** When calling `notify_triage`, pass `reviewer` as the icon and an outcome semantic key:
+- 0 high+ findings → semantic key `clean` (resolves to 🟢)
+- Only nit/low findings → semantic key `warn` (resolves to 🟡)
+- Any high/critical findings → semantic key `reject` (resolves to 🔴)
 
 ```bash
-notify_triage activity "<owner>/<repo>/<task>" "Review Complete" $'• 0 high findings\n• 3 nits' "" "reviewer" "🟢"
+notify_triage activity "<owner>/<repo>/<task>" "Review Complete" $'• 0 high findings\n• 3 nits' "" "reviewer" "clean"
 ```
 
 ## What you MUST NOT do
