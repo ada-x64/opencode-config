@@ -89,7 +89,7 @@ permission:
     "gh auth status*": allow
     "gh api *": allow
     "gh project list*": allow
-    # GitHub CLI (mutations — label state transitions and issue comments)
+    # GitHub CLI (mutations — label state transitions, issue comments, and PR comments)
     "gh issue edit*": allow
     "gh issue comment*": allow
     "gh pr comment*": allow
