@@ -89,9 +89,10 @@ permission:
     "gh auth status*": allow
     "gh api *": allow
     "gh project list*": allow
-    # GitHub CLI (mutations — label state transitions and issue comments)
+    # GitHub CLI (mutations — label state transitions, issue comments, and PR comments)
     "gh issue edit*": allow
     "gh issue comment*": allow
+    "gh pr comment*": allow
     # Vault write (filesystem)
     "mv *": allow
     "rm *": allow
@@ -349,6 +350,10 @@ Read the review. Evaluate:
    3. Send notification: `notify_triage escalation "<owner>/<repo>/<task>" "<one-line summary>"`
    4. Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
    5. **Continue to the next commit group.** Do not stop the run.
+   6. If the escalation results in an issue being created and there is a
+      related open PR (and the issue is not the PR's own tracking issue),
+      post a cross-reference comment on the PR before continuing:
+      `gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."`
 
 **e. Record design decisions** — if during implementation you encountered a
 genuine design ambiguity or made a non-trivial judgment call, before moving to
