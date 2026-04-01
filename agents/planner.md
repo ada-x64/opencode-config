@@ -89,6 +89,7 @@ permission:
     "gh issue create*": ask
     "gh issue edit*": ask
     "gh project item-add*": ask
+    "gh pr comment*": ask
     # Vault write (filesystem)
     "mv *": allow
     "rm *": allow

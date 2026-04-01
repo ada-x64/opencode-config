@@ -92,6 +92,7 @@ permission:
     # GitHub CLI (mutations — label state transitions and issue comments)
     "gh issue edit*": allow
     "gh issue comment*": allow
+    "gh pr comment*": allow
     # Vault write (filesystem)
     "mv *": allow
     "rm *": allow
