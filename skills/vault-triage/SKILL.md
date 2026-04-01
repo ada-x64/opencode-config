@@ -121,8 +121,8 @@ from the opencode-config repo.
 | Agent / Mode | Icon argument |
 |--------------|--------------|
 | `@implementor` | `implementor` |
-| `@auto-implementor` | `implementor` |
-| `@auto-auditor` | `auditor` |
+| `@auto-implementor` | `auto-implementor` |
+| `@auto-auditor` | `auto-auditor` |
 | Audit mode | `auditor` |
 | `@reviewer` | `reviewer` |
 | `@planner` | `planner` |
@@ -135,9 +135,9 @@ from the opencode-config repo.
 ### Semantic keys (7th argument — emoji resolution)
 
 Pass a semantic key as the 7th argument. `notify.sh` resolves it to the
-correct emoji. **Prefer semantic keys over raw emoji** — they are more readable
-and their mappings are centrally managed. Raw emoji are also accepted and pass
-through literally for cases not covered by the key table.
+correct emoji. **Always use semantic keys** — they are readable and their
+mappings are centrally managed. Unknown keys are ignored and fall back to the
+type-based default emoji.
 If the 7th argument is omitted, a default emoji is derived from the triage type.
 
 #### Type-based defaults (when 7th arg is omitted)

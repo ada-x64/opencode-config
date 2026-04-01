@@ -182,7 +182,7 @@ Plan ──────► Implement ──────► Review
 #### `@project-manager` — issue lifecycle and project board
 - **File:** `agents/project-manager.md`
 - **Role:** Keeps GitHub project state and vault task state synchronized. Closes completed issues, manages milestones, moves project board items, maintains `$AGENT_VAULT/projects/<owner>/<repo>.md` status documents, and runs `vault-gc`/`vault-lint` as part of project cleanup.
-- **Write access:** All `gh issue *`, `gh project *`, `gh label *`, and `gh api repos/*/milestones` mutations; `gh pr comment*` (to cross-reference PRs when creating related issues); `obsidian` CLI for vault writes; `vault-gc` and `vault-lint` scripts directly.
+- **Write access:** All `gh issue *`, `gh project *`, `gh label *`, and `gh api repos/*/milestones` mutations; `gh pr comment*` (to cross-reference PRs when creating related issues); `vault-gc` and `vault-lint` scripts directly.
 - **Does not:** Edit source files; run any git write command; merge or close PRs; create or delete repositories; operate on repos not in the vault.
 - **Modes:** Interactive (bulk-confirm) and status-sync. See `agents/project-manager.md` for full documentation.
 
