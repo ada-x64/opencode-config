@@ -16,7 +16,7 @@ for section in tasks repo-notes; do
 	for owner_dir in "$local_dir"/*/; do
 		[[ -d "$owner_dir" ]] || continue
 		owner="$(basename "$owner_dir")"
-		[[ "$owner" == "_fleet" ]] && continue
+		[[ "$owner" == "_fleet" || "$owner" == "_activity" ]] && continue
 		for repo_dir in "$owner_dir"/*/; do
 			[[ -d "$repo_dir" ]] || continue
 			repo="$(basename "$repo_dir")"

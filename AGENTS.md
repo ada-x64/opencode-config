@@ -501,15 +501,17 @@ gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 
 Push notifications to phone/desktop are sent via ntfy.sh. The
 `vault-triage/notify.sh` helper provides a `notify_triage` bash function.
-The 6th argument is the icon name (e.g. `"implementor"`, `"reviewer"`) and the
-optional 7th argument is a semantic key that `notify.sh` resolves to an emoji
-prefix (e.g. `"auto-activity"` → ⚙️📋, `"clean"` → 🟢). Full key table in
-`skills/vault-triage/SKILL.md`.
+The 6th argument is the icon name (e.g. `"implementor"`, `"reviewer"`,
+`"auto-implementor"`) and the optional 7th argument is a semantic key that
+`notify.sh` resolves to an emoji prefix (e.g. `"clean"` → 🟢, `"escalation"`
+→ ❗). When the icon starts with `auto-` (e.g. `"auto-implementor"`), the
+script strips the prefix for the PNG URL and prepends ⚙️ to the emoji
+automatically. Full key table in `skills/vault-triage/SKILL.md`.
 
 ```bash
 source ~/.config/opencode/skills/vault-triage/notify.sh
-notify_triage activity "owner/repo/task" "Commit Group 2 Complete" "• All tests passing" "" "implementor" "auto-activity"
-notify_triage escalation "owner/repo/task" "Review Loop Exhausted on Group 3" "• High findings persist" "" "implementor" "auto-escalation"
+notify_triage activity "owner/repo/task" "Commit Group 2 Complete" "• All tests passing" "" "auto-implementor" "activity"
+notify_triage escalation "owner/repo/task" "Review Loop Exhausted on Group 3" "• High findings persist" "" "auto-implementor" "escalation"
 ```
 
 All 7 agents load the `vault-triage` skill after completing significant work,

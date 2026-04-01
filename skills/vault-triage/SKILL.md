@@ -154,15 +154,17 @@ If the 7th argument is omitted, a default emoji is derived from the triage type.
 
 | Key | Emoji | Used when |
 |-----|-------|-----------|
+| `activity` | 📋 | General work completion |
 | `clean` | 🟢 | Review/audit: 0 high+ findings |
 | `warn` | 🟡 | Review/audit: nit/low findings only |
 | `reject` | 🔴 | Review/audit: high or critical findings |
-| `auto-activity` | ⚙️📋 | `@auto-implementor` commit group complete |
-| `auto-clean` | ⚙️🟢 | `@auto-auditor` / auto-review: 0 high+ findings |
-| `auto-warn` | ⚙️🟡 | `@auto-auditor` / auto-review: warnings only |
-| `auto-reject` | ⚙️🔴 | `@auto-auditor` / auto-review: critical findings |
-| `auto-escalation` | ⚙️❗ | `@auto-implementor` review loop exhausted |
-| `auto-design-question` | ⚙️❓ | `@auto-implementor` design ambiguity |
+| `escalation` | ❗ | Review loop exhausted or blocking issue |
+| `design-question` | ❓ | Design ambiguity needing human input |
+
+**Auto-agent prefix:** When the `icon` parameter starts with `auto-` (e.g.
+`"auto-implementor"`), `notify.sh` strips the prefix for the PNG URL lookup
+and prepends ⚙️ to the resolved emoji. Agents do not use separate `auto-*`
+semantic keys — the ⚙️ prefix is derived automatically from the agent name.
 
 **Example calls with icon and semantic key:**
 
@@ -170,14 +172,14 @@ If the 7th argument is omitted, a default emoji is derived from the triage type.
 # Reviewer — clean result
 notify_triage activity "ada-x64/qproj/fix-tests" "Review Complete" "• 0 high findings" "" "reviewer" "clean"
 
-# Auto-implementor — commit group complete
-notify_triage activity "ada-x64/qproj/fix-tests" "Commit Group 1 Finished" "• All tests passing" "" "implementor" "auto-activity"
+# Auto-implementor — commit group complete (⚙️ prefix added automatically)
+notify_triage activity "ada-x64/qproj/fix-tests" "Commit Group 1 Finished" "• All tests passing" "" "auto-implementor" "activity"
 
-# Auto-auditor — warnings
-notify_triage activity "ada-x64/qproj/audit" "Audit Complete" "• 2 medium warnings" "" "auditor" "auto-warn"
+# Auto-auditor — warnings (⚙️ prefix added automatically)
+notify_triage activity "ada-x64/qproj/audit" "Audit Complete" "• 2 medium warnings" "" "auto-auditor" "warn"
 
-# Escalation
-notify_triage escalation "ada-x64/qproj/fix-tests" "Review Loop Exhausted" "• High findings persist" "" "implementor" "auto-escalation"
+# Auto-implementor escalation (⚙️ prefix added automatically)
+notify_triage escalation "ada-x64/qproj/fix-tests" "Review Loop Exhausted" "• High findings persist" "" "auto-implementor" "escalation"
 ```
 
 ---
@@ -398,8 +400,8 @@ bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh --notify-summary
 
 ```bash
 source ~/.config/opencode/skills/vault-triage/notify.sh
-notify_triage escalation "ada-x64/qproj/fix-tests" "Review loop exhausted on commit group 2" "" "" "implementor" "auto-escalation"
-notify_triage activity "ada-x64/qproj/fix-tests" "Commit group 1 complete" "• All tests passing" "" "implementor" "auto-activity"
+notify_triage escalation "ada-x64/qproj/fix-tests" "Review loop exhausted on commit group 2" "" "" "auto-implementor" "escalation"
+notify_triage activity "ada-x64/qproj/fix-tests" "Commit group 1 complete" "• All tests passing" "" "auto-implementor" "activity"
 ```
 
 ### First-time setup

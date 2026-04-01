@@ -102,7 +102,6 @@ permission:
     "gh label edit*": allow
     "gh label delete*": allow
     # Vault tools
-    "obsidian*": allow
     "bash ~/.config/opencode/skills/vault-gc/gc.sh*": allow
     "bash ~/.config/opencode/skills/vault-lint/lint.sh*": allow
     # Vault directory creation
@@ -228,7 +227,7 @@ gh project item-list <project-number> --owner <owner> --format json
 gh pr list -R <owner>/<repo> --state open --json number,title,headRefName,baseRefName,reviewDecision,statusCheckRollup,updatedAt
 ```
 Write the Open Issues, Closed Issues, Milestones, Project Board Columns, and
-PRs in Review tables. Set `last_synced` via `obsidian property:set`.
+PRs in Review tables. Set `last_synced` via `fm_write`.
 
 **PR–schema cross-reference:** For each open PR, check if its `headRefName`
 matches the `branch:` frontmatter of any active schema in

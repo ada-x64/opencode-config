@@ -11,14 +11,14 @@
 #   body     — optional bullet-point detail text for the notification body
 #   file     — vault-relative path to the triage file (default: tasks/<task>/triage.md)
 #              used to compute the Obsidian click URL
-#   icon     — icon name without extension (optional; e.g. "planner", "reviewer")
+#   icon     — agent/icon name without extension (optional; e.g. "planner", "reviewer")
 #              maps to https://raw.githubusercontent.com/ada-x64/opencode-config/main/images/<icon>.png
+#              if the name starts with "auto-" (e.g. "auto-implementor"), the prefix is
+#              stripped for the PNG URL and ⚙️ is prepended to the emoji automatically
 #              if omitted, defaults to "default"
-#   emoji    — optional semantic key or literal emoji prefix for notification title
-#              prefer semantic keys (resolved to emoji by notify.sh) over raw emoji
-#              known semantic keys: clean, warn, reject, auto-activity, auto-clean,
-#              auto-warn, auto-reject, auto-escalation, auto-design-question
-#              unknown keys (including raw emoji) pass through literally
+#   emoji    — semantic key for emoji prefix in notification title
+#              known keys: activity, clean, warn, reject, escalation, design-question
+#              unknown keys are ignored and fall back to the type-based default
 #              if omitted, derived from triage type (❗ escalation, ❓ design-question, 📋 others)
 #
 # Requires: AGENT_VAULT (for topic file fallback and Obsidian URI)
@@ -62,34 +62,39 @@ notify_triage() {
 		priority="$NOTIFY_TRIAGE_PRIORITY"
 	fi
 
-	# Icon URL construction
+	# Icon URL construction — strip "auto-" prefix for PNG lookup
 	local icon_base_url="https://raw.githubusercontent.com/ada-x64/opencode-config/main/images"
+	local is_auto=""
 	if [[ -z "$icon" ]]; then
 		icon="default"
+	elif [[ "$icon" == auto-* ]]; then
+		is_auto="1"
+		icon="${icon#auto-}"
 	fi
 	local icon_url="${icon_base_url}/${icon}.png"
 
 	# Emoji + title construction
-	# First: resolve semantic key → emoji if the caller passed a known key
-	local emoji_prefix="$emoji"
-	case "$emoji_prefix" in
+	# Resolve semantic key → emoji. Unknown keys are ignored (fall back to type default).
+	local emoji_prefix=""
+	case "$emoji" in
+	activity) emoji_prefix="📋" ;;
 	clean) emoji_prefix="🟢" ;;
 	warn) emoji_prefix="🟡" ;;
 	reject) emoji_prefix="🔴" ;;
-	auto-activity) emoji_prefix="⚙️📋" ;;
-	auto-clean) emoji_prefix="⚙️🟢" ;;
-	auto-warn) emoji_prefix="⚙️🟡" ;;
-	auto-reject) emoji_prefix="⚙️🔴" ;;
-	auto-escalation) emoji_prefix="⚙️❗" ;;
-	auto-design-question) emoji_prefix="⚙️❓" ;;
-	# Unknown keys (including empty) fall through to type-based default below
+	escalation) emoji_prefix="❗" ;;
+	design-question) emoji_prefix="❓" ;;
 	esac
+	# If no recognized key, fall back to type-based default
 	if [[ -z "$emoji_prefix" ]]; then
 		case "$type" in
 		escalation) emoji_prefix="❗" ;;
 		design-question) emoji_prefix="❓" ;;
 		*) emoji_prefix="📋" ;;
 		esac
+	fi
+	# Auto agents (icon starts with "auto-") get ⚙️ prepended
+	if [[ -n "$is_auto" ]]; then
+		emoji_prefix="⚙️${emoji_prefix}"
 	fi
 	local task_name="${task##*/}"
 	local full_title="${emoji_prefix} [${task_name}]${headline:+ ${headline}}"

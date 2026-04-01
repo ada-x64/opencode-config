@@ -300,13 +300,13 @@ After writing the audit report, load the `vault-triage` skill and follow its
 Severity uses **roadmap-priority semantics** — a critical audit finding means
 "urgent engineering attention", not "blocks this PR".
 
-**Icon selection:** When calling `notify_triage`, pass `auditor` as the icon and combine ⚙️ with an outcome semantic key:
-- 0 high+ findings → semantic key `auto-clean` (resolves to ⚙️🟢)
-- Medium findings only → semantic key `auto-warn` (resolves to ⚙️🟡)
-- Any high/critical findings → semantic key `auto-reject` (resolves to ⚙️🔴)
+**Icon selection:** When calling `notify_triage`, pass `auto-auditor` as the icon (the `auto-` prefix triggers ⚙️ prepending automatically) and use the base semantic key:
+- 0 high+ findings → semantic key `clean` (resolves to ⚙️🟢)
+- Medium findings only → semantic key `warn` (resolves to ⚙️🟡)
+- Any high/critical findings → semantic key `reject` (resolves to ⚙️🔴)
 
 ```bash
-notify_triage activity "<owner>/<repo>/<task>" "Audit Complete" $'• 0 high findings\n• 2 medium warnings' "" "auditor" "auto-clean"
+notify_triage activity "<owner>/<repo>/<task>" "Audit Complete" $'• 0 high findings\n• 2 medium warnings' "" "auto-auditor" "clean"
 ```
 
 ## What you MUST NOT do

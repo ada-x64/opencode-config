@@ -183,30 +183,13 @@ All non-trivial implementation work follows three phases:
 - Schemas and reviews use YAML frontmatter for metadata (`repo`, `status`, `date`, etc.).
 - Path convention: `tasks/<owner>/<repo>/` mirrors the local checkout path
   convention `~/repos/<owner>/<repo>`.
-- Use the `obsidian` CLI for vault file management (move, delete, create, properties).
-- **Task and issue titles must not contain regex special characters** (`.`, `(`, `)`,
-  `*`, `[`, `]`, `+`, `?`, `{`, `}`, `^`, `$`, `|`, `\`). The `vault-lint` script
+- Agents access vault files directly via standard filesystem tools (Read, Write, Edit,
+  \`find\`, \`rg\`). Frontmatter is managed via \`source ~/.config/opencode/skills/lib/frontmatter.sh\`
+  then \`fm_read\`/\`fm_write\`.
+- **Task and issue titles must not contain regex special characters** (\`.\`, \`(\`, \`)\`,
+  \`*\`, \`[\`, \`]\`, \`+\`, \`?\`, \`{\`, \`}\`, \`^\`, \`$\`, \`|\`, \`\\\`). The \`vault-lint\` script
   uses title text as a regex pattern when scanning review files — special characters
   will silently corrupt issue-block extraction.
-
-## Obsidian CLI
-
-The `obsidian` command is available for headless vault management:
-
-```bash
-# Read operations
-obsidian files vault=agent.obs           # List all files
-obsidian folders vault=agent.obs         # List all folders
-obsidian read vault=agent.obs path="<p>" # Read file contents
-obsidian search vault=agent.obs query="<q>"  # Search vault
-obsidian property:read vault=agent.obs path="<p>" name=<prop>  # Read property
-
-# Mutation operations
-obsidian move vault=agent.obs path="<old>" to="<new>"         # Move (updates links)
-obsidian delete vault=agent.obs path="<p>" permanent           # Delete
-obsidian create vault=agent.obs path="<p>" content="<text>"    # Create
-obsidian property:set vault=agent.obs path="<p>" name=<prop> value=<val>  # Set property
-```
 AGENTS_EOF
 	echo "  created: $vault/AGENTS.md"
 	((created++)) || true
