@@ -194,9 +194,11 @@ Human-invoked sessions where PM performs GitHub and vault operations on request.
 6. `bash ~/.config/opencode/skills/vault-gc/gc.sh` — execute vault archival
 7. Report results
 
-**PR briefing format (included in roundup and status-sync output):**
+**PR status queries** ("What PRs are open?" etc.) are read-only. No triage entry is required for a pure PR status read — only for operations that mutate GitHub or vault state.
 
-For each repo with open PRs, include a "PRs in Review" section:
+## PR Briefing Format
+
+Included in both roundup output and status-sync documents. For each repo with open PRs, add a "PRs in Review" section:
 
 ```
 ### PRs in Review
@@ -228,8 +230,10 @@ PRs in Review tables. Set `last_synced` via `obsidian property:set`.
 
 **PR–schema cross-reference:** For each open PR, check if its `headRefName`
 matches the `branch:` frontmatter of any active schema in
-`$vault/tasks/$owner/$repo_name/*/schema.md`. Also check if the PR title or
-body references an issue number matching a schema's `issue:` field. When a
+`$vault/tasks/<owner>/<repo>/*/schema.md`. Also check if the PR title or
+body references an issue number and compare it against the number embedded in
+each schema's `issue:` frontmatter (which stores a Markdown link like
+`[#5](https://…)` — extract the numeric part before comparing). When a
 match is found, annotate the PR row with the schema name and status.
 
 **For `backend: local` repos:**
