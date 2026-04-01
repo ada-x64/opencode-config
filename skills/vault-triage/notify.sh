@@ -60,14 +60,14 @@ notify_triage() {
 	fi
 
 	# Icon URL construction
-	local ICON_BASE_URL="https://raw.githubusercontent.com/ada-x64/opencode-config/main/images"
+	local icon_base_url="https://raw.githubusercontent.com/ada-x64/opencode-config/main/images"
 	if [[ -z "$icon" ]]; then
 		icon="default"
 	fi
-	local icon_url="${ICON_BASE_URL}/${icon}.png"
+	local icon_url="${icon_base_url}/${icon}.png"
 
 	# Emoji + title construction
-	local emoji_prefix="${emoji:-}"
+	local emoji_prefix="$emoji"
 	if [[ -z "$emoji_prefix" ]]; then
 		case "$type" in
 		escalation) emoji_prefix="❗" ;;
@@ -76,7 +76,15 @@ notify_triage() {
 		esac
 	fi
 	local task_name="${task##*/}"
-	local full_title="${emoji_prefix} [${task_name}] ${headline}"
+	local full_title="${emoji_prefix} [${task_name}]${headline:+ ${headline}}"
+
+	# Sanitize values to prevent HTTP header injection via curl
+	full_title="${full_title//$'\n'/ }"
+	icon_url="${icon_url//$'\n'/ }"
+
+	# Backward compat: if body is empty (old callers pass nothing for $4),
+	# use headline as the notification body so the message body isn't blank.
+	local notify_body="${body:-$headline}"
 
 	# Resolve topic
 	local topic="${NTFY_TOPIC:-}"
@@ -105,7 +113,7 @@ notify_triage() {
 
 	if command -v ntfy &>/dev/null; then
 		ntfy publish --priority="$priority" --title="$full_title" --tags="$tag" \
-			--icon="$icon_url" "${ntfy_click[@]}" "$topic" "$body" 2>/dev/null || true
+			--icon="$icon_url" "${ntfy_click[@]}" "$topic" "$notify_body" 2>/dev/null || true
 	elif command -v curl &>/dev/null; then
 		curl -sL \
 			-H "Title: $full_title" \
@@ -113,7 +121,7 @@ notify_triage() {
 			-H "Tags: $tag" \
 			-H "Icon: $icon_url" \
 			"${curl_click[@]}" \
-			-d "$body" \
+			-d "$notify_body" \
 			"https://ntfy.sh/$topic" >/dev/null 2>&1 || true
 	fi
 	# If neither ntfy nor curl is available, silently do nothing
