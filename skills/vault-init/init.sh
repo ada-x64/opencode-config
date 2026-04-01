@@ -43,20 +43,21 @@ echo ""
 
 # Create directory structure
 ensure_dir "$vault/tasks"
-ensure_dir "$vault/archive/tasks"
+ensure_dir "$vault/_misc/archive/tasks"
 ensure_dir "$vault/audits"
 ensure_dir "$vault/projects"
-ensure_dir "$vault/cache"
+ensure_dir "$vault/_misc/cache"
 ensure_dir "$vault/design"
 ensure_dir "$vault/draft"
 ensure_dir "$vault/repo-notes"
-ensure_dir "$vault/templates"
+ensure_dir "$vault/_misc/templates"
+ensure_dir "$vault/_misc/images"
 
 # Copy templates (only if missing)
 if [[ -d "$skill_dir/templates" ]]; then
 	for tmpl in "$skill_dir/templates"/*.md; do
 		[[ -f "$tmpl" ]] || continue
-		ensure_file "$tmpl" "$vault/templates/$(basename "$tmpl")"
+		ensure_file "$tmpl" "$vault/_misc/templates/$(basename "$tmpl")"
 	done
 fi
 
@@ -100,15 +101,15 @@ and cross-cutting concerns.
 
 Staging area for notes and specs under active development.
 
-### `archive/` — Completed work
+### `_misc/archive/` — Completed work
 
 Mirrors the active directories for work that has been completed:
-- `archive/tasks/` — Completed task directories (schema + review + triage).
+- `_misc/archive/tasks/` — Completed task directories (schema + review + triage).
 
 When asked to archive tasks, move them from the active directory into the
-corresponding `archive/` subdirectory.
+corresponding `_misc/archive/` subdirectory.
 
-### `cache/` — GitHub metadata cache
+### `_misc/cache/` — GitHub metadata cache
 
 Cached project board, milestone, and label data for repositories.
 
@@ -116,7 +117,8 @@ Cached project board, milestone, and label data for repositories.
 
 - `.obsidian/` — Obsidian configuration (do not modify).
 - `AGENTS.md` — This file.
-- `templates/` — Format templates for schemas, reviews, triage, and issues.
+- `_misc/templates/` — Format templates for schemas, reviews, triage, and issues.
+- `_misc/images/` — Notification icons and other image assets.
 
 ## Workflow
 

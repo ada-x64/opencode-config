@@ -54,8 +54,8 @@ notify_triage() {
 
 	# Resolve topic
 	local topic="${NTFY_TOPIC:-}"
-	if [[ -z "$topic" && -n "${AGENT_VAULT:-}" && -f "${AGENT_VAULT}/cache/ntfy-topic.txt" ]]; then
-		topic="$(cat "${AGENT_VAULT}/cache/ntfy-topic.txt")"
+	if [[ -z "$topic" && -n "${AGENT_VAULT:-}" && -f "${AGENT_VAULT}/_misc/cache/ntfy-topic.txt" ]]; then
+		topic="$(cat "${AGENT_VAULT}/_misc/cache/ntfy-topic.txt")"
 	fi
 
 	# No topic = silently skip
