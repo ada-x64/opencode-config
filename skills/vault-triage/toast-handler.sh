@@ -30,15 +30,19 @@ fi
 config_dir="${HOME}/.config/opencode"
 if [[ -n "$icon_url" ]]; then
 	icon_filename="${icon_url##*/}" # e.g. "planner.png"
-	# Strip path traversal components — only allow plain filenames
-	icon_filename="${icon_filename//\//}"
-	icon_filename="${icon_filename//\.\./}"
-	if [[ -n "$icon_filename" ]]; then
+	# Allowlist: only accept the 9 known icon filenames to prevent path traversal
+	case "$icon_filename" in
+	implementor.png | auditor.png | reviewer.png | planner.png | designer.png | \
+		project-manager.png | build.png | plan.png | default.png)
 		icon_local="${config_dir}/images/${icon_filename}"
 		if [[ ! -f "$icon_local" ]]; then
 			icon_local="" # File not found — proceed without icon
 		fi
-	fi
+		;;
+	*)
+		icon_local="" # Unknown filename — proceed without icon
+		;;
+	esac
 fi
 
 # ── Platform detection ──────────────────────────────────────────────
@@ -66,11 +70,13 @@ wsl)
 		pwsh_path="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 	fi
 	# Escape single quotes in title and message for PowerShell
-	# Also strip newlines to prevent single-quoted string boundary injection
+	# Strip newlines and carriage returns to prevent single-quoted string boundary injection
 	ps_title="${title//\'/\'\'}"
 	ps_title="${ps_title//$'\n'/ }"
+	ps_title="${ps_title//$'\r'/ }"
 	ps_message="${message//\'/\'\'}"
 	ps_message="${ps_message//$'\n'/ }"
+	ps_message="${ps_message//$'\r'/ }"
 	if [[ -n "$icon_local" ]]; then
 		# Convert WSL path to Windows path for BurntToast
 		win_path="$(wslpath -w "$icon_local" 2>/dev/null || true)"
