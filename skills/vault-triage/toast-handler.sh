@@ -21,8 +21,8 @@ if [[ -n "$raw" ]]; then
 	if command -v jq &>/dev/null; then
 		icon_url="$(echo "$raw" | jq -r '.icon // empty' 2>/dev/null || true)"
 	else
-		# Fallback: grep for icon field in JSON
-		icon_url="$(echo "$raw" | grep -oP '"icon"\s*:\s*"\K[^"]+' 2>/dev/null || true)"
+		# Fallback: grep for icon field in JSON — use sed for POSIX portability (macOS lacks -P)
+		icon_url="$(echo "$raw" | sed -n 's/.*"icon"\s*:\s*"\([^"]*\)".*/\1/p' 2>/dev/null || true)"
 	fi
 fi
 
@@ -30,9 +30,14 @@ fi
 config_dir="${HOME}/.config/opencode"
 if [[ -n "$icon_url" ]]; then
 	icon_filename="${icon_url##*/}" # e.g. "planner.png"
-	icon_local="${config_dir}/images/${icon_filename}"
-	if [[ ! -f "$icon_local" ]]; then
-		icon_local="" # Fall back to no icon if file not found
+	# Strip path traversal components — only allow plain filenames
+	icon_filename="${icon_filename//\//}"
+	icon_filename="${icon_filename//\.\./}"
+	if [[ -n "$icon_filename" ]]; then
+		icon_local="${config_dir}/images/${icon_filename}"
+		if [[ ! -f "$icon_local" ]]; then
+			icon_local="" # File not found — proceed without icon
+		fi
 	fi
 fi
 
@@ -61,8 +66,11 @@ wsl)
 		pwsh_path="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 	fi
 	# Escape single quotes in title and message for PowerShell
+	# Also strip newlines to prevent single-quoted string boundary injection
 	ps_title="${title//\'/\'\'}"
+	ps_title="${ps_title//$'\n'/ }"
 	ps_message="${message//\'/\'\'}"
+	ps_message="${ps_message//$'\n'/ }"
 	if [[ -n "$icon_local" ]]; then
 		# Convert WSL path to Windows path for BurntToast
 		win_path="$(wslpath -w "$icon_local" 2>/dev/null || true)"
@@ -88,7 +96,12 @@ linux)
 	;;
 
 macos)
-	# osascript display notification does not support custom icons
-	osascript -e "display notification \"$message\" with title \"$title\"" 2>/dev/null || true
+	# osascript display notification does not support custom icons.
+	# Escape backslashes and double-quotes to prevent AppleScript injection.
+	safe_title="${title//\\/\\\\}"
+	safe_title="${safe_title//\"/\\\"}"
+	safe_message="${message//\\/\\\\}"
+	safe_message="${safe_message//\"/\\\"}"
+	osascript -e "display notification \"${safe_message}\" with title \"${safe_title}\"" 2>/dev/null || true
 	;;
 esac
