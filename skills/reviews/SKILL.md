@@ -46,4 +46,4 @@ $AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md
 
 ## Format template
 
-The canonical format is at `$AGENT_VAULT/templates/review.md`.
+The canonical format is at `$AGENT_VAULT/_misc/templates/review.md`.

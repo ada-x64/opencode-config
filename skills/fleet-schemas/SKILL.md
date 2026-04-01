@@ -37,4 +37,4 @@ find "$AGENT_VAULT/tasks" -name "schema.md" -path "*/<task>/*" -not -path "*/_fl
 
 ## Format template
 
-The canonical format is at `$AGENT_VAULT/templates/fleet-schema.md`.
+The canonical format is at `$AGENT_VAULT/_misc/templates/fleet-schema.md`.

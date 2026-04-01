@@ -74,7 +74,7 @@ find "$task_dir" -name "triage*.md" | sort
 ### Step 5 — Read the format template
 
 ```bash
-cat "$AGENT_VAULT/templates/triage.md"
+cat "$AGENT_VAULT/_misc/templates/triage.md"
 ```
 
 ### Step 6 — Write the triage entry
@@ -85,12 +85,68 @@ entry type (see **Entry Types** below). Set `status: pending`.
 ### Step 7 — MANDATORY: Send notification
 
 ```bash
-notify_triage "<type>" "<owner>/<repo>/<task>" "<one-line summary>"
+notify_triage "<type>" "<owner>/<repo>/<task>" "<headline>" "<body>" "" "<icon>"
 ```
 
 This is not optional. Failing to notify means the human has no real-time
 awareness of completed work. The function fails silently if ntfy is not
 configured — it will never block your work.
+
+When sending notifications with icons, pass the icon name as the 6th argument.
+The `headline` parameter (3rd arg) is a short action phrase for the notification
+title, and the optional `body` parameter (4th arg) contains bullet-point detail
+text. Pass an empty string for `file` (5th arg) to use the default path when
+specifying an icon:
+
+```bash
+notify_triage "<type>" "<owner>/<repo>/<task>" "<headline>" "<body>" "" "<icon>"
+```
+
+### Icon selection (per agent)
+
+| Agent / Mode | Icon |
+|--------------|------|
+| `@implementor` | `implementor` |
+| `@auto-implementor` | `implementor` |
+| `@auto-auditor` | `auditor` |
+| Audit mode | `auditor` |
+| `@reviewer` | `reviewer` |
+| `@planner` | `planner` |
+| `@designer` | `designer` |
+| `@project-manager` | `project-manager` |
+| Build mode | `build` |
+| Plan mode | `plan` |
+| Fallback | `default` |
+
+### Semantic keys for notify_triage (emoji resolution)
+
+Agents pass **semantic keys** — the `notify.sh` script owns the emoji-to-key
+mapping. Do NOT pick emoji yourself; instead pass the appropriate semantic key
+as part of the triage type or use the standard icon parameter. The notify
+script derives emoji from the triage type automatically:
+
+| Triage type | Derived emoji |
+|-------------|--------------|
+| `escalation` | ❗ |
+| `design-question` | ❓ |
+| `activity` | 📋 |
+| `handoff` | 📋 |
+| `run-summary` | 📋 |
+
+For review/audit outcome variants, reviewers and auditors pass outcome-specific
+semantic suffixes via the `emoji` (7th) argument:
+
+| Semantic key (emoji arg) | Meaning |
+|--------------------------|---------|
+| `🟢` | Clean/approved (0 high+ findings) |
+| `🟡` | Nits/warnings only |
+| `🔴` | Reject/critical (high or critical findings) |
+| `⚙️📋` | Auto-agent activity |
+| `⚙️🟢` | Auto-agent clean result |
+| `⚙️🟡` | Auto-agent warnings |
+| `⚙️🔴` | Auto-agent critical findings |
+| `⚙️❗` | Auto-agent escalation |
+| `⚙️❓` | Auto-agent design question |
 
 ### Step 8 — MANDATORY: Regenerate inbox
 
@@ -338,7 +394,7 @@ bash ~/.config/opencode/skills/vault-triage/setup.sh
 | Variable | Required | Source |
 |----------|----------|--------|
 | `AGENT_VAULT` | Yes | Agent environment |
-| `NTFY_TOPIC` | No | Falls back to `$AGENT_VAULT/cache/ntfy-topic.txt` |
+| `NTFY_TOPIC` | No | Falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
 ## Dashboard output
 

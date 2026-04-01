@@ -12,7 +12,7 @@ description: >
 ## Overview
 
 `lint.sh` validates schemas and reviews against the canonical format templates
-at `$AGENT_VAULT/templates/`. It checks for required headings, frontmatter
+at `$AGENT_VAULT/_misc/templates/`. It checks for required headings, frontmatter
 fields, valid status values, and per-issue annotations.
 
 ## How to Invoke
