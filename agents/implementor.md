@@ -337,3 +337,8 @@ post-work steps are **mandatory**:
 **Events requiring triage entries:**
 - Commit group completed (type: `activity` — include group number and validation result; `activity` fires at default/non-audible priority since the user is watching)
 - Full implementation complete (type: `activity` — include total groups and branch name)
+
+**Icon selection:** When calling `notify_triage`, pass `implementor` as the icon:
+```bash
+notify_triage activity "<owner>/<repo>/<task>" "Commit Group 1 Ready" $'• Updated 6 scripts\n• Tests passing ✓' "" "implementor"
+```

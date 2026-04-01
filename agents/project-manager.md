@@ -241,7 +241,7 @@ match is found, annotate the PR row with the schema name and status.
 **For `backend: local` repos:**
 Walk `$vault/tasks/<owner>/<repo>/` and read each schema's `status` and `issue` frontmatter fields. Build the Open Issues table from schemas with `status: todo` or `status: in progress`. Build the Closed Issues table from `status: complete` schemas. Set `last_synced`.
 
-**Creating a new status document:** If `$vault/projects/<owner>/<repo>.md` does not exist, create it from the template at `$vault/templates/project-status.md`. Ask the user which `backend` to use if it is not obvious from context — do not auto-detect.
+**Creating a new status document:** If `$vault/projects/<owner>/<repo>.md` does not exist, create it from the template at `$vault/_misc/templates/project-status.md`. Ask the user which `backend` to use if it is not obvious from context — do not auto-detect.
 
 **Staleness:** Default threshold is 24 hours (`stale_after_hours: 24`). Warn agents and users when `now - last_synced > stale_after_hours`.
 
@@ -287,6 +287,11 @@ follow its **Write Mode** instructions. The three post-work steps are
 - Bulk issue operations completed (type: `activity` — include count and repo)
 - Project status synced (type: `activity`)
 - Vault cleanup completed (type: `activity` — include archive count)
+
+**Icon selection:** When calling `notify_triage`, pass `project-manager` as the icon:
+```bash
+notify_triage activity "<owner>/<repo>/<task>" "Project Sync Done" $'• Closed 3 issues\n• Updated milestone' "" "project-manager"
+```
 
 ## What you MUST NOT do
 

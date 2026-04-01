@@ -123,7 +123,7 @@ in a repository and write a structured review document.
 
 - **Read:** the entire repository (source, tests, config, git history)
 - **Write:** `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md` — path derived from context provided by the caller
-- **Read-only:** vault instructions and review format template at `$AGENT_VAULT/templates/`
+- **Read-only:** vault instructions and review format template at `$AGENT_VAULT/_misc/templates/`
 
 ## Behavior
 
@@ -148,6 +148,15 @@ After writing the review file, load the `vault-triage` skill and follow its
 
 **Events requiring triage entries:**
 - Review completed (type: `activity` — include total finding count and max severity)
+
+**Icon selection:** When calling `notify_triage`, pass `reviewer` as the icon and an outcome emoji:
+- 0 high+ findings → emoji `🟢`
+- Only nit/low findings → emoji `🟡`
+- Any high/critical findings → emoji `🔴`
+
+```bash
+notify_triage activity "<owner>/<repo>/<task>" "Review Complete" $'• 0 high findings\n• 3 nits' "" "reviewer" "🟢"
+```
 
 ## What you MUST NOT do
 

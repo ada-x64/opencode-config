@@ -137,7 +137,7 @@ to create an implementation schema for a task, then create a GitHub issue for it
    Present the schema path and wait for feedback. If the user requests
    changes, iterate on the schema and ask for review again.
 5. **Create** a GitHub issue following the template at
-   `$AGENT_VAULT/templates/schema-issue.md`. Read that template, then
+   `$AGENT_VAULT/_misc/templates/schema-issue.md`. Read that template, then
    read your schema file and apply the template exactly.
 6. **Add** the issue to the project board and set milestone.
 7. **Link** the issue back into the schema header.
@@ -196,6 +196,11 @@ its **Write Mode** instructions. The three post-work steps are **mandatory**:
 **Events requiring triage entries:**
 - Schema written to the vault (type: `activity`)
 - GitHub issue created for the schema (type: `activity`)
+
+**Icon selection:** When calling `notify_triage`, pass `planner` as the icon:
+```bash
+notify_triage activity "<owner>/<repo>/<task>" "Schema Written" $'• Created schema with N commit groups\n• Issue #N linked' "" "planner"
+```
 
 ## What you MUST NOT do
 

@@ -434,6 +434,19 @@ After all commit groups are done and validated:
    - Escalations filed (filenames)
    - Whether the run-summary triage entry was written successfully
 
+**Icon selection:** When calling `notify_triage`, pass `implementor` as the icon and combine ⚙️ with a type emoji:
+- Commit group completed → emoji `⚙️📋`
+- Review loop exhausted → emoji `⚙️❗`
+- Design ambiguity → emoji `⚙️❓`
+- Run summary → emoji `⚙️📋`
+
+```bash
+# Examples:
+notify_triage activity "<owner>/<repo>/<task>" "Commit Group 1 Finished" $'• Updated 6 scripts\n• Tests passing ✓' "" "implementor" "⚙️📋"
+notify_triage escalation "<owner>/<repo>/<task>" "Review Loop Exhausted" $'• High findings persist in module X\n• 3 rounds attempted' "" "implementor" "⚙️❗"
+notify_triage run-summary "<owner>/<repo>/<task>" "Run Complete" $'• 5/5 commit groups done\n• 2 escalations logged' "" "implementor" "⚙️📋"
+```
+
 ## What you MUST NOT do
 
 - Push to remote (`git push`) — this is a hard rule with no exceptions
