@@ -2,20 +2,27 @@
 # vault-triage/notify.sh — Notification helper for agents.
 # Source this file to get the notify_triage function.
 # Usage: source ~/.config/opencode/skills/vault-triage/notify.sh
-#        notify_triage <type> <task> <body> [file]
+#        notify_triage <type> <task> <headline> [body] [file] [icon] [emoji]
 #
 # Parameters:
-#   type  — triage type (activity, escalation, design-question, handoff, run-summary)
-#   task  — owner/repo/task path (used in notification title and click URL)
-#   body  — notification body text
-#   file  — vault-relative path to the triage file (default: tasks/<task>/triage.md)
-#           used to compute the Obsidian click URL
+#   type     — triage type (activity, escalation, design-question, handoff, run-summary)
+#   task     — owner/repo/task path (task name extracted for notification title)
+#   headline — short action phrase for the notification title (e.g. "Commit Group 1 Finished")
+#   body     — optional bullet-point detail text for the notification body
+#   file     — vault-relative path to the triage file (default: tasks/<task>/triage.md)
+#              used to compute the Obsidian click URL
+#   icon     — icon name without extension (optional; e.g. "planner", "reviewer")
+#              maps to https://raw.githubusercontent.com/ada-x64/opencode-config/main/images/<icon>.png
+#              if omitted, defaults to "default"
+#   emoji    — optional emoji prefix for notification title (e.g. "⚙️📋", "🔴")
+#              if omitted, derived from triage type (❗ escalation, ❓ design-question, 📋 others)
+#              agents pass combined emojis for variants: "⚙️📋" (auto activity), "⚙️🟢" (auto clean audit)
 #
 # Requires: AGENT_VAULT (for topic file fallback and Obsidian URI)
 # Optional: NTFY_TOPIC env var or $AGENT_VAULT/_misc/cache/ntfy-topic.txt
 
 notify_triage() {
-	local type="${1:-}" task="${2:-}" body="${3:-}" file="${4:-}"
+	local type="${1:-}" task="${2:-}" headline="${3:-}" body="${4:-}" file="${5:-}" icon="${6:-}" emoji="${7:-}"
 	local priority="default"
 	local tag="information_source"
 
@@ -52,6 +59,25 @@ notify_triage() {
 		priority="$NOTIFY_TRIAGE_PRIORITY"
 	fi
 
+	# Icon URL construction
+	local ICON_BASE_URL="https://raw.githubusercontent.com/ada-x64/opencode-config/main/images"
+	if [[ -z "$icon" ]]; then
+		icon="default"
+	fi
+	local icon_url="${ICON_BASE_URL}/${icon}.png"
+
+	# Emoji + title construction
+	local emoji_prefix="${emoji:-}"
+	if [[ -z "$emoji_prefix" ]]; then
+		case "$type" in
+		escalation) emoji_prefix="❗" ;;
+		design-question) emoji_prefix="❓" ;;
+		*) emoji_prefix="📋" ;;
+		esac
+	fi
+	local task_name="${task##*/}"
+	local full_title="${emoji_prefix} [${task_name}] ${headline}"
+
 	# Resolve topic
 	local topic="${NTFY_TOPIC:-}"
 	if [[ -z "$topic" && -n "${AGENT_VAULT:-}" && -f "${AGENT_VAULT}/_misc/cache/ntfy-topic.txt" ]]; then
@@ -78,13 +104,14 @@ notify_triage() {
 	fi
 
 	if command -v ntfy &>/dev/null; then
-		ntfy publish --priority="$priority" --title="[$type] $task" --tags="$tag" \
-			"${ntfy_click[@]}" "$topic" "$body" 2>/dev/null || true
+		ntfy publish --priority="$priority" --title="$full_title" --tags="$tag" \
+			--icon="$icon_url" "${ntfy_click[@]}" "$topic" "$body" 2>/dev/null || true
 	elif command -v curl &>/dev/null; then
 		curl -sL \
-			-H "Title: [$type] $task" \
+			-H "Title: $full_title" \
 			-H "Priority: $priority" \
 			-H "Tags: $tag" \
+			-H "Icon: $icon_url" \
 			"${curl_click[@]}" \
 			-d "$body" \
 			"https://ntfy.sh/$topic" >/dev/null 2>&1 || true
