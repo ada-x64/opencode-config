@@ -45,6 +45,7 @@ Model configuration is managed via `build.yaml` + `build.sh` (see
 │   ├── vault-init/
 │   ├── vault-lint/
 │   └── vault-triage/
+├── images/                # Notification icons (64x64 PNG)
 ├── AGENTS.md              # This file
 └── README.md              # Short public summary
 ```
@@ -334,7 +335,7 @@ repo. The vault is a git-tracked directory managed with Obsidian.
 | `AGENT_REPOS` | Absolute path to local repo checkouts | `~/repos` |
 | `NTFY_TOPIC` | ntfy.sh topic for push notifications (optional) | `my-topic-abc123` |
 
-`NTFY_TOPIC` falls back to the value in `$AGENT_VAULT/cache/ntfy-topic.txt` if
+`NTFY_TOPIC` falls back to the value in `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` if
 the environment variable is not set.
 
 ### Vault directory layout
@@ -346,8 +347,12 @@ $AGENT_VAULT/
 │       ├── schema.md         # Implementation spec
 │       ├── review.md         # Code review (review-2.md, etc.)
 │       └── triage.md         # Triage entry (triage-2.md, etc.)
-├── archive/
-│   └── tasks/                # Completed/closed tasks
+├── _misc/
+│   ├── archive/
+│   │   └── tasks/            # Completed/closed tasks
+│   ├── cache/                # GitHub metadata cache
+│   ├── templates/            # Format templates (schema, review, triage, audit, ...)
+│   └── images/               # Notification icons and image assets
 ├── audits/
 │   └── <owner>/<repo>/
 │       └── <date>-<label>.md # Audit reports
@@ -355,8 +360,6 @@ $AGENT_VAULT/
 │   └── <owner>/<repo>/       # Reference documentation per repo
 ├── design/                   # Cross-cutting design documents
 ├── draft/                    # Work-in-progress staging area
-├── templates/                # Format templates (schema, review, triage, audit, ...)
-├── cache/                    # GitHub metadata cache
 ├── triage-inbox.md           # Generated triage dashboard
 └── AGENTS.md                 # Vault conventions document
 ```
@@ -500,8 +503,8 @@ Push notifications to phone/desktop are sent via ntfy.sh. The
 
 ```bash
 source ~/.config/opencode/skills/vault-triage/notify.sh
-notify_triage activity "owner/repo/task" "Commit group 2 complete — all tests passing"
-notify_triage escalation "owner/repo/task" "Review loop exhausted on group 3"
+notify_triage activity "owner/repo/task" "Commit Group 2 Complete" "• All tests passing" "" "implementor" "auto-activity"
+notify_triage escalation "owner/repo/task" "Review Loop Exhausted on Group 3" "• High findings persist" "" "implementor" "auto-escalation"
 ```
 
 All 7 agents load the `vault-triage` skill after completing significant work,
@@ -520,7 +523,7 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 |----------|----------|-------------|---------- |
 | `AGENT_VAULT` | Yes (for vault ops) | Absolute path to the Obsidian vault | None — must be set |
 | `AGENT_REPOS` | Yes (for repo ops) | Absolute path to local repo checkouts | None — must be set |
-| `NTFY_TOPIC` | No | ntfy.sh topic for push notifications | `$AGENT_VAULT/cache/ntfy-topic.txt` |
+| `NTFY_TOPIC` | No | ntfy.sh topic for push notifications | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
 Both path variables are checked at the top of any agent session that uses
 the vault or operates on a repository. The `vault-init` skill can create and

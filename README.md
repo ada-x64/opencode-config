@@ -9,6 +9,7 @@ opencode.json        # Model, mode prompts, and global bash permissions
 agents/              # Subagent definitions (dispatched via Task tool)
 prompts/             # Mode system prompts (build, plan, audit)
 skills/              # Loadable skill instructions and scripts
+images/              # Notification icons (64x64 PNG, served via raw.githubusercontent.com)
 ```
 
 ## Modes
@@ -72,4 +73,4 @@ vault's `AGENTS.md` for conventions.
 |----------|-------------|
 | `AGENT_VAULT` | Path to the agent vault (e.g. `~/obsidian/agent.obs`) |
 | `AGENT_REPOS` | Path to local repository checkouts (e.g. `~/repos`) |
-| `NTFY_TOPIC` | ntfy.sh topic for push notifications (optional; falls back to `$AGENT_VAULT/cache/ntfy-topic.txt`) |
+| `NTFY_TOPIC` | ntfy.sh topic for push notifications (optional; falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt`) |

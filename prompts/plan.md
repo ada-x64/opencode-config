@@ -123,7 +123,7 @@ exceeded 3 minutes:
 _elapsed=$(( $(date +%s) - _start ))
 if (( _elapsed > 180 )); then
   source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
-  notify_triage activity "<context>" "<one-line summary of completed work>"
+  notify_triage activity "<context>" "<headline>" "<bullet-point body>" "" "plan"
 fi
 ```
 
