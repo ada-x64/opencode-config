@@ -141,6 +141,14 @@ to create an implementation schema for a task, then create a GitHub issue for it
    read your schema file and apply the template exactly.
 6. **Add** the issue to the project board and set milestone.
 7. **Link** the issue back into the schema header.
+8. **Cross-reference PRs** — if the issue you just created relates to an open
+   PR (e.g., a bug found during CI, a design question from review, a follow-up
+   task), post a comment on the PR:
+   ```bash
+   gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."
+   ```
+   Skip this step if there is no related PR or if the issue is the PR's own
+   tracking issue.
 
 ## Research
 
