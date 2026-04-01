@@ -351,7 +351,8 @@ Read the review. Evaluate:
    4. Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
    5. **Continue to the next commit group.** Do not stop the run.
    6. If the escalation results in an issue being created and there is a
-      related open PR, post a cross-reference comment on the PR:
+      related open PR (and the issue is not the PR's own tracking issue),
+      post a cross-reference comment on the PR before continuing:
       `gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."`
 
 **e. Record design decisions** — if during implementation you encountered a

@@ -175,7 +175,7 @@ Human-invoked sessions where PM performs GitHub and vault operations on request.
 3. Optionally run `bash ~/.config/opencode/skills/vault-lint/lint.sh` and surface any violations.
 4. For bulk operations affecting more than one item: enumerate all affected items, present a numbered summary table ("Will close N issues: #12, #14, #17 …"), and wait for explicit user "yes" before executing.
 5. Execute GitHub mutations (`gh issue close`, `gh project item-edit`, etc.) for each item.
-6. When creating an issue that relates to an open PR, post a cross-reference comment on the PR: `gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."` Skip if no related PR.
+6. If you created an issue during this session that relates to an open PR (and the issue is not the PR's own tracking issue), post a cross-reference comment on the PR: `gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."` Skip if no issue was created or no related PR exists.
 7. Update `$vault/projects/<owner>/<repo>.md` (create if absent, update `last_synced` and tables).
 8. After GitHub mutations, optionally run `bash ~/.config/opencode/skills/vault-gc/gc.sh`.
 
