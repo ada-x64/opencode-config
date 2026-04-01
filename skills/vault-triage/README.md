@@ -81,7 +81,7 @@ run `ntfy subscribe --from-config &` in a startup script.
 
 ```bash
 source ~/.config/opencode/skills/vault-triage/notify.sh
-notify_triage escalation test/task "Hello from setup"
+notify_triage escalation test/task "Hello from setup" "" "" "default"
 ```
 
 You should receive a high-priority notification on your phone within a few

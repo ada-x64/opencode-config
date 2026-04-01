@@ -14,9 +14,11 @@
 #   icon     — icon name without extension (optional; e.g. "planner", "reviewer")
 #              maps to https://raw.githubusercontent.com/ada-x64/opencode-config/main/images/<icon>.png
 #              if omitted, defaults to "default"
-#   emoji    — optional emoji prefix for notification title (e.g. "⚙️📋", "🔴")
+#   emoji    — optional semantic key or literal emoji prefix for notification title
+#              notify.sh resolves semantic keys to emoji; unknown keys pass through literally
+#              known semantic keys: clean, warn, reject, auto-activity, auto-clean,
+#              auto-warn, auto-reject, auto-escalation, auto-design-question
 #              if omitted, derived from triage type (❗ escalation, ❓ design-question, 📋 others)
-#              agents pass combined emojis for variants: "⚙️📋" (auto activity), "⚙️🟢" (auto clean audit)
 #
 # Requires: AGENT_VAULT (for topic file fallback and Obsidian URI)
 # Optional: NTFY_TOPIC env var or $AGENT_VAULT/_misc/cache/ntfy-topic.txt
@@ -67,7 +69,20 @@ notify_triage() {
 	local icon_url="${icon_base_url}/${icon}.png"
 
 	# Emoji + title construction
+	# First: resolve semantic key → emoji if the caller passed a known key
 	local emoji_prefix="$emoji"
+	case "$emoji_prefix" in
+	clean) emoji_prefix="🟢" ;;
+	warn) emoji_prefix="🟡" ;;
+	reject) emoji_prefix="🔴" ;;
+	auto-activity) emoji_prefix="⚙️📋" ;;
+	auto-clean) emoji_prefix="⚙️🟢" ;;
+	auto-warn) emoji_prefix="⚙️🟡" ;;
+	auto-reject) emoji_prefix="⚙️🔴" ;;
+	auto-escalation) emoji_prefix="⚙️❗" ;;
+	auto-design-question) emoji_prefix="⚙️❓" ;;
+	# Unknown keys (including empty) fall through to type-based default below
+	esac
 	if [[ -z "$emoji_prefix" ]]; then
 		case "$type" in
 		escalation) emoji_prefix="❗" ;;
