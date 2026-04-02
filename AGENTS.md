@@ -325,6 +325,7 @@ Some skills include executable scripts:
 - `vault-init/init.sh` — idempotent vault directory initializer
 - `vault-triage/notify.sh` — `notify_triage` bash function for push alerts
 - `vault-triage/triage-dashboard.sh` — generates `$AGENT_VAULT/triage-inbox.md`
+- `vault-triage/triage-resolve.sh` — marks a triage entry as `addressed` or `dismissed`
 - `vault-triage/setup.sh` — one-time notification platform setup
 
 ---
@@ -537,6 +538,11 @@ route to `_misc/triage/` (action-required), `_misc/activity/` (FYI), or
 `_misc/handoffs/` (context transfers). Only `_misc/triage/` appears in the
 dashboard. All calls fail silently if ntfy is not configured, so they never
 block agent work.
+
+The dashboard renders pending items as `- [ ]` checkboxes and handled items
+as `- [x]` in a collapsed section. Use
+`bash ~/.config/opencode/skills/vault-triage/triage-resolve.sh` to mark entries as
+addressed or dismissed.
 
 ---
 

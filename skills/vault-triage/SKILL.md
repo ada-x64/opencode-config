@@ -486,6 +486,19 @@ notify_triage activity "ada-x64/qproj/fix-tests" "Commit group 1 complete" "• 
 bash ~/.config/opencode/skills/vault-triage/setup.sh
 ```
 
+### Resolve a triage entry
+
+```bash
+# Mark as addressed (default)
+bash ~/.config/opencode/skills/vault-triage/triage-resolve.sh "$AGENT_VAULT/_misc/triage/2026-04-01T14-30-00.md"
+
+# Mark as dismissed
+bash ~/.config/opencode/skills/vault-triage/triage-resolve.sh "$AGENT_VAULT/_misc/triage/2026-04-01T14-30-00.md" dismissed
+
+# Then regenerate the dashboard
+bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh
+```
+
 ---
 
 ## Environment
@@ -497,8 +510,15 @@ bash ~/.config/opencode/skills/vault-triage/setup.sh
 
 ## Dashboard output
 
-Generated at `$AGENT_VAULT/triage-inbox.md`. Sections: Pending, Addressed,
-Dismissed. Each row has a wiki-link to the triage file, type, agent, and date.
+Generated at `$AGENT_VAULT/triage-inbox.md`. Pending items render as `- [ ]`
+checkboxes. Addressed items render as `- [x]`; dismissed items render as
+`- [x] ~~link~~` with a `_(dismissed)_` suffix. Both appear inside a collapsed
+`<details>` block. Each item includes a wiki-link to the entry file, type
+(bolded), agent, repo, and date.
+
+Checkboxes in the dashboard are **visual only** — toggling them in Obsidian
+modifies the generated file, but the next regeneration overwrites it. Use
+`triage-resolve.sh` to persistently update the entry's frontmatter status.
 
 ## Notification priorities
 
