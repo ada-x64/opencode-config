@@ -511,7 +511,8 @@ bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh
 ## Dashboard output
 
 Generated at `$AGENT_VAULT/triage-inbox.md`. Pending items render as `- [ ]`
-checkboxes; addressed/dismissed items render as `- [x]` inside a collapsed
+checkboxes. Addressed items render as `- [x]`; dismissed items render as
+`- [x] ~~link~~` with a `_(dismissed)_` suffix. Both appear inside a collapsed
 `<details>` block. Each item includes a wiki-link to the entry file, type
 (bolded), agent, repo, and date.
 
