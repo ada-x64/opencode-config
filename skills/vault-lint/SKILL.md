@@ -19,17 +19,17 @@ fields, valid status values, and per-issue annotations.
 
 ```bash
 # Lint everything (vault docs + bash scripts)
-bash ~/.config/opencode/skills/vault-lint/lint.sh
+bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh
 
 # Schemas only
-bash ~/.config/opencode/skills/vault-lint/lint.sh --schemas-only
+bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh --schemas-only
 
 # Reviews only
-bash ~/.config/opencode/skills/vault-lint/lint.sh --reviews-only
+bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh --reviews-only
 
 # Filter to a specific owner/repo
-bash ~/.config/opencode/skills/vault-lint/lint.sh ada-x64/agent-config
-bash ~/.config/opencode/skills/vault-lint/lint.sh --schemas-only ada-x64/agent-config
+bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh ada-x64/agent-config
+bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh --schemas-only ada-x64/agent-config
 ```
 
 ## What Gets Checked
@@ -62,7 +62,7 @@ bash ~/.config/opencode/skills/vault-lint/lint.sh --schemas-only ada-x64/agent-c
 | Per-issue `**Severity:**` | Required for each `### N.` issue section               |
 | Per-issue `**Category:**` | Required for each `### N.` issue section               |
 
-### Bash scripts (`~/.config/opencode/skills/**/*.sh`)
+### Bash scripts (`$OPENCODE_CONFIG_SRC/skills/**/*.sh`)
 
 All shell scripts are passed through `shellcheck`. Requires `shellcheck` to be
 installed (`apt-get install shellcheck` or `brew install shellcheck`). If not

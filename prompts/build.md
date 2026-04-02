@@ -83,7 +83,7 @@ Any agent can load the skill and follow its Write Mode instructions. See the
 skill for entry types, notification events, and the mandatory post-write steps.
 
 To check pending triage items, load the `vault-triage` skill in Report Mode,
-or run `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh` to
+or run `bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh` to
 regenerate `$AGENT_VAULT/triage-inbox.md`.
 
 ### `@planner` — schema authoring
@@ -209,7 +209,7 @@ exceeded 3 minutes:
 ```bash
 _elapsed=$(( $(date +%s) - _start ))
 if (( _elapsed > 180 )); then
-  source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
+  source $OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh 2>/dev/null || true
   notify_triage activity "<context>" "<headline>" "<bullet-point body>" "" "build"
 fi
 ```

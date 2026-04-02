@@ -28,10 +28,10 @@ these are true:
 
 ```bash
 # Initialize using $AGENT_VAULT (default)
-bash ~/.config/opencode/skills/vault-init/init.sh
+bash $OPENCODE_CONFIG_SRC/skills/vault-init/init.sh
 
 # Initialize at a specific path
-bash ~/.config/opencode/skills/vault-init/init.sh /path/to/vault
+bash $OPENCODE_CONFIG_SRC/skills/vault-init/init.sh /path/to/vault
 
 # The script is idempotent — safe to run multiple times
 ```

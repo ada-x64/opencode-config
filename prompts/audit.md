@@ -92,7 +92,7 @@ exceeded 3 minutes:
 ```bash
 _elapsed=$(( $(date +%s) - _start ))
 if (( _elapsed > 180 )); then
-  source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
+  source $OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh 2>/dev/null || true
   notify_triage activity "<context>" "<headline>" "<bullet-point body>" "" "auditor"
 fi
 ```
