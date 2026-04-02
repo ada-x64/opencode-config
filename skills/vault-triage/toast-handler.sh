@@ -61,9 +61,13 @@ platform="$(detect_platform)"
 # ── Dispatch to platform notification ───────────────────────────────
 case "$platform" in
 wsl)
-	# Find PowerShell
+	# Find PowerShell 7 (pwsh.exe) — required for BurntToast module.
+	# In systemd service context, Windows interop paths are not in PATH,
+	# so command -v won't find pwsh.exe. Use well-known install locations as fallback.
 	if pwsh_path="$(command -v pwsh.exe 2>/dev/null)"; then
 		:
+	elif [[ -x "/mnt/c/Program Files/PowerShell/7/pwsh.exe" ]]; then
+		pwsh_path="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
 	elif pwsh_path="$(command -v powershell.exe 2>/dev/null)"; then
 		:
 	else
