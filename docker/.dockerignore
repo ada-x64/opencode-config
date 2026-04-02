@@ -1,0 +1,3 @@
+# Keep the Docker build context minimal
+*
+!Dockerfile
