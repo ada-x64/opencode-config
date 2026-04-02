@@ -1,0 +1,36 @@
+# AoE (Agent of Empires) configuration template
+#
+# This file is a versioned template. To deploy:
+#   cp ~/.config/opencode/docker/aoe-config.toml ~/.config/aoe/config.toml
+#   # or: ln -sf ~/.config/opencode/docker/aoe-config.toml ~/.config/aoe/config.toml
+#
+# Requires on host:
+#   export GH_TOKEN=$(gh auth token 2>/dev/null)
+#   export NTFY_TOPIC="<your-ntfy-topic>"
+
+[session]
+default_tool = "opencode"
+
+[sandbox]
+enabled_by_default = true
+default_image = "opencode-sandbox:latest"
+auto_cleanup = true
+cpu_limit = "4"
+memory_limit = "8g"
+mount_ssh = false
+
+extra_volumes = [
+    "$HOME/obsidian/agent.obs:/root/obsidian/agent.obs",
+]
+
+environment = [
+    "AGENT_VAULT=/root/obsidian/agent.obs",
+    "AGENT_REPOS=/workspace",
+    "GH_TOKEN",
+    "NTFY_TOPIC",
+    "GIT_CONFIG_COUNT=2",
+    "GIT_CONFIG_KEY_0=credential.https://github.com.helper",
+    "GIT_CONFIG_VALUE_0=!gh auth git-credential",
+    "GIT_CONFIG_KEY_1=protocol.version",
+    "GIT_CONFIG_VALUE_1=2",
+]
