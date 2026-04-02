@@ -450,12 +450,14 @@ After all commit groups are done and validated:
 - Review loop exhausted → semantic key `escalation` (resolves to ⚙️❗)
 - Design ambiguity → semantic key `design-question` (resolves to ⚙️❓)
 - Run summary → semantic key `activity` (resolves to ⚙️📋)
+- Permissions request → semantic key `permissions-request` (resolves to ⚙️🔒)
 
 ```bash
 # Examples:
 notify_triage activity "<owner>/<repo>/<task>" "Commit Group 1 Finished" $'• Updated 6 scripts\n• Tests passing ✓' "" "auto-implementor" "activity"
 notify_triage escalation "<owner>/<repo>/<task>" "Review Loop Exhausted" $'• High findings persist in module X\n• 3 rounds attempted' "" "auto-implementor" "escalation"
 notify_triage run-summary "<owner>/<repo>/<task>" "Run Complete" $'• 5/5 commit groups done\n• 2 escalations logged' "" "auto-implementor" "activity"
+notify_triage permissions-request "<owner>/<repo>/<task>" "Command Blocked" $'• ./z build denied\n• Add "./z *": allow to auto-implementor.md' "" "auto-implementor" "permissions-request"
 ```
 
 ## What you MUST NOT do

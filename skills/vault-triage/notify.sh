@@ -17,7 +17,7 @@
 #              stripped for the PNG URL and ⚙️ is prepended to the emoji automatically
 #              if omitted, defaults to "default"
 #   emoji    — semantic key for emoji prefix in notification title
-#              known keys: activity, clean, warn, reject, escalation, design-question
+#              known keys: activity, clean, warn, reject, escalation, design-question, permissions-request
 #              unknown keys are ignored and fall back to the type-based default
 #              if omitted, derived from triage type (❗ escalation, ❓ design-question, 📋 others)
 #
@@ -93,6 +93,7 @@ notify_triage() {
 		case "$type" in
 		escalation) emoji_prefix="❗" ;;
 		design-question) emoji_prefix="❓" ;;
+		permissions-request) emoji_prefix="🔒" ;;
 		*) emoji_prefix="📋" ;;
 		esac
 	fi
