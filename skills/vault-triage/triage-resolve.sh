@@ -12,11 +12,10 @@
 # After resolving, regenerate the dashboard:
 #   bash triage-dashboard.sh
 #
-# Requires: AGENT_VAULT set in environment (for path validation)
 set -euo pipefail
 
-# shellcheck source=../lib/frontmatter.sh
 _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/frontmatter.sh
 source "${_SCRIPT_DIR}/../lib/frontmatter.sh"
 
 file="${1:?Usage: triage-resolve.sh <file> [addressed|dismissed]}"
@@ -38,7 +37,11 @@ if [[ ! -f "$file" ]]; then
 fi
 
 # Read current status
-current="$(fm_read "$file" "status" "unknown")"
+current="$(fm_read "$file" "status" "")"
+if [[ -z "$current" ]]; then
+	echo "Error: 'status' key not found in frontmatter: $file" >&2
+	exit 1
+fi
 if [[ "$current" == "$new_status" ]]; then
 	echo "Already $new_status: $file"
 	exit 0
@@ -46,4 +49,9 @@ fi
 
 # Update status
 fm_write "$file" "status" "$new_status"
+actual="$(fm_read "$file" "status" "")"
+if [[ "$actual" != "$new_status" ]]; then
+	echo "Error: fm_write failed — 'status' key missing or unwritable in: $file" >&2
+	exit 1
+fi
 echo "$current -> $new_status: $file"
