@@ -20,9 +20,8 @@ memory_limit = "8g"
 mount_ssh = false
 
 extra_volumes = [
-    # Adjust vault path to match your host layout (e.g. ~/winhome/obsidian/agent.obs on WSL)
-    "$HOME/obsidian/agent.obs:/root/obsidian/agent.obs",
-    "$HOME/.config/opencode:/root/.config/opencode",
+    "{{AGENT_VAULT}}:/root/obsidian/agent.obs",
+    "{{OPENCODE_CONFIG_SRC}}:/root/.config/opencode",
 ]
 
 environment = [
