@@ -83,7 +83,7 @@ entry type (see **Entry Types** below). Set `status: pending`.
 notify_triage "<type>" "<owner>/<repo>/<task>" "<headline>" "<body>" "_misc/<dir>/<filename>.md" "<icon>" "<semantic-key>"
 ```
 
-Add a note: "Pass the vault-relative path to the triage file as the 5th argument so the Obsidian click URL points to the correct file. Use the directory matching the entry type (`triage/`, `activity/`, or `handoffs/`)."
+> **Note:** Pass the actual vault-relative path to the triage file (e.g. `_misc/activity/2026-04-01T14-30-00.md`) as the 5th argument so the Obsidian click URL points to the correct file. Use the directory matching the entry type (`triage/`, `activity/`, or `handoffs/`). Callers who omit this argument will get the `unknown.md` fallback.
 
 This is not optional. Failing to notify means the human has no real-time
 awareness of completed work. The function fails silently if ntfy is not

@@ -5,8 +5,10 @@ via a Markdown dashboard and push notifications.
 
 ## What it does
 
-When agents run autonomously overnight they write `triage.md` files deep inside
-`$AGENT_VAULT/tasks/`. This skill gives you two ways to find them:
+When agents complete work they write timestamped triage entries to flat
+directories under `$AGENT_VAULT/_misc/`: `_misc/triage/` (action-required
+items), `_misc/activity/` (completion logs), and `_misc/handoffs/` (run
+summaries and context transfers). This skill gives you two ways to find them:
 
 1. **Dashboard** (`triage-inbox.md`) — a generated Markdown file at the vault
    root listing all triage entries grouped by status (Pending / Addressed /

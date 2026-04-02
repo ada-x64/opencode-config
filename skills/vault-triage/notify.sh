@@ -9,7 +9,7 @@
 #   task     — owner/repo/task path (task name extracted for notification title)
 #   headline — short action phrase for the notification title (e.g. "Commit Group 1 Finished")
 #   body     — optional bullet-point detail text for the notification body
-#   file     — vault-relative path to the triage file (default: tasks/<task>/triage.md)
+#   file     — vault-relative path to the triage file (default: _misc/triage/unknown.md)
 #              used to compute the Obsidian click URL
 #   icon     — agent/icon name without extension (optional; e.g. "planner", "reviewer")
 #              maps to https://raw.githubusercontent.com/ada-x64/opencode-config/main/images/<icon>.png

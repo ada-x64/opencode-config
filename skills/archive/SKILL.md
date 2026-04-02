@@ -11,7 +11,8 @@ description: >
 ## Overview
 
 Completed tasks are archived at `$AGENT_VAULT/_misc/archive/tasks/<owner>/<repo>/<task>/`.
-Each archived task directory may contain `schema.md`, `review.md`, and `triage.md`.
+Each archived task directory contains `schema.md` and `review.md`. Legacy tasks
+archived before the triage restructure may also contain `triage.md`.
 The `vault-gc` skill moves task directories here when a task is finished.
 
 ## Finding archived content
@@ -43,5 +44,5 @@ find "$AGENT_VAULT/_misc/archive" -name "*.md" -type f
 ```
 $AGENT_VAULT/_misc/archive/tasks/<owner>/<repo>/<task>/schema.md
 $AGENT_VAULT/_misc/archive/tasks/<owner>/<repo>/<task>/review.md
-$AGENT_VAULT/_misc/archive/tasks/<owner>/<repo>/<task>/triage.md
+# (legacy tasks only) $AGENT_VAULT/_misc/archive/tasks/<owner>/<repo>/<task>/triage.md
 ```
