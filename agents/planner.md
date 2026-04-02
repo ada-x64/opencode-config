@@ -158,6 +158,31 @@ notes, existing schemas, and online documentation or references. Summarize
 key findings in the schema's **Reference** section so the implementor has
 full context without needing to re-read the same sources.
 
+### Vault Notes Lookup
+
+Before diving into code, check the vault for existing reference notes about
+the target repository and its org. Run these commands early in exploration:
+
+1. **Check for repo-specific notes:**
+   ```bash
+   ls "$AGENT_VAULT/repo-notes/<owner>/<repo>/" 2>/dev/null
+   ```
+   If the directory exists and contains files, read each note that looks
+   relevant to the current task.
+
+2. **Check for org-wide conventions:**
+   ```bash
+   ls "$AGENT_VAULT/repo-notes/<owner>/_conventions/" 2>/dev/null
+   ```
+   If the directory exists, read all convention notes — they apply to every
+   repo in the org (e.g., build-tool requirements, naming conventions).
+
+3. **Incorporate findings** into the schema's **Reference** section with
+   vault-relative citations (e.g., `repo-notes/nanvix/_conventions/bootstrap-script.md`).
+
+If neither directory exists or both are empty, move on — not every repo has
+vault notes yet.
+
 ### Citations
 
 Always cite sources you read during exploration and design. This includes:
