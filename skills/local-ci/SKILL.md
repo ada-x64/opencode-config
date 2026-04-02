@@ -60,41 +60,45 @@ bash ~/.config/opencode/skills/local-ci/act.sh -W .github/workflows/ci.yml -v
 
 ## Key `gh act` Flags
 
-| Flag | Description |
-|------|-------------|
-| `-W .github/workflows/FILE.yml` | Run a specific workflow file |
-| `-j JOB_ID` | Run a specific job by its ID |
-| `-n` | Dry run — validate without creating containers |
-| `-v` | Verbose output |
-| `--list` | List all workflows and jobs |
-| `-e EVENT.json` | Provide a custom event payload |
-| `-s SECRET=value` | Pass a secret to actions |
-| `--env VAR=value` | Set an environment variable |
-| `--matrix key:value` | Filter matrix configuration |
-| `-P platform=image` | Use a custom Docker image for a platform |
-| `--reuse` | Keep containers between runs (faster iteration) |
-| `--rm` | Remove containers after failure |
+| Flag                            | Description                                     |
+| ------------------------------- | ----------------------------------------------- |
+| `-W .github/workflows/FILE.yml` | Run a specific workflow file                    |
+| `-j JOB_ID`                     | Run a specific job by its ID                    |
+| `-n`                            | Dry run — validate without creating containers  |
+| `-v`                            | Verbose output                                  |
+| `--list`                        | List all workflows and jobs                     |
+| `-e EVENT.json`                 | Provide a custom event payload                  |
+| `-s SECRET=value`               | Pass a secret to actions                        |
+| `--env VAR=value`               | Set an environment variable                     |
+| `--matrix key:value`            | Filter matrix configuration                     |
+| `-P platform=image`             | Use a custom Docker image for a platform        |
+| `--reuse`                       | Keep containers between runs (faster iteration) |
+| `--rm`                          | Remove containers after failure                 |
 
 ## Debugging CI Failures
 
 Follow this workflow:
 
 1. **List available workflows and jobs:**
+
    ```bash
    bash ~/.config/opencode/skills/local-ci/act.sh --list
    ```
 
 2. **Run the failing workflow:**
+
    ```bash
    bash ~/.config/opencode/skills/local-ci/act.sh -W .github/workflows/ci.yml -v
    ```
 
 3. **Isolate the failing job** if the workflow has multiple jobs:
+
    ```bash
    bash ~/.config/opencode/skills/local-ci/act.sh -W .github/workflows/ci.yml -j <job-id> -v
    ```
 
 4. **Iterate on fixes** — use `--reuse` to keep containers alive between runs:
+
    ```bash
    bash ~/.config/opencode/skills/local-ci/act.sh -W .github/workflows/ci.yml -j <job-id> --reuse
    ```
@@ -108,16 +112,16 @@ Follow this workflow:
 
 _Check each repository's `.github/workflows/` directory for the current list._
 
-| Repository | Workflow(s) |
-|------------|------------|
-| `nanvix/` | `ci.yml`, `verus-update.yml`, `cargo-upgrade.yml`, `branch-up-to-date.yml`, and others |
-| `zutils/` | `ci.yml`, `release.yml` |
-| `nanvix-python/` | `ci.yml` |
-| `bzip2/` | `nanvix-ci.yml` |
-| `zlib/` | `nanvix-ci.yml`, `cmake.yml`, `fuzz.yml`, `configure.yml` |
-| `sqlite/` | `nanvix-ci.yml` |
-| `nanvix-hello-c/` | `nanvix-ci.yml` |
-| `openssl/` | `cross-compiles.yml`, `make-release.yml`, and others |
+| Repository        | Workflow(s)                                                                            |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| `nanvix/`         | `ci.yml`, `verus-update.yml`, `cargo-upgrade.yml`, `branch-up-to-date.yml`, and others |
+| `zutils/`         | `ci.yml`, `release.yml`                                                                |
+| `nanvix-python/`  | `ci.yml`                                                                               |
+| `bzip2/`          | `nanvix-ci.yml`                                                                        |
+| `zlib/`           | `nanvix-ci.yml`, `cmake.yml`, `fuzz.yml`, `configure.yml`                              |
+| `sqlite/`         | `nanvix-ci.yml`                                                                        |
+| `nanvix-hello-c/` | `nanvix-ci.yml`                                                                        |
+| `openssl/`        | `cross-compiles.yml`, `make-release.yml`, and others                                   |
 
 ## Troubleshooting
 

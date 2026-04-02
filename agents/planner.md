@@ -194,10 +194,12 @@ its **Write Mode** instructions. The three post-work steps are **mandatory**:
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
 **Events requiring triage entries:**
+
 - Schema written to the vault (type: `activity`)
 - GitHub issue created for the schema (type: `activity`)
 
 **Icon selection:** When calling `notify_triage`, pass `planner` as the icon:
+
 ```bash
 notify_triage activity "<owner>/<repo>/<task>" "Schema Written" $'• Created schema with N commit groups\n• Issue #N linked' "" "planner"
 ```

@@ -40,6 +40,7 @@ Use the Task tool to dispatch subagents.
 ### `@auto-auditor` — full-repository or scoped audit
 
 Dispatch for any full-repo or scoped quality analysis. The auto-auditor will:
+
 - Probe for language and available tools
 - Run all available static analysis tools (graceful degradation if tools absent)
 - Optionally run the test suite and collect coverage data
@@ -48,6 +49,7 @@ Dispatch for any full-repo or scoped quality analysis. The auto-auditor will:
 - Return a one-paragraph summary
 
 Provide the auto-auditor with:
+
 - `repo_path` — absolute path to the repository (e.g. `$AGENT_REPOS/<owner>/<repo>`)
 - `label` — short identifier for the report filename (e.g. `full-audit`, `security-pass`, `auth-module`)
 - `scope` — path prefix, glob, or `"full"` (optional; defaults to full repository)
@@ -57,6 +59,7 @@ Provide the auto-auditor with:
 
 Dispatch when the user also wants a structured review of staged changes or a
 specific branch diff, within the same audit session. The reviewer:
+
 - Checks staged changes or latest commit
 - Tags findings with severity and category
 - Writes to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`
@@ -68,6 +71,7 @@ one session.
 ## Direct Work (No Subagent)
 
 Handle directly — without dispatching a subagent — when:
+
 - The user asks questions about an existing audit report (read and explain)
 - The user wants to compare two audit reports over time
 - The user asks about the audit report format or how to interpret findings

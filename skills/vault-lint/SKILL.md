@@ -36,31 +36,31 @@ bash ~/.config/opencode/skills/vault-lint/lint.sh --schemas-only ada-x64/agent-c
 
 ### Schemas (`$AGENT_VAULT/tasks/**/schema.md`)
 
-| Check | Rule |
-|-------|------|
-| YAML frontmatter | Must be present (opening `---`) |
-| `repo` property | Required in frontmatter |
-| `date` property | Required in frontmatter |
-| `status` property | Required; must be `todo`, `in progress`, or `complete` |
-| H1 heading | Must be present after frontmatter |
-| `## Problem` | Required section |
-| `## Approach` | Required section |
-| `## Todos` | Required section |
-| `## Files changed` | Required section |
-| `issue` property | Warning if missing (not a hard error) |
+| Check              | Rule                                                   |
+| ------------------ | ------------------------------------------------------ |
+| YAML frontmatter   | Must be present (opening `---`)                        |
+| `repo` property    | Required in frontmatter                                |
+| `date` property    | Required in frontmatter                                |
+| `status` property  | Required; must be `todo`, `in progress`, or `complete` |
+| H1 heading         | Must be present after frontmatter                      |
+| `## Problem`       | Required section                                       |
+| `## Approach`      | Required section                                       |
+| `## Todos`         | Required section                                       |
+| `## Files changed` | Required section                                       |
+| `issue` property   | Warning if missing (not a hard error)                  |
 
 ### Reviews (`$AGENT_VAULT/tasks/**/review.md`)
 
-| Check | Rule |
-|-------|------|
-| YAML frontmatter | Must be present (opening `---`) |
-| `repo` property | Required in frontmatter |
-| `date` property | Required in frontmatter |
-| `status` property | Required; must be `todo`, `in progress`, or `complete` |
-| H1 heading | Must start with `# Review:` |
-| `## Verdict:` | Required section |
-| Per-issue `**Severity:**` | Required for each `### N.` issue section |
-| Per-issue `**Category:**` | Required for each `### N.` issue section |
+| Check                     | Rule                                                   |
+| ------------------------- | ------------------------------------------------------ |
+| YAML frontmatter          | Must be present (opening `---`)                        |
+| `repo` property           | Required in frontmatter                                |
+| `date` property           | Required in frontmatter                                |
+| `status` property         | Required; must be `todo`, `in progress`, or `complete` |
+| H1 heading                | Must start with `# Review:`                            |
+| `## Verdict:`             | Required section                                       |
+| Per-issue `**Severity:**` | Required for each `### N.` issue section               |
+| Per-issue `**Category:**` | Required for each `### N.` issue section               |
 
 ### Bash scripts (`~/.config/opencode/skills/**/*.sh`)
 

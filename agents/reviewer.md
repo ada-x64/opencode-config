@@ -147,9 +147,11 @@ After writing the review file, load the `vault-triage` skill and follow its
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
 **Events requiring triage entries:**
+
 - Review completed (type: `activity` — include total finding count and max severity)
 
 **Icon selection:** When calling `notify_triage`, pass `reviewer` as the icon and an outcome semantic key:
+
 - 0 high+ findings → semantic key `clean` (resolves to 🟢)
 - Only nit/low findings → semantic key `warn` (resolves to 🟡)
 - Any high/critical findings → semantic key `reject` (resolves to 🔴)

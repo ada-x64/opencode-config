@@ -201,10 +201,12 @@ step-by-step within a repository.
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
 The caller (primary agent or user) will provide:
+
 - The **repository path** to work in
 - The **task directory** at `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/`
 
 Set these as shell variables at the start of your session:
+
 ```bash
 task_dir="$AGENT_VAULT/tasks/<owner>/<repo>/<task>"
 schema_file="$task_dir/schema.md"
@@ -335,10 +337,12 @@ post-work steps are **mandatory**:
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
 **Events requiring triage entries:**
+
 - Commit group completed (type: `activity` — include group number and validation result; `activity` fires at default/non-audible priority since the user is watching)
 - Full implementation complete (type: `activity` — include total groups and branch name)
 
 **Icon selection:** When calling `notify_triage`, pass `implementor` as the icon:
+
 ```bash
 notify_triage activity "<owner>/<repo>/<task>" "Commit Group 1 Ready" $'• Updated 6 scripts\n• Tests passing ✓' "" "implementor"
 ```

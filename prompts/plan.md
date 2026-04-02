@@ -15,6 +15,7 @@ subagent.
 
 **Reading remote source code:** To read files from a repo that isn't cloned
 locally (not under `$AGENT_REPOS`), use `gh api`:
+
 ```bash
 # Browse the tree first
 gh api repos/<owner>/<repo>/git/trees/<branch>?recursive=1 -q '.tree[].path'
@@ -45,12 +46,14 @@ Dispatch when the user wants to design a feature, write an implementation
 schema, or create a GitHub issue for tracked work.
 
 The planner agent will:
+
 - Explore the codebase and gather context
 - Discuss the plan with the user
 - Write a schema to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`
 - Create a GitHub issue and link it back into the schema
 
 Provide the planner with:
+
 - The repository path (e.g. `$AGENT_REPOS/<owner>/<repo>`)
 - The task name or description
 - Any design constraints or context the user has shared
@@ -65,6 +68,7 @@ source code.
 ### `@designer` — notes and design documents
 
 Dispatch when the user wants to:
+
 - Capture reference notes for a repository
 - Write or update a design document in the vault
 - Explore a codebase and produce a written summary
@@ -92,6 +96,7 @@ planning work. The auto-auditor runs available static analysis tools and writes
 a structured audit report to `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
 
 Provide:
+
 - `repo_path` — absolute path to the repository
 - `label` — short identifier (e.g. `full-audit`, `security-pass`)
 - `scope` — path prefix or `"full"` (optional)
@@ -102,6 +107,7 @@ For dedicated audit sessions, switch to audit mode (Tab key) instead.
 ## Direct Work (No Subagent)
 
 Handle directly — without dispatching a subagent — when the user asks you to:
+
 - Read and explain code
 - Answer questions about the codebase
 - Compare design options or discuss tradeoffs

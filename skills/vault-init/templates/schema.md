@@ -22,13 +22,13 @@ date: YYYY-MM-DD
 
 ### Frontmatter fields
 
-| Field | Description |
-|-------|-------------|
-| `repo` | `<owner>/<repo>` identifier |
-| `issue` | GitHub issue link (e.g. `[#1](https://github.com/owner/repo/issues/1)`) or blank |
-| `branch` | Target branch name |
-| `status` | `todo` / `in progress` / `complete` |
-| `date` | Creation date (YYYY-MM-DD) |
+| Field    | Description                                                                      |
+| -------- | -------------------------------------------------------------------------------- |
+| `repo`   | `<owner>/<repo>` identifier                                                      |
+| `issue`  | GitHub issue link (e.g. `[#1](https://github.com/owner/repo/issues/1)`) or blank |
+| `branch` | Target branch name                                                               |
+| `status` | `todo` / `in progress` / `complete`                                              |
+| `date`   | Creation date (YYYY-MM-DD)                                                       |
 
 ## Problem
 
@@ -108,10 +108,10 @@ Table of all files that will be created or modified, with the nature of each cha
 ```markdown
 ## Files changed
 
-| File | Nature |
-|------|--------|
-| `path/to/file.py` | <Brief description of changes> |
-| `path/to/new-file.md` | New: <description> |
+| File                  | Nature                         |
+| --------------------- | ------------------------------ |
+| `path/to/file.py`     | <Brief description of changes> |
+| `path/to/new-file.md` | New: <description>             |
 ```
 
 ## Notes (optional)

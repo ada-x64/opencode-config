@@ -31,8 +31,8 @@ bash ~/.config/opencode/skills/vault-gc/gc.sh
 
 ## What Gets Moved
 
-| From | To |
-|------|----|
+| From                                        | To                                                        |
+| ------------------------------------------- | --------------------------------------------------------- |
 | `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/` | `$AGENT_VAULT/_misc/archive/tasks/<owner>/<repo>/<task>/` |
 
 The entire task directory (schema.md, review.md, triage.md) is moved as a unit.
