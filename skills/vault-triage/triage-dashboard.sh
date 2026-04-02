@@ -31,27 +31,28 @@ for triage in "${triages[@]}"; do
 	type="$(fm_read "$triage" "type" "unknown")"
 	agent="$(fm_read "$triage" "agent" "unknown")"
 	repo="$(fm_read "$triage" "repo" "unknown")"
-	date="$(fm_read "$triage" "date" "unknown")"
+	entry_date="$(fm_read "$triage" "date" "unknown")"
 
 	link="[[${rel%.md}]]"
 
 	case "$status" in
 	pending)
-		pending+=("- [ ] $link — **$type** — $agent — $repo — $date")
+		pending+=("- [ ] $link — **$type** — $agent — $repo — $entry_date")
 		((++pending_count))
 		[[ "$type" == "escalation" ]] && ((++escalation_count)) # pending-only; drives --notify-summary priority
 		;;
 	addressed)
-		addressed+=("- [x] $link — **$type** — $agent — $repo — $date")
+		addressed+=("- [x] $link — **$type** — $agent — $repo — $entry_date")
 		((++addressed_count))
 		;;
 	dismissed)
-		dismissed+=("- [x] ~~$link~~ — **$type** — $agent — $repo — $date _(dismissed)_")
+		dismissed+=("- [x] ~~$link~~ — **$type** — $agent — $repo — $entry_date _(dismissed)_")
 		((++dismissed_count))
 		;;
 	*)
-		pending+=("- [ ] $link — **$type** — $agent — $repo — $date")
+		pending+=("- [ ] $link — **$type** — $agent — $repo — $entry_date")
 		((++pending_count))
+		[[ "$type" == "escalation" ]] && ((++escalation_count))
 		;;
 	esac
 done
@@ -113,6 +114,9 @@ fi
 		echo ""
 		if [[ ${#addressed[@]} -gt 0 ]]; then
 			printf '%s\n' "${addressed[@]}"
+		fi
+		if [[ ${#dismissed[@]} -gt 0 && ${#addressed[@]} -gt 0 ]]; then
+			echo ""
 		fi
 		if [[ ${#dismissed[@]} -gt 0 ]]; then
 			printf '%s\n' "${dismissed[@]}"
