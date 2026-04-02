@@ -179,6 +179,7 @@ Plan ──────► Implement ──────► Review
 - **Write access:** Full vault mutations (schemas and drafts); GitHub issue
   creation and project board adds (both require user approval via `ask`);
   `gh pr comment*` (ask — to cross-reference PRs when creating a related issue).
+- **Post-schema:** Archives source drafts from `$AGENT_VAULT/draft/` to `$AGENT_VAULT/_misc/archive/draft/` with a date prefix.
 - **Does not:** Implement anything; write outside the vault.
 
 #### `@project-manager` — issue lifecycle and project board
