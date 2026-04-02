@@ -114,9 +114,15 @@ echo "Rsync complete."
 AOE_SRC="$SCRIPT_DIR/docker/aoe-config.toml"
 AOE_DEST="${HOME}/.config/aoe/config.toml"
 if [[ -f "$AOE_SRC" ]]; then
-	mkdir -p "$(dirname "$AOE_DEST")"
-	cp "$AOE_SRC" "$AOE_DEST"
-	echo "AoE config deployed to: $AOE_DEST"
+	if [[ -n "${AGENT_VAULT:-}" ]]; then
+		mkdir -p "$(dirname "$AOE_DEST")"
+		sed -e "s|{{AGENT_VAULT}}|${AGENT_VAULT}|g" \
+			-e "s|{{OPENCODE_CONFIG_SRC}}|${OPENCODE_CONFIG_SRC}|g" \
+			"$AOE_SRC" >"$AOE_DEST"
+		echo "AoE config deployed to: $AOE_DEST"
+	else
+		echo "Warning: AGENT_VAULT not set — skipping AoE config deployment." >&2
+	fi
 fi
 
 # --- Step 4: Resolve {{CONFIG_DIR}} in target agent files ---
