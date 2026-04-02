@@ -1,8 +1,8 @@
 # AoE (Agent of Empires) configuration template
 #
 # This file is a versioned template. To deploy:
-#   cp ~/.config/opencode/docker/aoe-config.toml ~/.config/aoe/config.toml
-#   # or: ln -sf ~/.config/opencode/docker/aoe-config.toml ~/.config/aoe/config.toml
+#   cp "$OPENCODE_CONFIG_SRC/docker/aoe-config.toml" ~/.config/aoe/config.toml
+#   # or: ln -sf "$OPENCODE_CONFIG_SRC/docker/aoe-config.toml" ~/.config/aoe/config.toml
 #
 # Requires on host:
 #   export GH_TOKEN=$(gh auth token 2>/dev/null)
@@ -20,6 +20,7 @@ memory_limit = "8g"
 mount_ssh = false
 
 extra_volumes = [
+    # Adjust vault path to match your host layout (e.g. ~/winhome/obsidian/agent.obs on WSL)
     "$HOME/obsidian/agent.obs:/root/obsidian/agent.obs",
     "$HOME/.config/opencode:/root/.config/opencode",
 ]
