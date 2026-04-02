@@ -96,7 +96,9 @@
       "ntfy publish*": "allow",
       "source ~/.config/opencode/skills/vault-triage/notify.sh*": "allow",
       "notify_triage *": "allow",
-      "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": "allow"
+      "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": "allow",
+      "bash ~/.config/opencode/skills/gh-helpers/create-issue.sh*": "ask",
+      "bash ~/.config/opencode/skills/gh-helpers/create-pr.sh*": "ask"
     }
   }
 }

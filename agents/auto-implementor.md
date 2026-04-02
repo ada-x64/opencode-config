@@ -93,6 +93,7 @@ permission:
     "gh issue edit*": allow
     "gh issue comment*": allow
     "gh pr comment*": allow
+    "bash ~/.config/opencode/skills/gh-helpers/create-pr.sh*": ask
     # Vault write (filesystem)
     "mv *": allow
     "rm *": allow

@@ -307,6 +307,7 @@ detailed instructions and references to bundled scripts.
 | --------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `archive`       | `skills/archive/`       | Find and read archived schemas and reviews from the vault                                                                                |
 | `fleet-schemas` | `skills/fleet-schemas/` | Find and read cross-repo (fleet) schemas                                                                                                 |
+| `gh-helpers`    | `skills/gh-helpers/`    | Create GitHub issues and PRs from schema files and commit history via helper scripts                                                     |
 | `local-ci`      | `skills/local-ci/`      | Run and debug GitHub Actions workflows locally via `gh act` (includes `act.sh` wrapper)                                                  |
 | `repo-notes`    | `skills/repo-notes/`    | Find and read repository reference notes from the vault                                                                                  |
 | `reviews`       | `skills/reviews/`       | Find and read code review files from the vault                                                                                           |
@@ -323,6 +324,8 @@ detailed instructions and references to bundled scripts.
 Some skills include executable scripts:
 
 - `local-ci/act.sh` — wrapper around `gh act` for local CI runs
+- `gh-helpers/create-issue.sh` — creates a GitHub issue from a schema file (title from H1, body in `<details>` block)
+- `gh-helpers/create-pr.sh` — creates a PR with body generated from commit log and diff stats
 - `vault-init/init.sh` — idempotent vault directory initializer
 - `vault-triage/notify.sh` — `notify_triage` bash function for push alerts
 - `vault-triage/triage-dashboard.sh` — generates `$AGENT_VAULT/triage-inbox.md`
