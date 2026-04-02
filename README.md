@@ -69,9 +69,40 @@ vault's `AGENTS.md` for conventions.
 
 | Variable | Description |
 |----------|-------------|
+| `OPENCODE_CONFIG_SRC` | Path to the opencode config source directory (defaults to `~/.config/opencode`) |
 | `AGENT_VAULT` | Path to the agent vault (e.g. `~/obsidian/agent.obs`) |
 | `AGENT_REPOS` | Path to local repository checkouts (e.g. `~/repos`) |
 | `NTFY_TOPIC` | ntfy.sh topic for push notifications (optional; falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt`) |
+
+## Installation
+
+Use `install.sh` to deploy config files from a repo checkout to the opencode config directory:
+
+```bash
+# Clone the repo somewhere outside ~/.config/opencode
+git clone https://github.com/ada-x64/opencode-config.git ~/repos/ada-x64/opencode-config
+
+# Deploy using the host profile (targets ~/.config/opencode by default)
+bash ~/repos/ada-x64/opencode-config/install.sh --profile host
+
+# Deploy to a custom directory
+bash ~/repos/ada-x64/opencode-config/install.sh --profile host --config-dir /path/to/config
+```
+
+The install script:
+1. Copies repo files to the target config directory (rsync, excluding `.git/`, `profiles/`, `install.sh`)
+2. Resolves `{{CONFIG_DIR}}` placeholders in agent bash permission patterns
+3. Runs `build.sh` in the target directory for model + `external_directory` stamping
+
+Profiles are in `profiles/`:
+- `host.env` — standard Linux/WSL workstation (`CONFIG_DIR="$HOME/.config/opencode"`)
+- `docker.env` — Docker containers (`CONFIG_DIR="/root/.config/opencode"`)
+
+Set `OPENCODE_CONFIG_SRC` to the repo checkout path so agents can reference skill scripts at runtime:
+
+```bash
+export OPENCODE_CONFIG_SRC="$HOME/repos/ada-x64/opencode-config"
+```
 
 ## Docker Sandbox
 
@@ -87,7 +118,7 @@ docker/
 ### Building the image
 
 ```bash
-docker build -t opencode-sandbox:latest ~/.config/opencode/docker/
+docker build -t opencode-sandbox:latest "$OPENCODE_CONFIG_SRC/docker/"
 ```
 
 ### AoE config
@@ -96,10 +127,10 @@ docker build -t opencode-sandbox:latest ~/.config/opencode/docker/
 
 ```bash
 # Copy (one-time):
-cp ~/.config/opencode/docker/aoe-config.toml ~/.config/aoe/config.toml
+cp "$OPENCODE_CONFIG_SRC/docker/aoe-config.toml" ~/.config/aoe/config.toml
 
 # Or symlink (auto-updates on pull):
-ln -sf ~/.config/opencode/docker/aoe-config.toml ~/.config/aoe/config.toml
+ln -sf "$OPENCODE_CONFIG_SRC/docker/aoe-config.toml" ~/.config/aoe/config.toml
 ```
 
 The config sets up: sandbox-by-default, custom image, vault bind-mount (RW), credential passthrough (`GH_TOKEN`, `GIT_CONFIG_COUNT`), and resource limits (4 CPU / 8 GB RAM).

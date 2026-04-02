@@ -1,6 +1,6 @@
 # opencode-config — Repository Overview
 
-This repository (`ada-x64/opencode-config`, living at `~/.config/opencode`) is
+This repository (`ada-x64/opencode-config`, deployed to `$OPENCODE_CONFIG_SRC`) is
 the opencode configuration for this workstation. It defines the AI models,
 operation modes, subagent personas, skill libraries, and bash permission
 policies that govern every agent session.
@@ -15,7 +15,7 @@ Model configuration is managed via `build.yaml` + `build.sh` (see
 ## Repository Layout
 
 ```
-~/.config/opencode/
+$OPENCODE_CONFIG_SRC/
 ├── opencode.json          # Core config: model, mode prompts, global bash permissions
 ├── build.yaml             # Model tier definitions (source of truth for model assignment)
 ├── build.sh               # Applies build.yaml → opencode.json + agent frontmatter
@@ -380,7 +380,7 @@ access it directly via standard filesystem tools — no app needs to be running.
 
 - **Read:** Read tool, `cat`, `find`, `rg` — standard file reads and searches
 - **Create/modify:** Write and Edit tools — agents use these directly for vault file writes
-- **Frontmatter:** `source ~/.config/opencode/skills/lib/frontmatter.sh` then `fm_read file.md "key"` to read; `fm_write file.md "key" "value"` to write
+- **Frontmatter:** `source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh"` then `fm_read file.md "key"` to read; `fm_write file.md "key" "value"` to write
 - **Move/rename:** `mv`
 - **Delete:** `rm`
 - **List:** `find "$AGENT_VAULT" -name "*.md"`
@@ -391,7 +391,7 @@ If `$AGENT_VAULT` is unset or the vault directory is missing, load the
 `vault-init` skill and run:
 
 ```bash
-bash ~/.config/opencode/skills/vault-init/init.sh
+bash "$OPENCODE_CONFIG_SRC/skills/vault-init/init.sh"
 ```
 
 The script is idempotent and safe to run multiple times.
@@ -447,8 +447,8 @@ dispatches it automatically after each commit.
 2. Open the YAML frontmatter with `"*": deny` as the first bash rule.
 3. Copy the full read-only baseline from `agents/designer.md` (or any agent).
 4. Add only the write permissions the new agent actually needs.
-5. Add `external_directory` entries if the agent needs paths beyond `~/repos/`
-   and `~/winhome/obsidian/agent.obs/`.
+5. Add `external_directory` entries if the agent needs paths beyond `$AGENT_REPOS/`
+   and `$AGENT_VAULT/`.
 6. Write the system prompt in the Markdown body after the closing `---`.
 7. Add the agent to the permission table in
    `repo-notes/ada-x64/opencode-config/agent-permissions.md` in the vault.
@@ -519,7 +519,7 @@ script strips the prefix for the PNG URL and prepends ⚙️ to the emoji
 automatically. Full key table in `skills/vault-triage/SKILL.md`.
 
 ```bash
-source ~/.config/opencode/skills/vault-triage/notify.sh
+source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh"
 notify_triage activity "owner/repo/task" "Commit Group 2 Complete" "• All tests passing" "" "auto-implementor" "activity"
 notify_triage escalation "owner/repo/task" "Review Loop Exhausted on Group 3" "• High findings persist" "" "auto-implementor" "escalation"
 ```
@@ -536,11 +536,12 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 
 ## Environment Variable Reference
 
-| Variable      | Required            | Description                           | Fallback                                  |
-| ------------- | ------------------- | ------------------------------------- | ----------------------------------------- |
-| `AGENT_VAULT` | Yes (for vault ops) | Absolute path to the Obsidian vault   | None — must be set                        |
-| `AGENT_REPOS` | Yes (for repo ops)  | Absolute path to local repo checkouts | None — must be set                        |
-| `NTFY_TOPIC`  | No                  | ntfy.sh topic for push notifications  | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
+| Variable              | Required            | Description                                   | Fallback                                  |
+| --------------------- | ------------------- | --------------------------------------------- | ----------------------------------------- |
+| `OPENCODE_CONFIG_SRC` | No                  | Absolute path to the opencode config source directory | `$HOME/.config/opencode`          |
+| `AGENT_VAULT`         | Yes (for vault ops) | Absolute path to the Obsidian vault           | None — must be set                        |
+| `AGENT_REPOS`         | Yes (for repo ops)  | Absolute path to local repo checkouts         | None — must be set                        |
+| `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications          | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
 Both path variables are checked at the top of any agent session that uses
 the vault or operates on a repository. The `vault-init` skill can create and
