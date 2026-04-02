@@ -34,24 +34,23 @@ for triage in "${triages[@]}"; do
 	date="$(fm_read "$triage" "date" "unknown")"
 
 	link="[[${rel%.md}]]"
-	row="| $link | $type | $agent | $repo | $date |"
 
 	case "$status" in
 	pending)
-		pending+=("$row")
+		pending+=("- [ ] $link — **$type** — $agent — $repo — $date")
 		((++pending_count))
 		[[ "$type" == "escalation" ]] && ((++escalation_count)) # pending-only; drives --notify-summary priority
 		;;
 	addressed)
-		addressed+=("$row")
+		addressed+=("- [x] $link — **$type** — $agent — $repo — $date")
 		((++addressed_count))
 		;;
 	dismissed)
-		dismissed+=("$row")
+		dismissed+=("- [x] ~~$link~~ — **$type** — $agent — $repo — $date _(dismissed)_")
 		((++dismissed_count))
 		;;
 	*)
-		pending+=("$row")
+		pending+=("- [ ] $link — **$type** — $agent — $repo — $date")
 		((++pending_count))
 		;;
 	esac
@@ -97,34 +96,29 @@ fi
 	echo ""
 	echo "_Generated: $(date -u '+%Y-%m-%d %H:%M UTC')_"
 	echo ""
-	echo "## Pending"
+	echo "> [!info] Checkboxes reflect frontmatter \`status\`. To mark an item as handled,"
+	echo "> run: \`bash ~/.config/opencode/skills/vault-triage/triage-resolve.sh <file> [addressed|dismissed]\`"
+	echo ""
+	echo "## Pending ($pending_count)"
 	echo ""
 	if [[ ${#pending[@]} -gt 0 ]]; then
-		echo "| Entry | Type | Agent | Repo | Date |"
-		echo "|-------|------|-------|------|------|"
 		printf '%s\n' "${pending[@]}"
 	else
 		echo "_No pending triage items._"
 	fi
 	echo ""
-	echo "## Addressed"
-	echo ""
-	if [[ ${#addressed[@]} -gt 0 ]]; then
-		echo "| Entry | Type | Agent | Repo | Date |"
-		echo "|-------|------|-------|------|------|"
-		printf '%s\n' "${addressed[@]}"
-	else
-		echo "_None._"
-	fi
-	echo ""
-	echo "## Dismissed"
-	echo ""
-	if [[ ${#dismissed[@]} -gt 0 ]]; then
-		echo "| Entry | Type | Agent | Repo | Date |"
-		echo "|-------|------|-------|------|------|"
-		printf '%s\n' "${dismissed[@]}"
-	else
-		echo "_None._"
+	if [[ $((addressed_count + dismissed_count)) -gt 0 ]]; then
+		echo "<details>"
+		echo "<summary>Handled ($addressed_count addressed, $dismissed_count dismissed)</summary>"
+		echo ""
+		if [[ ${#addressed[@]} -gt 0 ]]; then
+			printf '%s\n' "${addressed[@]}"
+		fi
+		if [[ ${#dismissed[@]} -gt 0 ]]; then
+			printf '%s\n' "${dismissed[@]}"
+		fi
+		echo ""
+		echo "</details>"
 	fi
 } >"$output"
 
