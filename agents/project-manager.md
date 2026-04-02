@@ -102,17 +102,17 @@ permission:
     "gh label edit*": allow
     "gh label delete*": allow
     # Vault tools
-    "bash ~/.config/opencode/skills/vault-gc/gc.sh*": allow
-    "bash ~/.config/opencode/skills/vault-lint/lint.sh*": allow
+    "bash {{CONFIG_DIR}}/skills/vault-gc/gc.sh*": allow
+    "bash {{CONFIG_DIR}}/skills/vault-lint/lint.sh*": allow
     # Vault directory creation
     "mkdir *": allow
     # Notifications
     "ntfy publish*": allow
     # Triage skill (write + notify + inbox)
-    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
     "notify_triage *": allow
     "curl *": allow
-    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
+    "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow
     # Hard denies — PM never touches code or git history
     "git add*": deny
     "git commit*": deny
@@ -141,10 +141,10 @@ You are the **project manager agent**. Your job is to keep GitHub project state 
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
-If `$AGENT_VAULT` is not set, use `~/winhome/obsidian/agent.obs` directly. Verify the vault exists before any operation:
+If `$AGENT_VAULT` is not set, abort with an error. Verify the vault exists before any operation:
 
 ```bash
-vault="${AGENT_VAULT:-$HOME/winhome/obsidian/agent.obs}"
+vault="${AGENT_VAULT:?AGENT_VAULT must be set}"
 [[ -d "$vault" ]] || { echo "Error: vault not found at $vault" >&2; exit 1; }
 ```
 
@@ -173,12 +173,12 @@ Human-invoked sessions where PM performs GitHub and vault operations on request.
 
 1. Parse the target scope (owner/repo, or "all vault repos").
 2. Apply vault scope guard.
-3. Optionally run `bash ~/.config/opencode/skills/vault-lint/lint.sh` and surface any violations.
+3. Optionally run `bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh` and surface any violations.
 4. For bulk operations affecting more than one item: enumerate all affected items, present a numbered summary table ("Will close N issues: #12, #14, #17 …"), and wait for explicit user "yes" before executing.
 5. Execute GitHub mutations (`gh issue close`, `gh project item-edit`, etc.) for each item.
 6. If you created an issue during this session that relates to an open PR (and the issue is not the PR's own tracking issue), post a cross-reference comment on the PR: `gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."` Skip if no issue was created or no related PR exists.
 7. Update `$vault/projects/<owner>/<repo>.md` (create if absent, update `last_synced` and tables).
-8. After GitHub mutations, optionally run `bash ~/.config/opencode/skills/vault-gc/gc.sh`.
+8. After GitHub mutations, optionally run `bash $OPENCODE_CONFIG_SRC/skills/vault-gc/gc.sh`.
 
 **Common invocation phrasings PM recognises:**
 
@@ -191,12 +191,12 @@ Human-invoked sessions where PM performs GitHub and vault operations on request.
 
 **Bulk-close sequence (most common operation):**
 
-1. `bash ~/.config/opencode/skills/vault-lint/lint.sh` — surface format violations
-2. `bash ~/.config/opencode/skills/vault-gc/gc.sh --dry-run` — preview archivable tasks
+1. `bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh` — surface format violations
+2. `bash $OPENCODE_CONFIG_SRC/skills/vault-gc/gc.sh --dry-run` — preview archivable tasks
 3. Present summary, wait for user "yes"
 4. Close linked GitHub issues and update project board columns
 5. Update `$vault/projects/<owner>/<repo>.md` status documents
-6. `bash ~/.config/opencode/skills/vault-gc/gc.sh` — execute vault archival
+6. `bash $OPENCODE_CONFIG_SRC/skills/vault-gc/gc.sh` — execute vault archival
 7. Report results
 
 **PR status queries** ("What PRs are open?" etc.) are read-only. No triage entry is required for a pure PR status read — only for operations that mutate GitHub or vault state.

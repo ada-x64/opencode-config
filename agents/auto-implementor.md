@@ -181,13 +181,13 @@ permission:
     "vitest*": allow
     "tsc*": allow
     # Shell sourcing (notify helper — trailing * allows && chaining)
-    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
     # notify_triage function (called standalone after sourcing)
     "notify_triage *": allow
     # curl (used by notify.sh send path)
     "curl *": allow
     # Triage skill (inbox regeneration)
-    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
+    "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow
   external_directory:
     "{env:AGENT_REPOS}/**": allow
     "{env:AGENT_VAULT}/**": allow
@@ -229,8 +229,8 @@ review_file="$task_dir/review.md"
 Load the notification helper (fails silently if not configured):
 
 ```bash
-source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
-source ~/.config/opencode/skills/lib/frontmatter.sh 2>/dev/null || true
+source $OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh 2>/dev/null || true
+source $OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh 2>/dev/null || true
 ```
 
 ## Behavior
@@ -356,7 +356,7 @@ Read the review. Evaluate:
   1.  Load the `vault-triage` skill.
   2.  Write an `escalation` triage entry directly to `$task_dir/`.
   3.  Send notification: `notify_triage escalation "<owner>/<repo>/<task>" "<one-line summary>"`
-  4.  Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
+  4.  Regenerate inbox: `bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh`
   5.  **Continue to the next commit group.** Do not stop the run.
   6.  If the escalation results in an issue being created and there is a
       related open PR (and the issue is not the PR's own tracking issue),
@@ -370,7 +370,7 @@ the next group:
 1. Load the `vault-triage` skill.
 2. Write a `design-question` triage entry directly to `$task_dir/`.
 3. Send notification: `notify_triage design-question "<owner>/<repo>/<task>" "<one-line summary>"`
-4. Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
+4. Regenerate inbox: `bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh`
 
 **f. Activity entry** — after the review loop completes for this group, load
 the `vault-triage` skill and write an `activity` triage entry to `$task_dir/`.

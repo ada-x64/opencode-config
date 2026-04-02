@@ -90,10 +90,10 @@ permission:
     # Notifications
     "ntfy publish*": allow
     # Triage skill (write + notify + inbox)
-    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
     "notify_triage *": allow
     "curl *": allow
-    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
+    "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow
     # Test/validation suite (read-only observation, no build mutations)
     "cargo test*": allow
     "cargo clippy*": allow

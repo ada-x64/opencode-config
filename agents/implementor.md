@@ -176,13 +176,13 @@ permission:
     "vitest*": allow
     "tsc*": allow
     # Shell sourcing (notify helper — trailing * allows && chaining)
-    "source ~/.config/opencode/skills/vault-triage/notify.sh*": allow
+    "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
     # notify_triage function (called standalone after sourcing)
     "notify_triage *": allow
     # curl (used by notify.sh send path)
     "curl *": allow
     # Triage skill (inbox regeneration)
-    "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
+    "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow
   external_directory:
     "{env:AGENT_REPOS}/**": allow
     "{env:AGENT_VAULT}/**": allow
@@ -229,7 +229,7 @@ review_file="$task_dir/review.md"
 2. Read the schema provided as context.
 3. Read the branch from the schema's frontmatter and switch to it (will prompt for approval):
    ```bash
-   source ~/.config/opencode/skills/lib/frontmatter.sh
+    source $OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh
    branch="$(fm_read "$schema_file" "branch")"
    git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
    ```
