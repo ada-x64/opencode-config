@@ -7,10 +7,10 @@ global:
   # Stamped into every agent's permission.external_directory block.
   # All entries get ": allow". Order is preserved.
   external_directory:
-    - "~/repos/**" # $AGENT_REPOS default
-    - "~/winhome/obsidian/agent.obs/**" # $AGENT_VAULT default
-    - "~/.config/opencode/**" # opencode config
-    - "/tmp/**" # scratch / temp files
+    - "{env:AGENT_REPOS}/**"
+    - "{env:AGENT_VAULT}/**"
+    - "{env:OPENCODE_CONFIG_SRC}/**"
+    - "/tmp/**"
 
 tiers:
   design:

@@ -189,9 +189,9 @@ permission:
     # Triage skill (inbox regeneration)
     "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": allow
   external_directory:
-    "~/repos/**": allow
-    "~/winhome/obsidian/agent.obs/**": allow
-    "~/.config/opencode/**": allow
+    "{env:AGENT_REPOS}/**": allow
+    "{env:AGENT_VAULT}/**": allow
+    "{env:OPENCODE_CONFIG_SRC}/**": allow
     "/tmp/**": allow
   task:
     "*": allow

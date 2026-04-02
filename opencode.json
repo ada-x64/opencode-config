@@ -94,9 +94,9 @@
       "gh project list*": "allow",
       "curl*": "allow",
       "ntfy publish*": "allow",
-      "source ~/.config/opencode/skills/vault-triage/notify.sh*": "allow",
+      "source {env:OPENCODE_CONFIG_SRC}/skills/vault-triage/notify.sh*": "allow",
       "notify_triage *": "allow",
-      "bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh*": "allow"
+      "bash {env:OPENCODE_CONFIG_SRC}/skills/vault-triage/triage-dashboard.sh*": "allow"
     }
   }
 }
