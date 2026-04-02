@@ -295,6 +295,7 @@ After writing the audit report, load the `vault-triage` skill and follow its
 **Events requiring triage entries:**
 
 - Audit report completed (type: `activity` — include critical/high finding counts and top recommendation)
+- Bash command denied by permission model (type: `permissions-request` — load the `vault-triage` skill and write a `permissions-request` entry to `_misc/triage/` describing the denied command, context, and suggested rule)
 
 ## Severity Reference
 

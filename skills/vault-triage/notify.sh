@@ -5,7 +5,7 @@
 #        notify_triage <type> <task> <headline> [body] [file] [icon] [emoji]
 #
 # Parameters:
-#   type     — triage type (activity, escalation, design-question, handoff, run-summary)
+#   type     — triage type (activity, escalation, design-question, handoff, run-summary, permissions-request)
 #   task     — owner/repo/task path (task name extracted for notification title)
 #   headline — short action phrase for the notification title (e.g. "Commit Group 1 Finished")
 #   body     — optional bullet-point detail text for the notification body
@@ -54,6 +54,10 @@ notify_triage() {
 	run-summary)
 		priority="low"
 		tag="memo"
+		;;
+	permissions-request)
+		priority="high"
+		tag="lock"
 		;;
 	esac
 

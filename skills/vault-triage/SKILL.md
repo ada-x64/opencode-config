@@ -350,6 +350,53 @@ context to continue.
 
 ---
 
+### `permissions-request` — bash command blocked by permission model
+
+**Directory:** `_misc/triage/`
+
+**When:** Any time a bash command is denied by the agent's permission model.
+This captures needed permissions that the user may want to add.
+
+**Format:** Structured — must include:
+- **Command** — the exact command string that was denied
+- **Context** — what the agent was trying to accomplish
+- **Suggested rule** — the permission rule to add (e.g. `"./z *": allow`)
+
+**Example:**
+
+```yaml
+---
+type: permissions-request
+agent: auto-implementor
+task: fix-build
+repo: nanvix/microkernel
+date: 2026-04-01
+status: pending
+---
+
+## Command Denied
+
+```
+./z build
+```
+
+## Context
+
+Attempting to run the project's bootstrap build script as specified in commit
+group 1a of the schema. The `./z` script is the standard build entry point
+for all nanvix repositories.
+
+## Suggested Permission Rule
+
+```yaml
+"./z *": allow
+```
+
+Add to `agents/auto-implementor.md` in the build tools section.
+```
+
+---
+
 ## Notification Events by Agent Role
 
 | Agent               | Events                                                   | Type              |
@@ -362,8 +409,9 @@ context to continue.
 | `@auto-implementor` | Design ambiguity resolved                                | `design-question` |
 | `@auto-implementor` | Run complete                                             | `run-summary`     |
 | `@auto-implementor` | Commit group completed                                   | `activity`        |
-| `@auto-auditor`     | Audit report completed (include critical/high counts)    | `activity`        |
-| `@project-manager`  | Bulk operations completed; Vault cleanup; Project sync   | `activity`        |
+| `@auto-auditor`     | Audit report completed (include critical/high counts)    | `activity`            |
+| `@project-manager`  | Bulk operations completed; Vault cleanup; Project sync   | `activity`            |
+| All agents          | Bash command denied by permission model                  | `permissions-request` |
 
 ---
 
@@ -457,10 +505,11 @@ Dismissed. Each row has a wiki-link to the triage file, type, agent, and date.
 All triage types produce desktop toasts (via ntfy subscriber) and phone
 notifications. Priority controls audible alerts on mobile:
 
-| Triage type       | ntfy priority | Phone audible |
-| ----------------- | ------------- | ------------- |
-| `escalation`      | high          | Yes           |
-| `design-question` | high          | Yes           |
-| `activity`        | default       | No            |
-| `handoff`         | default       | No            |
-| `run-summary`     | low           | No            |
+| Triage type           | ntfy priority | Phone audible |
+| --------------------- | ------------- | ------------- |
+| `escalation`          | high          | Yes           |
+| `design-question`     | high          | Yes           |
+| `permissions-request` | high          | Yes           |
+| `activity`            | default       | No            |
+| `handoff`             | default       | No            |
+| `run-summary`         | low           | No            |

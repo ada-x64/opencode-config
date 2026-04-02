@@ -186,6 +186,7 @@ and follow its **Write Mode** instructions. The three post-work steps are
 
 - Repo notes written (type: `activity`)
 - Design document written (type: `activity`)
+- Bash command denied by permission model (type: `permissions-request` — load the `vault-triage` skill and write a `permissions-request` entry to `_misc/triage/` describing the denied command, context, and suggested rule)
 
 **Note:** The designer does not always have a task context. When writing the
 triage entry frontmatter, leave the `task` and `repo` fields empty if there

@@ -149,6 +149,7 @@ After writing the review file, load the `vault-triage` skill and follow its
 **Events requiring triage entries:**
 
 - Review completed (type: `activity` — include total finding count and max severity)
+- Bash command denied by permission model (type: `permissions-request` — load the `vault-triage` skill and write a `permissions-request` entry to `_misc/triage/` describing the denied command, context, and suggested rule)
 
 **Icon selection:** When calling `notify_triage`, pass `reviewer` as the icon and an outcome semantic key:
 

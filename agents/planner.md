@@ -197,6 +197,7 @@ its **Write Mode** instructions. The three post-work steps are **mandatory**:
 
 - Schema written to the vault (type: `activity`)
 - GitHub issue created for the schema (type: `activity`)
+- Bash command denied by permission model (type: `permissions-request` — load the `vault-triage` skill and write a `permissions-request` entry to `_misc/triage/` describing the denied command, context, and suggested rule)
 
 **Icon selection:** When calling `notify_triage`, pass `planner` as the icon:
 
