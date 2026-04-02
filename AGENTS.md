@@ -536,13 +536,13 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 
 ## Environment Variable Reference
 
-| Variable              | Required            | Description                                   | Fallback                                  |
-| --------------------- | ------------------- | --------------------------------------------- | ----------------------------------------- |
-| `OPENCODE_CONFIG_SRC` | No                  | Absolute path to the opencode config source directory | `$HOME/.config/opencode`          |
-| `AGENT_VAULT`         | Yes (for vault ops) | Absolute path to the Obsidian vault           | None — must be set                        |
-| `AGENT_REPOS`         | Yes (for repo ops)  | Absolute path to local repo checkouts         | None — must be set                        |
-| `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications          | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
+| Variable              | Required            | Description                                         | Fallback                                  |
+| --------------------- | ------------------- | --------------------------------------------------- | ----------------------------------------- |
+| `OPENCODE_CONFIG_SRC` | No                  | Absolute path to the opencode config source directory | `$HOME/.config/opencode`                |
+| `AGENT_VAULT`         | Yes (for vault ops) | Absolute path to the Obsidian vault                 | None — must be set                        |
+| `AGENT_REPOS`         | Yes (for repo ops)  | Absolute path to local repo checkouts               | None — must be set                        |
+| `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications                | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
-Both path variables are checked at the top of any agent session that uses
+`AGENT_VAULT` and `AGENT_REPOS` are checked at the top of any agent session that uses
 the vault or operates on a repository. The `vault-init` skill can create and
 populate the vault directory if it does not yet exist.
