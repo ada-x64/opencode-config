@@ -142,7 +142,7 @@ in a repository and write a structured review document.
 After writing the review file, load the `vault-triage` skill and follow its
 **Write Mode** instructions. The three post-work steps are **mandatory**:
 
-1. Write a triage entry to the task directory
+1. Write a triage entry (load `vault-triage` skill for directory routing: `_misc/triage/`, `_misc/activity/`, or `_misc/handoffs/`)
 2. Send a push notification via `notify_triage`
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 

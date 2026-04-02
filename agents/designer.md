@@ -178,7 +178,7 @@ After writing a repo note or design document, load the `vault-triage` skill
 and follow its **Write Mode** instructions. The three post-work steps are
 **mandatory**:
 
-1. Write a triage entry to the task directory
+1. Write a triage entry (load `vault-triage` skill for directory routing: `_misc/triage/`, `_misc/activity/`, or `_misc/handoffs/`)
 2. Send a push notification via `notify_triage`
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
@@ -187,10 +187,9 @@ and follow its **Write Mode** instructions. The three post-work steps are
 - Repo notes written (type: `activity`)
 - Design document written (type: `activity`)
 
-**Note:** The designer does not always operate within a task context. If there
-is no task directory for the current work, write the triage entry to
-`$AGENT_VAULT/tasks/_activity/designer/` (create if absent) and use `designer`
-as the task name.
+**Note:** The designer does not always have a task context. When writing the
+triage entry frontmatter, leave the `task` and `repo` fields empty if there
+is no task context.
 
 **Icon selection:** When calling `notify_triage`, pass `designer` as the icon:
 

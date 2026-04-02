@@ -21,20 +21,20 @@ pending_count=0 addressed_count=0 dismissed_count=0
 escalation_count=0
 
 shopt -s nullglob
-triages=("$vault"/tasks/*/*/*/triage*.md "$vault"/tasks/_activity/*/triage*.md)
+triages=("$vault"/_misc/triage/*.md)
 shopt -u nullglob
 for triage in "${triages[@]}"; do
 	[[ -f "$triage" ]] || continue
-	[[ "$triage" == *"/_fleet/"* ]] && continue
 
 	rel="${triage#"$vault"/}"
 	status="$(fm_read "$triage" "status" "unknown")"
 	type="$(fm_read "$triage" "type" "unknown")"
 	agent="$(fm_read "$triage" "agent" "unknown")"
+	repo="$(fm_read "$triage" "repo" "unknown")"
 	date="$(fm_read "$triage" "date" "unknown")"
 
 	link="[[${rel%.md}]]"
-	row="| $link | $type | $agent | $date |"
+	row="| $link | $type | $agent | $repo | $date |"
 
 	case "$status" in
 	pending)
@@ -100,8 +100,8 @@ fi
 	echo "## Pending"
 	echo ""
 	if [[ ${#pending[@]} -gt 0 ]]; then
-		echo "| Task | Type | Agent | Date |"
-		echo "|------|------|-------|------|"
+		echo "| Entry | Type | Agent | Repo | Date |"
+		echo "|-------|------|-------|------|------|"
 		printf '%s\n' "${pending[@]}"
 	else
 		echo "_No pending triage items._"
@@ -110,8 +110,8 @@ fi
 	echo "## Addressed"
 	echo ""
 	if [[ ${#addressed[@]} -gt 0 ]]; then
-		echo "| Task | Type | Agent | Date |"
-		echo "|------|------|-------|------|"
+		echo "| Entry | Type | Agent | Repo | Date |"
+		echo "|-------|------|-------|------|------|"
 		printf '%s\n' "${addressed[@]}"
 	else
 		echo "_None._"
@@ -120,8 +120,8 @@ fi
 	echo "## Dismissed"
 	echo ""
 	if [[ ${#dismissed[@]} -gt 0 ]]; then
-		echo "| Task | Type | Agent | Date |"
-		echo "|------|------|-------|------|"
+		echo "| Entry | Type | Agent | Repo | Date |"
+		echo "|-------|------|-------|------|------|"
 		printf '%s\n' "${dismissed[@]}"
 	else
 		echo "_None._"

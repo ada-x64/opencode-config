@@ -32,7 +32,7 @@ notify_triage() {
 	# Default file path when not provided.
 	# NOTE: agents writing triage-2.md, triage-3.md etc. must pass the file arg
 	# explicitly for the click URL to point to the correct file.
-	[[ -z "$file" ]] && file="tasks/${task}/triage.md"
+	[[ -z "$file" ]] && file="_misc/triage/unknown.md"
 
 	case "$type" in
 	escalation)

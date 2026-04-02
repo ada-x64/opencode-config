@@ -354,8 +354,11 @@ $AGENT_VAULT/
 │   └── <owner>/<repo>/<task>/
 │       ├── schema.md         # Implementation spec
 │       ├── review.md         # Code review (review-2.md, etc.)
-│       └── triage.md         # Triage entry (triage-2.md, etc.)
+│       └── (schema + review only; triage entries are in _misc/)
 ├── _misc/
+│   ├── triage/               # Action-required entries (escalation, design-question, permissions-request)
+│   ├── activity/             # Routine completion logs
+│   ├── handoffs/             # Handoffs and run summaries
 │   ├── archive/
 │   │   └── tasks/            # Completed/closed tasks
 │   ├── cache/                # GitHub metadata cache
@@ -528,9 +531,12 @@ All 7 agents load the `vault-triage` skill after completing significant work,
 write a triage entry, send a notification, and regenerate the inbox. These
 three post-work steps are mandatory — see the skill's Write Mode instructions.
 
-Notification priorities: escalation/design-question → high (audible);
-activity/handoff → default (non-audible); run-summary → low (silent). All
-calls fail silently if ntfy is not configured, so they never block agent work.
+Notification priorities: escalation/design-question/permissions-request → high (audible);
+activity/handoff → default (non-audible); run-summary → low (silent). Entries
+route to `_misc/triage/` (action-required), `_misc/activity/` (FYI), or
+`_misc/handoffs/` (context transfers). Only `_misc/triage/` appears in the
+dashboard. All calls fail silently if ntfy is not configured, so they never
+block agent work.
 
 ---
 

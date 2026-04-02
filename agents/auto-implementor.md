@@ -354,7 +354,7 @@ Read the review. Evaluate:
 - **High+ findings still persist:** This is a design problem, not a code fix
   problem. Do NOT stop. Instead:
   1.  Load the `vault-triage` skill.
-  2.  Write an `escalation` triage entry directly to `$task_dir/`.
+   2. Write an `escalation` triage entry to `$AGENT_VAULT/_misc/triage/`.
   3.  Send notification: `notify_triage escalation "<owner>/<repo>/<task>" "<one-line summary>"`
   4.  Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
   5.  **Continue to the next commit group.** Do not stop the run.
@@ -368,12 +368,12 @@ genuine design ambiguity or made a non-trivial judgment call, before moving to
 the next group:
 
 1. Load the `vault-triage` skill.
-2. Write a `design-question` triage entry directly to `$task_dir/`.
+2. Write a `design-question` triage entry to `$AGENT_VAULT/_misc/triage/`.
 3. Send notification: `notify_triage design-question "<owner>/<repo>/<task>" "<one-line summary>"`
 4. Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
 
 **f. Activity entry** — after the review loop completes for this group, load
-the `vault-triage` skill and write an `activity` triage entry to `$task_dir/`.
+the `vault-triage` skill and write an `activity` triage entry to `$AGENT_VAULT/_misc/activity/`.
 Send notification and regenerate inbox as part of the mandatory post-write steps.
 
 **g. Continue** — proceed immediately to the next commit group. Do not pause.
@@ -384,7 +384,7 @@ All triage entries are written directly — load the `vault-triage` skill and
 follow its **Write Mode** instructions. The three post-work steps are
 **mandatory** after every triage write:
 
-1. Write a triage entry to the task directory
+1. Write a triage entry (load `vault-triage` skill for directory routing: `_misc/triage/`, `_misc/activity/`, or `_misc/handoffs/`)
 2. Send a push notification via `notify_triage`
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
@@ -433,8 +433,8 @@ After all commit groups are done and validated:
    unset _issue_field _issue_num _repo_slug
    ```
    This is best-effort — it never fails the completion sequence.
-4. Load the `vault-triage` skill. Write a `run-summary` triage entry directly
-   to `$task_dir/`. Include: commit groups completed, total review rounds,
+4. Load the `vault-triage` skill. Write a `run-summary` triage entry to
+   `$AGENT_VAULT/_misc/handoffs/`. Include: commit groups completed, total review rounds,
    escalations filed, design decisions made, unresolved nit/low findings.
    Send notification and regenerate inbox as part of the mandatory post-write steps.
 5. Return a final summary to the caller. Always include:

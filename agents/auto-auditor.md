@@ -288,8 +288,7 @@ Return a one-paragraph summary to the caller: path written, overall health
 After writing the audit report, load the `vault-triage` skill and follow its
 **Write Mode** instructions. The three post-work steps are **mandatory**:
 
-1. Write a triage entry to the relevant task directory (if one exists for the
-   repo being audited) or to `$AGENT_VAULT/tasks/_activity/auto-auditor/`
+1. Write a triage entry (load `vault-triage` skill for directory routing: `_misc/triage/`, `_misc/activity/`, or `_misc/handoffs/`)
 2. Send a push notification via `notify_triage`
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
