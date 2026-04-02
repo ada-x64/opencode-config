@@ -538,6 +538,10 @@ route to `_misc/triage/` (action-required), `_misc/activity/` (FYI), or
 dashboard. All calls fail silently if ntfy is not configured, so they never
 block agent work.
 
+The dashboard renders pending items as `- [ ]` checkboxes and handled items
+as `- [x]` in a collapsed section. Use `triage-resolve.sh` to mark entries as
+addressed or dismissed.
+
 ---
 
 ## Environment Variable Reference
