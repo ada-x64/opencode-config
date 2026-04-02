@@ -7,8 +7,8 @@
 set -euo pipefail
 
 # --- Temp dir with cleanup ---
-TMPDIR="$(mktemp -d)"
-trap 'rm -rf "$TMPDIR"' EXIT
+_TMPDIR="$(mktemp -d)"
+trap 'rm -rf "$_TMPDIR"' EXIT
 
 # --- Config ---
 CONFIG_DIR="$HOME/.config/opencode"
@@ -31,6 +31,9 @@ echo "  ====================="
 echo ""
 
 # --- Interactive prompts ---
+# When piped via curl | bash, stdin is the script, not the terminal.
+# Open /dev/tty explicitly so read() can interact with the user.
+exec 3</dev/tty
 
 # AGENT_VAULT: auto-detect WSL path, then standard path
 _vault_default=""
@@ -45,34 +48,35 @@ if [[ -n "$_vault_default" ]]; then
 else
 	printf 'Where is your agent vault? (required): '
 fi
-read -r _vault_input
+read -r _vault_input <&3
 AGENT_VAULT="${_vault_input:-$_vault_default}"
 
 if [[ -z "$AGENT_VAULT" ]]; then
-	warn "AGENT_VAULT is required." >&2
+	warn "AGENT_VAULT is required."
 	exit 1
 fi
 
 # AGENT_REPOS
 _repos_default="${AGENT_REPOS:-$HOME/repos}"
 printf 'Where do you keep repos? [%s]: ' "$_repos_default"
-read -r _repos_input
+read -r _repos_input <&3
 AGENT_REPOS="${_repos_input:-$_repos_default}"
 
 # NTFY_TOPIC
 printf 'ntfy.sh topic for push notifications (optional, Enter to skip): '
-read -r NTFY_TOPIC
+read -r NTFY_TOPIC <&3
 
+exec 3<&-
 echo ""
 
 # --- Download tarball ---
 info "Downloading opencode-config..."
-curl -fsSL "$TARBALL_URL" -o "$TMPDIR/opencode-config.tar.gz"
+curl -fsSL "$TARBALL_URL" -o "$_TMPDIR/opencode-config.tar.gz"
 
 # --- Extract to CONFIG_DIR ---
 info "Installing to $CONFIG_DIR..."
 mkdir -p "$CONFIG_DIR"
-tar -xzf "$TMPDIR/opencode-config.tar.gz" -C "$CONFIG_DIR"
+tar -xzf "$_TMPDIR/opencode-config.tar.gz" -C "$CONFIG_DIR"
 
 # --- Resolve {{CONFIG_DIR}} in agent bash permissions ---
 info "Resolving agent permission paths..."
@@ -111,7 +115,7 @@ if grep -q 'OPENCODE_CONFIG_SRC' "$_profile" 2>/dev/null; then
 else
 	{
 		printf '\n# opencode-config\n'
-		printf 'export OPENCODE_CONFIG_SRC="%s"\n' "$HOME/.config/opencode"
+		printf 'export OPENCODE_CONFIG_SRC="%s"\n' "$CONFIG_DIR"
 		printf 'export AGENT_VAULT="%s"\n' "$AGENT_VAULT"
 		printf 'export AGENT_REPOS="%s"\n' "$AGENT_REPOS"
 		if [[ -n "$NTFY_TOPIC" ]]; then
@@ -125,7 +129,7 @@ fi
 echo ""
 info "Setup complete!"
 echo ""
-echo "  Config:    ~/.config/opencode"
+echo "  Config:    $CONFIG_DIR"
 echo "  AoE:       ~/.config/aoe/config.toml"
 echo "  Vault:     $AGENT_VAULT"
 echo "  Repos:     $AGENT_REPOS"

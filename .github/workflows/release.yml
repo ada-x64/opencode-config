@@ -8,8 +8,7 @@ on:
     inputs:
       tag:
         description: "Tag name for the release (e.g. v1.0.0)"
-        required: false
-        default: ""
+        required: true
 
 permissions:
   contents: write
@@ -24,7 +23,7 @@ jobs:
       - name: Determine tag
         id: tag
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.tag }}" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
           else
             echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
@@ -61,6 +60,7 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.name }}
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
             setup.sh
             opencode-config.tar.gz
