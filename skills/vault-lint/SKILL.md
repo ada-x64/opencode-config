@@ -19,17 +19,17 @@ fields, valid status values, and per-issue annotations.
 
 ```bash
 # Lint everything (vault docs + bash scripts)
-bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh
+bash "$OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh"
 
 # Schemas only
-bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh --schemas-only
+bash "$OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh" --schemas-only
 
 # Reviews only
-bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh --reviews-only
+bash "$OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh" --reviews-only
 
 # Filter to a specific owner/repo
-bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh ada-x64/agent-config
-bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh --schemas-only ada-x64/agent-config
+bash "$OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh" ada-x64/agent-config
+bash "$OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh" --schemas-only ada-x64/agent-config
 ```
 
 ## What Gets Checked

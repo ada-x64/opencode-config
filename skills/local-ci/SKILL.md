@@ -34,22 +34,22 @@ target repository directory.
 cd "$AGENT_REPOS/<owner>/<repo>"
 
 # Run all workflows triggered by push (default event)
-bash $OPENCODE_CONFIG_SRC/skills/local-ci/act.sh
+bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh"
 
 # Run a specific workflow file
-bash $OPENCODE_CONFIG_SRC/skills/local-ci/act.sh -W .github/workflows/ci.yml
+bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml
 
 # Run a specific job within a workflow
-bash $OPENCODE_CONFIG_SRC/skills/local-ci/act.sh -W .github/workflows/ci.yml -j build
+bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml -j build
 
 # Dry run (validate without running containers)
-bash $OPENCODE_CONFIG_SRC/skills/local-ci/act.sh -n
+bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -n
 
 # List all available workflows and jobs
-bash $OPENCODE_CONFIG_SRC/skills/local-ci/act.sh --list
+bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" --list
 
 # Verbose output for debugging
-bash $OPENCODE_CONFIG_SRC/skills/local-ci/act.sh -W .github/workflows/ci.yml -v
+bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml -v
 ```
 
 ## What the Script Does
@@ -82,25 +82,25 @@ Follow this workflow:
 1. **List available workflows and jobs:**
 
    ```bash
-   bash $OPENCODE_CONFIG_SRC/skills/local-ci/act.sh --list
+   bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" --list
    ```
 
 2. **Run the failing workflow:**
 
    ```bash
-   bash $OPENCODE_CONFIG_SRC/skills/local-ci/act.sh -W .github/workflows/ci.yml -v
+   bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml -v
    ```
 
 3. **Isolate the failing job** if the workflow has multiple jobs:
 
    ```bash
-   bash $OPENCODE_CONFIG_SRC/skills/local-ci/act.sh -W .github/workflows/ci.yml -j <job-id> -v
+   bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml -j <job-id> -v
    ```
 
 4. **Iterate on fixes** — use `--reuse` to keep containers alive between runs:
 
    ```bash
-   bash $OPENCODE_CONFIG_SRC/skills/local-ci/act.sh -W .github/workflows/ci.yml -j <job-id> --reuse
+   bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml -j <job-id> --reuse
    ```
 
 5. **Clean up** when done:

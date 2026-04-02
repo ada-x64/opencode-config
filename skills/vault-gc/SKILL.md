@@ -23,10 +23,10 @@ Archiving moves the entire task directory from `tasks/` into `_misc/archive/task
 
 ```bash
 # Preview what would be archived (no changes made)
-bash $OPENCODE_CONFIG_SRC/skills/vault-gc/gc.sh --dry-run
+bash "$OPENCODE_CONFIG_SRC/skills/vault-gc/gc.sh" --dry-run
 
 # Archive all completed tasks
-bash $OPENCODE_CONFIG_SRC/skills/vault-gc/gc.sh
+bash "$OPENCODE_CONFIG_SRC/skills/vault-gc/gc.sh"
 ```
 
 ## What Gets Moved

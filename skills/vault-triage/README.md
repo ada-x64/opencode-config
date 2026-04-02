@@ -30,7 +30,7 @@ remote machine with no display.
 ### 1. Run setup.sh
 
 ```bash
-bash $OPENCODE_CONFIG_SRC/skills/vault-triage/setup.sh
+bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/setup.sh"
 ```
 
 This will:
@@ -82,7 +82,7 @@ run `ntfy subscribe --from-config &` in a startup script.
 ### 4. Test it
 
 ```bash
-source $OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh
+source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh"
 notify_triage escalation test/task "Hello from setup" "" "" "default"
 ```
 
@@ -94,7 +94,7 @@ seconds.
 ### Refresh the dashboard
 
 ```bash
-bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh
+bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh"
 ```
 
 Opens/refreshes `$AGENT_VAULT/triage-inbox.md`. The scheduled timer does this
@@ -104,14 +104,14 @@ automatically and sends a summary notification instead of writing the file
 ### Check pending items without opening Obsidian
 
 ```bash
-bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh && \
+bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh" && \
   grep -A 20 "## Pending" "$AGENT_VAULT/triage-inbox.md"
 ```
 
 ### Send a manual summary notification now
 
 ```bash
-bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh --notify-summary
+bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh" --notify-summary
 ```
 
 ## Environment variables

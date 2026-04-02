@@ -20,10 +20,10 @@ content and refreshes the cache for each one.
 
 ```bash
 # Refresh cache for all repos with vault content
-bash $OPENCODE_CONFIG_SRC/skills/vault-cache/refresh.sh
+bash "$OPENCODE_CONFIG_SRC/skills/vault-cache/refresh.sh"
 
 # Refresh a specific repo only
-bash $OPENCODE_CONFIG_SRC/skills/vault-cache/refresh.sh ada-x64/wf
+bash "$OPENCODE_CONFIG_SRC/skills/vault-cache/refresh.sh" ada-x64/wf
 ```
 
 ## What Gets Cached

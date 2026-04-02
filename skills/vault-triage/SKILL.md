@@ -30,7 +30,7 @@ Follow these steps in order after completing significant work:
 ### Step 1 — Source the notification helper
 
 ```bash
-source $OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh 2>/dev/null || true
+source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh" 2>/dev/null || true
 ```
 
 ### Step 2 — Confirm AGENT_VAULT is set
@@ -103,7 +103,7 @@ the triage type.
 ### Step 8 — MANDATORY: Regenerate inbox
 
 ```bash
-bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh
+bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh"
 ```
 
 This is not optional. The triage inbox must always reflect the current
@@ -376,7 +376,7 @@ To read triage files and generate a summary of pending items:
 2. Read each file and extract frontmatter fields:
 
    ```bash
-   source $OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh
+   source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh"
    fm_read "$file" "type" "unknown"
    fm_read "$file" "status" "unknown"
    fm_read "$file" "date" "unknown"
@@ -401,16 +401,16 @@ To read triage files and generate a summary of pending items:
 
 ```bash
 # Regenerate triage-inbox.md
-bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh
+bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh"
 
 # Send a summary notification instead of regenerating
-bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh --notify-summary
+bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh" --notify-summary
 ```
 
 ### Send a notification manually
 
 ```bash
-source $OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh
+source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh"
 notify_triage escalation "ada-x64/qproj/fix-tests" "Review loop exhausted on commit group 2" "" "" "auto-implementor" "escalation"
 notify_triage activity "ada-x64/qproj/fix-tests" "Commit group 1 complete" "• All tests passing" "" "auto-implementor" "activity"
 ```
@@ -420,7 +420,7 @@ notify_triage activity "ada-x64/qproj/fix-tests" "Commit group 1 complete" "• 
 > **Note:** `setup.sh` is shipped separately. Run once after the full skill is installed.
 
 ```bash
-bash $OPENCODE_CONFIG_SRC/skills/vault-triage/setup.sh
+bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/setup.sh"
 ```
 
 ---
