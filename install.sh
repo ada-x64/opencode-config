@@ -2,18 +2,16 @@
 # install.sh — deploy opencode-config to the target config directory
 #
 # Usage:
-#   bash install.sh [--profile <name>] [--config-dir <path>] [--force-in-place] [--help]
+#   bash install.sh [--profile <name>] [--config-dir <path>] [--help]
 #
 # Options:
 #   --profile <name>     Profile to use (default: host). Loads profiles/<name>.env.
 #   --config-dir <path>  Override CONFIG_DIR from the profile.
-#   --force-in-place     Allow running when source == target (resolves {{CONFIG_DIR}}
-#                        in source files — restorable with: git checkout -- agents/).
 #   --help               Show this help message and exit.
 #
 # What it does:
 #   1. Loads the selected profile to set CONFIG_DIR and OPENCODE_CONFIG_SRC.
-#   2. Detects in-place mode (source == CONFIG_DIR) and refuses unless --force-in-place.
+#   2. Refuses to run if source == CONFIG_DIR (move the repo first).
 #   3. rsyncs repo contents to CONFIG_DIR (excluding .git/, profiles/, install.sh, etc.).
 #   4. Resolves {{CONFIG_DIR}} placeholders in target agent files.
 #   5. Runs build.sh in the target directory for model + external_directory stamping.
@@ -31,7 +29,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # --- Argument parsing ---
 PROFILE="host"
 CONFIG_DIR_OVERRIDE=""
-FORCE_IN_PLACE=0
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -42,10 +39,6 @@ while [[ $# -gt 0 ]]; do
 	--config-dir)
 		CONFIG_DIR_OVERRIDE="$2"
 		shift 2
-		;;
-	--force-in-place)
-		FORCE_IN_PLACE=1
-		shift
 		;;
 	--help | -h)
 		sed -n '2,/^set -/{ /^set -/d; s/^# //; s/^#$//; p }' "$0"
@@ -85,56 +78,37 @@ RESOLVED_SCRIPT_DIR="$(realpath "$SCRIPT_DIR")"
 RESOLVED_CONFIG_DIR="$(realpath "$CONFIG_DIR" 2>/dev/null || echo "$CONFIG_DIR")"
 
 if [[ "$RESOLVED_SCRIPT_DIR" == "$RESOLVED_CONFIG_DIR" ]]; then
-	if [[ "$FORCE_IN_PLACE" -eq 0 ]]; then
-		echo "Error: source directory equals target CONFIG_DIR." >&2
-		echo "" >&2
-		echo "  Source: $RESOLVED_SCRIPT_DIR" >&2
-		echo "  Target: $RESOLVED_CONFIG_DIR" >&2
-		echo "" >&2
-		echo "Running install.sh in-place would resolve {{CONFIG_DIR}} placeholders" >&2
-		echo "in the source agent files, destroying them permanently." >&2
-		echo "" >&2
-		echo "Recommended: move the repo to \$AGENT_REPOS/ada-x64/opencode-config" >&2
-		echo "  mv ~/.config/opencode \$AGENT_REPOS/ada-x64/opencode-config" >&2
-		echo "  git clone <remote> ~/.config/opencode   # or symlink" >&2
-		echo "  bash \$AGENT_REPOS/ada-x64/opencode-config/install.sh" >&2
-		echo "" >&2
-		echo "Or use --force-in-place to resolve placeholders in source (then restore" >&2
-		echo "with: git checkout -- agents/) — only for the current session." >&2
-		exit 1
-	else
-		echo "Warning: --force-in-place enabled. Resolving {{CONFIG_DIR}} in source files." >&2
-		echo "Restore source placeholders with: git checkout -- agents/" >&2
-		echo ""
-		SKIP_COPY=1
-	fi
-else
-	SKIP_COPY=0
+	echo "Error: source directory equals target CONFIG_DIR." >&2
+	echo "" >&2
+	echo "  Source: $RESOLVED_SCRIPT_DIR" >&2
+	echo "  Target: $RESOLVED_CONFIG_DIR" >&2
+	echo "" >&2
+	echo "Running install.sh in-place would resolve {{CONFIG_DIR}} placeholders" >&2
+	echo "in the source agent files, destroying them permanently." >&2
+	echo "" >&2
+	echo "Move the repo first, then run install.sh from the new location:" >&2
+	echo "  mv ~/.config/opencode \$AGENT_REPOS/ada-x64/opencode-config" >&2
+	echo "  bash \$AGENT_REPOS/ada-x64/opencode-config/install.sh" >&2
+	exit 1
 fi
 
-# --- Step 3: rsync source to CONFIG_DIR ---
-if [[ "$SKIP_COPY" -eq 0 ]]; then
-	echo "Deploying to: $CONFIG_DIR"
-	echo "Profile:      $PROFILE (${PROFILE_FILE})"
-	echo ""
+# --- Rsync source to CONFIG_DIR ---
+echo "Deploying to: $CONFIG_DIR"
+echo "Profile:      $PROFILE (${PROFILE_FILE})"
+echo ""
 
-	mkdir -p "$CONFIG_DIR"
+mkdir -p "$CONFIG_DIR"
 
-	rsync -a --delete \
-		--exclude='.git/' \
-		--exclude='profiles/' \
-		--exclude='install.sh' \
-		--exclude='docker/' \
-		--exclude='README.md' \
-		--exclude='.gitignore' \
-		"$SCRIPT_DIR/" "$CONFIG_DIR/"
+rsync -a --delete \
+	--exclude='.git/' \
+	--exclude='profiles/' \
+	--exclude='install.sh' \
+	--exclude='docker/' \
+	--exclude='README.md' \
+	--exclude='.gitignore' \
+	"$SCRIPT_DIR/" "$CONFIG_DIR/"
 
-	echo "Rsync complete."
-else
-	echo "In-place mode: skipping copy step."
-	echo "Target: $CONFIG_DIR (same as source)"
-	echo ""
-fi
+echo "Rsync complete."
 
 # --- Step 4: Resolve {{CONFIG_DIR}} in target agent files ---
 echo "Resolving {{CONFIG_DIR}} → $OPENCODE_CONFIG_SRC in agent files..."
