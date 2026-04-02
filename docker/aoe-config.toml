@@ -21,11 +21,13 @@ mount_ssh = false
 
 extra_volumes = [
     "$HOME/obsidian/agent.obs:/root/obsidian/agent.obs",
+    "$HOME/.config/opencode:/root/.config/opencode",
 ]
 
 environment = [
     "AGENT_VAULT=/root/obsidian/agent.obs",
     "AGENT_REPOS=/workspace",
+    "OPENCODE_CONFIG_SRC=/root/.config/opencode",
     "GH_TOKEN",
     "NTFY_TOPIC",
     "GIT_CONFIG_COUNT=2",
