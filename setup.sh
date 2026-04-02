@@ -33,7 +33,12 @@ echo ""
 # --- Interactive prompts ---
 # When piped via curl | bash, stdin is the script, not the terminal.
 # Open /dev/tty explicitly so read() can interact with the user.
-exec 3</dev/tty
+if ! exec 3</dev/tty 2>/dev/null; then
+	warn "No interactive terminal available."
+	warn "Set AGENT_VAULT and AGENT_REPOS in your environment and re-run setup.sh directly:"
+	warn "  AGENT_VAULT=~/obsidian/agent.obs bash setup.sh"
+	exit 1
+fi
 
 # AGENT_VAULT: auto-detect WSL path, then standard path
 _vault_default=""

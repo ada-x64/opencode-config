@@ -1,8 +1,8 @@
 # AoE (Agent of Empires) configuration template
 #
-# This file is a versioned template. To deploy:
-#   cp "$OPENCODE_CONFIG_SRC/docker/aoe-config.toml" ~/.config/aoe/config.toml
-#   # or: ln -sf "$OPENCODE_CONFIG_SRC/docker/aoe-config.toml" ~/.config/aoe/config.toml
+# This file is a versioned template with placeholders. To deploy, run setup.sh
+# or install.sh — they resolve {{AGENT_VAULT}} and {{OPENCODE_CONFIG_SRC}}
+# automatically using your environment.
 #
 # Requires on host:
 #   export GH_TOKEN=$(gh auth token 2>/dev/null)
