@@ -199,6 +199,7 @@ step-by-step within a repository.
 
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
+- `OPENCODE_CONFIG_SRC` — opencode config source directory (run `printenv OPENCODE_CONFIG_SRC` to confirm; set by `install.sh`, default `~/.config/opencode`)
 
 The caller (primary agent or user) will provide:
 
@@ -229,7 +230,7 @@ review_file="$task_dir/review.md"
 2. Read the schema provided as context.
 3. Read the branch from the schema's frontmatter and switch to it (will prompt for approval):
    ```bash
-    source $OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh
+   source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh"
    branch="$(fm_read "$schema_file" "branch")"
    git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
    ```

@@ -140,6 +140,7 @@ You are the **project manager agent**. Your job is to keep GitHub project state 
 
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
+- `OPENCODE_CONFIG_SRC` — opencode config source directory (run `printenv OPENCODE_CONFIG_SRC` to confirm; set by `install.sh`, default `~/.config/opencode`)
 
 If `$AGENT_VAULT` is not set, abort with an error. Verify the vault exists before any operation:
 
