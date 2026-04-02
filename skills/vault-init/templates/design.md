@@ -85,14 +85,17 @@ works in Obsidian navigation and in rendered markdown:
 ```markdown
 ## Bibliography
 
-[^1]: `nanvix/zutils/src/tag.py:42-58` — Tag resolution logic; linear
-      search through all tags.
+[^1]:
+    `nanvix/zutils/src/tag.py:42-58` — Tag resolution logic; linear
+    search through all tags.
 
-[^2]: https://docs.python.org/3/library/ast.html — Python AST module;
-      `NodeVisitor` pattern for tree traversal.
+[^2]:
+    https://docs.python.org/3/library/ast.html — Python AST module;
+    `NodeVisitor` pattern for tree traversal.
 
-[^3]: [[repo-notes/nanvix/zutils/internals]] — Sysroot layout and
-      cross-compilation constraints.
+[^3]:
+    [[repo-notes/nanvix/zutils/internals]] — Sysroot layout and
+    cross-compilation constraints.
 ```
 
 ## Design decisions
@@ -109,6 +112,7 @@ alternatives considered and why they were rejected.
 **Decision:** <What was decided.>
 **Rationale:** <Why this choice over alternatives.>
 **Alternatives considered:**
+
 - <Alternative A> — rejected because <reason>
 - <Alternative B> — rejected because <reason>
 ```
@@ -122,11 +126,11 @@ changed.
 ```markdown
 ## History
 
-| Date | Change |
-|------|--------|
-| YYYY-MM-DD | Initial draft |
+| Date       | Change                                                 |
+| ---------- | ------------------------------------------------------ |
+| YYYY-MM-DD | Initial draft                                          |
 | YYYY-MM-DD | Added comparison of approach A vs B after benchmarking |
-| YYYY-MM-DD | Revised thesis based on feedback from @user |
+| YYYY-MM-DD | Revised thesis based on feedback from @user            |
 ```
 
 ---

@@ -31,6 +31,7 @@ Use the Task tool to dispatch subagents. Choose the right agent for the task:
 
 Dispatch when the user wants to execute a schema that already exists in the
 vault. The implementor will:
+
 - Read the schema and switch to the correct branch
 - Work through each commit group in order
 - Pause after each group for user approval before continuing
@@ -38,6 +39,7 @@ vault. The implementor will:
   review the staged changes and append findings to the review file
 
 Provide the implementor with:
+
 - The repository path (e.g. `$AGENT_REPOS/<owner>/<repo>`)
 - The task directory (e.g. `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/`)
 
@@ -48,12 +50,14 @@ If no schema exists yet, dispatch `@planner` first or switch to plan mode
 
 Dispatch when the user wants to execute a schema **without manual approval gates
 between commit groups**. The auto-implementor will:
+
 - Read the schema and switch to the correct branch
 - Work through each commit group autonomously
 - Run a bounded review loop (max 3 reviews per group) after each commit
 - Writes triage entries directly via the vault-triage skill
 
 Provide the auto-implementor with:
+
 - The repository path (e.g. `$AGENT_REPOS/<owner>/<repo>`)
 - The task directory (e.g. `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/`)
 
@@ -65,6 +69,7 @@ before proceeding.
 
 Dispatch when the user asks for a code review, or automatically after an
 implementor commit group. The reviewer:
+
 - Checks staged changes (`git diff --cached`) or latest commit (`git show HEAD`)
 - Tags every finding with severity (nit/low/medium/high/critical) and
   category (bug/performance/design/types/maintenance/security/docs/testing/style)
@@ -93,6 +98,7 @@ Once the schema is written and the issue is created, `@project-manager` owns iss
 ### `@project-manager` — issue lifecycle and project board operations
 
 Dispatch when the user wants to:
+
 - Close completed issues and sync project board columns
 - Assign milestones in bulk or create new milestones
 - Triage the open-issue backlog for a repo
@@ -104,6 +110,7 @@ PM operates only on repos that are vault-managed (`tasks/<owner>/<repo>/` or
 merges PRs.
 
 Provide the project manager with:
+
 - The owner/repo slug(s) to operate on, or "all vault repos"
 - The desired operation (close completed, sync status, triage backlog, etc.)
 
@@ -122,6 +129,7 @@ coverage data, and writes a structured audit report to
 `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
 
 Provide:
+
 - `repo_path` — absolute path to the repository
 - `label` — short identifier (e.g. `full-audit`, `security-pass`)
 - `scope` — path prefix or `"full"` (optional)
@@ -132,6 +140,7 @@ For dedicated audit sessions, switch to audit mode (Tab key) instead.
 ## Direct Work (No Subagent)
 
 Handle directly — without dispatching a subagent — when the task is:
+
 - Straightforward and self-contained (a quick fix, a single file change)
 - Exploratory (read and explain code, answer questions)
 - Ad-hoc (a one-off script, a small refactor not worth a schema)
@@ -153,7 +162,7 @@ vault (`$AGENT_VAULT/tasks/<owner>/<repo>/*/schema.md` with `status: todo` or
    (`status: in progress` in schema frontmatter — note the space, distinct from
    the `in-progress` GitHub label which uses a hyphen.)
 2. **After making changes:** If an active schema was found and your changes
-   overlap with it, update the *schema file* (not the repo):
+   overlap with it, update the _schema file_ (not the repo):
    - Note deviations from planned file changes in the schema's `## Files changed`
      section
    - Update commit group descriptions if the scope shifted
@@ -177,6 +186,7 @@ the reality.
 
 **Reading remote source code:** To read files from a repo that isn't cloned
 locally (not under `$AGENT_REPOS`), use `gh api`:
+
 ```bash
 # Browse the tree first
 gh api repos/<owner>/<repo>/git/trees/<branch>?recursive=1 -q '.tree[].path'

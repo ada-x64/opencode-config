@@ -18,12 +18,12 @@ agent: auto-auditor
 If no tools were available, note this prominently here.>
 
 | Severity | Count |
-|----------|-------|
-| critical | N |
-| high | N |
-| medium | N |
-| low | N |
-| info | N |
+| -------- | ----- |
+| critical | N     |
+| high     | N     |
+| medium   | N     |
+| low      | N     |
+| info     | N     |
 
 ## Scope
 
@@ -69,14 +69,14 @@ missing test categories, test-to-code churn correlation.>
 
 ## Severity Summary
 
-| Severity | Security | Testing | Architecture | Performance | Maintenance | Total |
-|----------|----------|---------|--------------|-------------|-------------|-------|
-| critical | N | N | N | N | N | N |
-| high     | N | N | N | N | N | N |
-| medium   | N | N | N | N | N | N |
-| low      | N | N | N | N | N | N |
-| info     | N | N | N | N | N | N |
-| **Total**| N | N | N | N | N | **N** |
+| Severity  | Security | Testing | Architecture | Performance | Maintenance | Total |
+| --------- | -------- | ------- | ------------ | ----------- | ----------- | ----- |
+| critical  | N        | N       | N            | N           | N           | N     |
+| high      | N        | N       | N            | N           | N           | N     |
+| medium    | N        | N       | N            | N           | N           | N     |
+| low       | N        | N       | N            | N           | N           | N     |
+| info      | N        | N       | N            | N           | N           | N     |
+| **Total** | N        | N       | N            | N           | N           | **N** |
 
 ---
 
@@ -84,13 +84,13 @@ missing test categories, test-to-code churn correlation.>
 
 Audit severity uses **roadmap-priority semantics** — not merge-gate semantics. An audit finding does not block a PR; it informs an engineering roadmap.
 
-| Severity | Audit meaning |
-|----------|--------------|
-| **critical** | Active exploit, data loss risk, or regulatory violation. Fix immediately. |
-| **high** | Significant vulnerability or quality failure; address within the current sprint. |
-| **medium** | Noteworthy pattern; address within the quarter. |
-| **low** | Minor quality issue or best-practice gap; worth tracking, not urgent. |
-| **info** | Neutral observation with no negative valence (e.g. "test coverage is 80% in this module"). |
+| Severity     | Audit meaning                                                                              |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| **critical** | Active exploit, data loss risk, or regulatory violation. Fix immediately.                  |
+| **high**     | Significant vulnerability or quality failure; address within the current sprint.           |
+| **medium**   | Noteworthy pattern; address within the quarter.                                            |
+| **low**      | Minor quality issue or best-practice gap; worth tracking, not urgent.                      |
+| **info**     | Neutral observation with no negative valence (e.g. "test coverage is 80% in this module"). |
 
 Note: `info` is specific to the audit severity model and has no counterpart in the review (`nit/low/medium/high/critical`) format.
 
@@ -100,27 +100,27 @@ Note: `info` is specific to the audit severity model and has no counterpart in t
 
 The `coverage_source` frontmatter field records where coverage data was obtained:
 
-| Value | Source |
-|-------|--------|
-| `cargo-llvm-cov` | LLVM-based coverage instrumentation via `cargo llvm-cov` |
-| `pytest-cov` | Python test coverage via `pytest --cov` |
-| `jest-coverage` | JavaScript/TypeScript coverage via `jest --coverage` or `vitest --coverage` |
-| `codecov-api` | Hosted coverage data fetched from the Codecov API |
-| `coveralls-api` | Hosted coverage data fetched from the Coveralls API |
-| `none` | No coverage data available or requested |
+| Value            | Source                                                                      |
+| ---------------- | --------------------------------------------------------------------------- |
+| `cargo-llvm-cov` | LLVM-based coverage instrumentation via `cargo llvm-cov`                    |
+| `pytest-cov`     | Python test coverage via `pytest --cov`                                     |
+| `jest-coverage`  | JavaScript/TypeScript coverage via `jest --coverage` or `vitest --coverage` |
+| `codecov-api`    | Hosted coverage data fetched from the Codecov API                           |
+| `coveralls-api`  | Hosted coverage data fetched from the Coveralls API                         |
+| `none`           | No coverage data available or requested                                     |
 
 ---
 
 ## Frontmatter Field Reference
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `repo` | string | `<owner>/<repo>` — the repository being audited |
-| `date` | string | `YYYY-MM-DD` — date the audit was run |
-| `label` | string | Short identifier for the report filename (e.g. `full-audit`, `security-pass`, `auth-module`) |
-| `scope` | string | `full` or a path prefix / glob (e.g. `src/auth`, `src/**/*.rs`) |
-| `tools_run` | list | Tools that executed successfully during this audit |
-| `tools_unavailable` | list | Tools detected as absent (probed but not found) |
-| `coverage_source` | string | Where coverage data was obtained (see Coverage Source Values above) |
-| `status` | string | Always `complete` — audit reports are point-in-time, immutable records |
-| `agent` | string | Always `auto-auditor` |
+| Field               | Type   | Description                                                                                  |
+| ------------------- | ------ | -------------------------------------------------------------------------------------------- |
+| `repo`              | string | `<owner>/<repo>` — the repository being audited                                              |
+| `date`              | string | `YYYY-MM-DD` — date the audit was run                                                        |
+| `label`             | string | Short identifier for the report filename (e.g. `full-audit`, `security-pass`, `auth-module`) |
+| `scope`             | string | `full` or a path prefix / glob (e.g. `src/auth`, `src/**/*.rs`)                              |
+| `tools_run`         | list   | Tools that executed successfully during this audit                                           |
+| `tools_unavailable` | list   | Tools detected as absent (probed but not found)                                              |
+| `coverage_source`   | string | Where coverage data was obtained (see Coverage Source Values above)                          |
+| `status`            | string | Always `complete` — audit reports are point-in-time, immutable records                       |
+| `agent`             | string | Always `auto-auditor`                                                                        |

@@ -22,12 +22,12 @@ date: YYYY-MM-DD
 
 ### Frontmatter fields
 
-| Field | Description |
-|-------|-------------|
-| `task` | Shared task name used across all per-repo schemas |
-| `issue` | GitHub issue link for the umbrella issue (or blank) |
-| `status` | `todo` / `in progress` / `complete` |
-| `date` | Creation date (YYYY-MM-DD) |
+| Field    | Description                                         |
+| -------- | --------------------------------------------------- |
+| `task`   | Shared task name used across all per-repo schemas   |
+| `issue`  | GitHub issue link for the umbrella issue (or blank) |
+| `status` | `todo` / `in progress` / `complete`                 |
+| `date`   | Creation date (YYYY-MM-DD)                          |
 
 ## Problem
 
@@ -48,8 +48,8 @@ which repos are involved — the fleet implementor parses it to discover repos.
 ```markdown
 ## Repos
 
-| Repo | Path | schema |
-|------|------|-----------|
+| Repo             | Path                     | schema                                  |
+| ---------------- | ------------------------ | --------------------------------------- |
 | `<owner>/<repo>` | `~/repos/<owner>/<repo>` | `tasks/<owner>/<repo>/<task>/schema.md` |
 ```
 

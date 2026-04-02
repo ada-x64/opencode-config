@@ -20,9 +20,9 @@ date: YYYY-MM-DD
 
 ### Frontmatter fields
 
-| Field | Description |
-|-------|-------------|
-| `repo` | `<owner>/<repo>` identifier |
+| Field  | Description                                                            |
+| ------ | ---------------------------------------------------------------------- |
+| `repo` | `<owner>/<repo>` identifier                                            |
 | `date` | Date the notes were written or last substantially updated (YYYY-MM-DD) |
 
 ## Purpose
@@ -41,21 +41,21 @@ repository or subsystem does. Why does it exist? What problem does it solve?
 **Required.** A description of the directory structure and major files. Use a
 code block for the tree, then annotate each entry.
 
-```markdown
+````markdown
 ## Layout
 
 \```
 repo/
-  src/
-    main.rs       # entry point
-    lib.rs        # library root
-  tests/          # integration tests
-  Cargo.toml
+src/
+main.rs # entry point
+lib.rs # library root
+tests/ # integration tests
+Cargo.toml
 \```
 
 - `src/main.rs` — <What it does>
 - `src/lib.rs` — <What it does>
-```
+````
 
 ## Architecture
 
@@ -92,8 +92,8 @@ are touched frequently, contain core logic, or are required reading.
 ```markdown
 ## Key files
 
-| File | Purpose |
-|------|---------|
+| File              | Purpose        |
+| ----------------- | -------------- |
 | `path/to/file.rs` | <What it does> |
 ```
 
@@ -116,8 +116,8 @@ the code. Things an agent should know before making changes.
 ```markdown
 ## History
 
-| Date | Change |
-|------|--------|
-| YYYY-MM-DD | Initial notes |
+| Date       | Change                                      |
+| ---------- | ------------------------------------------- |
+| YYYY-MM-DD | Initial notes                               |
 | YYYY-MM-DD | Updated architecture section after refactor |
 ```

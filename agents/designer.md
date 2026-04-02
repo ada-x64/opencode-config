@@ -129,6 +129,7 @@ comprehensive standalone reference — a future agent session should be able to
 understand a subsystem by reading one file.
 
 Follow the conventions in the vault instructions. When creating a new note:
+
 1. Determine the `<owner>/<repo>` from the repo being documented
 2. Create the file at `$AGENT_VAULT/repo-notes/<owner>/<repo>/<descriptive-name>.md`
 3. Make it thorough — cover architecture, key files, conventions, gotchas
@@ -182,6 +183,7 @@ and follow its **Write Mode** instructions. The three post-work steps are
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
 **Events requiring triage entries:**
+
 - Repo notes written (type: `activity`)
 - Design document written (type: `activity`)
 
@@ -191,6 +193,7 @@ is no task directory for the current work, write the triage entry to
 as the task name.
 
 **Icon selection:** When calling `notify_triage`, pass `designer` as the icon:
+
 ```bash
 notify_triage activity "<owner>/<repo>/<task>" "Notes Updated" $'• Added repo-notes for <repo>' "" "designer"
 ```

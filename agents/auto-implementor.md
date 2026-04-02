@@ -213,10 +213,12 @@ If `$AGENT_VAULT` is not set or the vault doesn't exist, use the `vault-init`
 skill to set it up before proceeding.
 
 The caller will provide:
+
 - The **repository path** to work in
 - The **task path** at `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/`
 
 Set these as shell variables at the start of your session:
+
 ```bash
 repo_path="<path provided by caller>"
 task_dir="$AGENT_VAULT/tasks/<owner>/<repo>/<task>"
@@ -225,6 +227,7 @@ review_file="$task_dir/review.md"
 ```
 
 Load the notification helper (fails silently if not configured):
+
 ```bash
 source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
 source ~/.config/opencode/skills/lib/frontmatter.sh 2>/dev/null || true
@@ -234,47 +237,47 @@ source ~/.config/opencode/skills/lib/frontmatter.sh 2>/dev/null || true
 
 ### Startup
 
-1. Read `CONTRIBUTING.md` from the repository root (if it exists).
-2. Read the full schema at `$schema_file`.
-3. Read the `branch` field from the schema's YAML frontmatter and switch to that
-   branch, creating it if it does not exist:
-   ```bash
-   branch="$(fm_read "$schema_file" "branch" "")"
-   if [[ -z "$branch" || "$branch" == "null" ]]; then
-     echo "Warning: schema has no branch field — staying on current branch." >&2
-     branch="$(git -C "$repo_path" branch --show-current)"
-   fi
-   git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
-   ```
-4. Update the schema status to `in progress`:
-   ```bash
-   fm_write "$schema_file" "status" "in progress"
-   ```
-5. Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
-   ```bash
-   _issue_field="$(fm_read "$schema_file" "issue" "")"
-   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
-     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-     _repo_slug="$(fm_read "$schema_file" "repo" "")"
-     gh issue edit "$_issue_num" -R "$_repo_slug" --add-label "in-progress" 2>/dev/null || true
-   fi
-   unset _issue_field _issue_num _repo_slug
-   ```
-       This is best-effort — it never fails the startup sequence.
-6. Post a start comment on the linked GitHub issue (skip if vault-only or blank):
-   ```bash
-   _issue_field="$(fm_read "$schema_file" "issue" "")"
-   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
-     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-     _repo_slug="$(fm_read "$schema_file" "repo" "")"
-     _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
-     gh issue comment "$_issue_num" -R "$_repo_slug" \
-       --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
-       2>/dev/null || true
-   fi
-   unset _issue_field _issue_num _repo_slug _group_count
-   ```
-   This is best-effort — it never fails the startup sequence.
+1.  Read `CONTRIBUTING.md` from the repository root (if it exists).
+2.  Read the full schema at `$schema_file`.
+3.  Read the `branch` field from the schema's YAML frontmatter and switch to that
+    branch, creating it if it does not exist:
+    ```bash
+    branch="$(fm_read "$schema_file" "branch" "")"
+    if [[ -z "$branch" || "$branch" == "null" ]]; then
+      echo "Warning: schema has no branch field — staying on current branch." >&2
+      branch="$(git -C "$repo_path" branch --show-current)"
+    fi
+    git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
+    ```
+4.  Update the schema status to `in progress`:
+    ```bash
+    fm_write "$schema_file" "status" "in progress"
+    ```
+5.  Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
+    ```bash
+    _issue_field="$(fm_read "$schema_file" "issue" "")"
+    if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
+      _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
+      _repo_slug="$(fm_read "$schema_file" "repo" "")"
+      gh issue edit "$_issue_num" -R "$_repo_slug" --add-label "in-progress" 2>/dev/null || true
+    fi
+    unset _issue_field _issue_num _repo_slug
+    ```
+        This is best-effort — it never fails the startup sequence.
+6.  Post a start comment on the linked GitHub issue (skip if vault-only or blank):
+    ```bash
+    _issue_field="$(fm_read "$schema_file" "issue" "")"
+    if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
+      _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
+      _repo_slug="$(fm_read "$schema_file" "repo" "")"
+      _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
+      gh issue comment "$_issue_num" -R "$_repo_slug" \
+        --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
+        2>/dev/null || true
+    fi
+    unset _issue_field _issue_num _repo_slug _group_count
+    ```
+    This is best-effort — it never fails the startup sequence.
 
 ### For each commit group (1, 2, 3, …)
 
@@ -288,6 +291,7 @@ fails, fix the issue and re-run until it passes. Do not proceed with a broken
 validation.
 
 **c. Commit** — stage and commit all changes for this group:
+
 ```bash
 git -C "$repo_path" add -A
 git -C "$repo_path" commit -m "<short message describing the group>"
@@ -296,6 +300,7 @@ git -C "$repo_path" commit -m "<short message describing the group>"
 **d. Review loop** — bounded to a maximum of 3 reviews per commit group:
 
 **Round 1:** Dispatch a reviewer:
+
 ```
 @reviewer
 Review the latest commit in <repo_path>. Write findings to <review_file>.
@@ -306,6 +311,7 @@ Read the review file. Evaluate findings by severity:
 
 - **All findings are medium severity or below (nit/low/medium):** Fix in a single
   commit, move on. Done — 1 review for this group.
+
   ```bash
   git -C "$repo_path" commit -am "review: address findings"
   ```
@@ -317,6 +323,7 @@ Read the review file. Evaluate findings by severity:
   Then proceed to Round 2.
 
 **Round 2:** Dispatch a second review to verify fixes:
+
 ```
 @reviewer
 Re-review <repo_path> after fixes. Write findings to <review_file>.
@@ -333,6 +340,7 @@ Read the review. Evaluate:
 - **High+ findings persist:** Fix and commit, then proceed to Round 3.
 
 **Round 3 (cap):** Dispatch a third and final review:
+
 ```
 @reviewer
 Final review of <repo_path>. Write findings to <review_file>.
@@ -345,12 +353,12 @@ Read the review. Evaluate:
 
 - **High+ findings still persist:** This is a design problem, not a code fix
   problem. Do NOT stop. Instead:
-   1. Load the `vault-triage` skill.
-   2. Write an `escalation` triage entry directly to `$task_dir/`.
-   3. Send notification: `notify_triage escalation "<owner>/<repo>/<task>" "<one-line summary>"`
-   4. Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
-   5. **Continue to the next commit group.** Do not stop the run.
-   6. If the escalation results in an issue being created and there is a
+  1.  Load the `vault-triage` skill.
+  2.  Write an `escalation` triage entry directly to `$task_dir/`.
+  3.  Send notification: `notify_triage escalation "<owner>/<repo>/<task>" "<one-line summary>"`
+  4.  Regenerate inbox: `bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh`
+  5.  **Continue to the next commit group.** Do not stop the run.
+  6.  If the escalation results in an issue being created and there is a
       related open PR (and the issue is not the PR's own tracking issue),
       post a cross-reference comment on the PR before continuing:
       `gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."`
@@ -358,6 +366,7 @@ Read the review. Evaluate:
 **e. Record design decisions** — if during implementation you encountered a
 genuine design ambiguity or made a non-trivial judgment call, before moving to
 the next group:
+
 1. Load the `vault-triage` skill.
 2. Write a `design-question` triage entry directly to `$task_dir/`.
 3. Send notification: `notify_triage design-question "<owner>/<repo>/<task>" "<one-line summary>"`
@@ -381,12 +390,12 @@ follow its **Write Mode** instructions. The three post-work steps are
 
 **Events requiring triage entries:**
 
-| Event | Type | When |
-|-------|------|------|
-| Commit group completed | `activity` | After each commit + review cycle |
-| Review loop exhausted (3 rounds, high+ persists) | `escalation` | Step d |
-| Design ambiguity resolved | `design-question` | Step e |
-| Run complete | `run-summary` | Completion |
+| Event                                            | Type              | When                             |
+| ------------------------------------------------ | ----------------- | -------------------------------- |
+| Commit group completed                           | `activity`        | After each commit + review cycle |
+| Review loop exhausted (3 rounds, high+ persists) | `escalation`      | Step d                           |
+| Design ambiguity resolved                        | `design-question` | Step e                           |
+| Run complete                                     | `run-summary`     | Completion                       |
 
 For `escalation` and `design-question` entries, follow the detailed format
 instructions in the vault-triage skill — these require diagnosis categories,
@@ -410,7 +419,7 @@ After all commit groups are done and validated:
    fi
    unset _issue_field _issue_num _repo_slug
    ```
-    This is best-effort — it never fails the completion sequence.
+   This is best-effort — it never fails the completion sequence.
 3. Post a completion comment on the linked GitHub issue (skip if vault-only or blank):
    ```bash
    _issue_field="$(fm_read "$schema_file" "issue" "")"
@@ -435,6 +444,7 @@ After all commit groups are done and validated:
    - Whether the run-summary triage entry was written successfully
 
 **Icon selection:** When calling `notify_triage`, pass `auto-implementor` as the icon (the `auto-` prefix triggers ⚙️ prepending automatically) and use the base semantic key:
+
 - Commit group completed → semantic key `activity` (resolves to ⚙️📋)
 - Review loop exhausted → semantic key `escalation` (resolves to ⚙️❗)
 - Design ambiguity → semantic key `design-question` (resolves to ⚙️❓)

@@ -78,27 +78,28 @@ by hand — the build script will overwrite manual changes.
 
 Defines two model tiers:
 
-| Tier | Model | Inherits global? |
-|------|-------|-----------------|
-| `design` | `github-copilot/claude-opus-4.6` | Yes (no `model` override in agent frontmatter) |
-| `execute` | `github-copilot/claude-sonnet-4.6` | No (explicit `model` override) |
+| Tier      | Model                              | Inherits global?                               |
+| --------- | ---------------------------------- | ---------------------------------------------- |
+| `design`  | `github-copilot/claude-opus-4.6`   | Yes (no `model` override in agent frontmatter) |
+| `execute` | `github-copilot/claude-sonnet-4.6` | No (explicit `model` override)                 |
 
 Each agent declares its tier via a `tier:` field in its YAML frontmatter.
 
 ### Tier assignments
 
-| Agent | Tier |
-|-------|------|
-| `@planner` | `design` |
-| `@designer` | `design` |
-| `@auto-auditor` | `design` |
-| `@implementor` | `execute` |
+| Agent               | Tier      |
+| ------------------- | --------- |
+| `@planner`          | `design`  |
+| `@designer`         | `design`  |
+| `@auto-auditor`     | `design`  |
+| `@implementor`      | `execute` |
 | `@auto-implementor` | `execute` |
-| `@reviewer` | `execute` |
+| `@reviewer`         | `execute` |
 
 ### `build.sh`
 
 Reads `build.yaml` and:
+
 1. Sets the `model` field in `opencode.json` to `global.model`.
 2. For each agent file, reads its `tier` from frontmatter, looks up the tier
    in `build.yaml`, and sets or removes the `model` field accordingly.
@@ -120,10 +121,10 @@ Modes are interactive session contexts. Switch between them with the **Tab key**
 in the opencode TUI. Each mode has its own system prompt and a distinct scope
 of permitted actions.
 
-| Mode | Prompt file | Purpose |
-|------|-------------|---------|
-| **build** | `prompts/build.md` | Full tool access — file edits, commands, subagent dispatch |
-| **plan** | `prompts/plan.md` | Read-only exploration and schema authoring; no direct file edits |
+| Mode      | Prompt file        | Purpose                                                                   |
+| --------- | ------------------ | ------------------------------------------------------------------------- |
+| **build** | `prompts/build.md` | Full tool access — file edits, commands, subagent dispatch                |
+| **plan**  | `prompts/plan.md`  | Read-only exploration and schema authoring; no direct file edits          |
 | **audit** | `prompts/audit.md` | Read-only quality analysis — orchestrates `@auto-auditor` and `@reviewer` |
 
 ### build mode
@@ -170,6 +171,7 @@ Plan ──────► Implement ──────► Review
 ### Agent reference
 
 #### `@planner` — schema authoring
+
 - **File:** `agents/planner.md`
 - **Role:** Explores a codebase, discusses design with the user, writes an
   implementation schema to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`,
@@ -180,6 +182,7 @@ Plan ──────► Implement ──────► Review
 - **Does not:** Implement anything; write outside the vault.
 
 #### `@project-manager` — issue lifecycle and project board
+
 - **File:** `agents/project-manager.md`
 - **Role:** Keeps GitHub project state and vault task state synchronized. Closes completed issues, manages milestones, moves project board items, maintains `$AGENT_VAULT/projects/<owner>/<repo>.md` status documents, and runs `vault-gc`/`vault-lint` as part of project cleanup.
 - **Write access:** All `gh issue *`, `gh project *`, `gh label *`, and `gh api repos/*/milestones` mutations; `gh pr comment*` (to cross-reference PRs when creating related issues); `vault-gc` and `vault-lint` scripts directly.
@@ -187,6 +190,7 @@ Plan ──────► Implement ──────► Review
 - **Modes:** Interactive (bulk-confirm) and status-sync. See `agents/project-manager.md` for full documentation.
 
 #### `@implementor` — manual schema execution
+
 - **File:** `agents/implementor.md`
 - **Role:** Executes a schema commit-group by commit-group, **pausing after
   each group** for user review before proceeding. Reads `CONTRIBUTING.md` at
@@ -201,6 +205,7 @@ Plan ──────► Implement ──────► Review
   apply `review-ready` label (that is manual/PM-agent only).
 
 #### `@auto-implementor` — autonomous schema execution
+
 - **File:** `agents/auto-implementor.md`
 - **Role:** Executes a schema **end-to-end without pausing**. After each commit
   group it stages, commits, then runs a bounded review loop (max 3 rounds of
@@ -218,6 +223,7 @@ Plan ──────► Implement ──────► Review
   continues — it never stops the run.
 
 #### `@reviewer` — structured code review
+
 - **File:** `agents/reviewer.md`
 - **Role:** Reviews staged changes (`git diff --cached`) or the latest commit
   (`git show HEAD`). Every finding is tagged with severity
@@ -230,6 +236,7 @@ Plan ──────► Implement ──────► Review
 - **Does not:** Run build tools; create PRs or issues; write outside the review file.
 
 #### `@designer` — repo notes and design documents
+
 - **File:** `agents/designer.md`
 - **Role:** Explores repositories and produces written reference material:
   - Repo notes at `$AGENT_VAULT/repo-notes/<owner>/<repo>/`
@@ -239,6 +246,7 @@ Plan ──────► Implement ──────► Review
 - **Does not:** Write schemas or reviews; run build tools; mutate git state.
 
 #### `@auto-auditor` — headless quality audit
+
 - **File:** `agents/auto-auditor.md`
 - **Role:** Detects project language, runs all available static analysis tools
   (degrading gracefully when tools are absent), synthesises findings across
@@ -294,20 +302,20 @@ detailed instructions and references to bundled scripts.
 
 ### Available skills
 
-| Skill | Directory | Purpose |
-|-------|-----------|---------|
-| `archive` | `skills/archive/` | Find and read archived schemas and reviews from the vault |
-| `fleet-schemas` | `skills/fleet-schemas/` | Find and read cross-repo (fleet) schemas |
-| `local-ci` | `skills/local-ci/` | Run and debug GitHub Actions workflows locally via `gh act` (includes `act.sh` wrapper) |
-| `repo-notes` | `skills/repo-notes/` | Find and read repository reference notes from the vault |
-| `reviews` | `skills/reviews/` | Find and read code review files from the vault |
-| `schemas` | `skills/schemas/` | Find and read implementation schemas; understand schema frontmatter fields |
-| `vault` | `skills/vault/` | Cross-section vault search and repository lookup |
-| `vault-cache` | `skills/vault-cache/` | Refresh the GitHub metadata cache (projects, milestones, labels) |
-| `vault-gc` | `skills/vault-gc/` | Archive completed schemas and reviews; supports `--dry-run` |
-| `vault-init` | `skills/vault-init/` | Initialize or verify the vault directory structure; runs `init.sh` |
-| `vault-lint` | `skills/vault-lint/` | Validate schemas and reviews against format templates |
-| `vault-triage` | `skills/vault-triage/` | Full triage skill for all agents — write triage entries, send push notifications, regenerate the inbox. Load after any significant work. |
+| Skill           | Directory               | Purpose                                                                                                                                  |
+| --------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `archive`       | `skills/archive/`       | Find and read archived schemas and reviews from the vault                                                                                |
+| `fleet-schemas` | `skills/fleet-schemas/` | Find and read cross-repo (fleet) schemas                                                                                                 |
+| `local-ci`      | `skills/local-ci/`      | Run and debug GitHub Actions workflows locally via `gh act` (includes `act.sh` wrapper)                                                  |
+| `repo-notes`    | `skills/repo-notes/`    | Find and read repository reference notes from the vault                                                                                  |
+| `reviews`       | `skills/reviews/`       | Find and read code review files from the vault                                                                                           |
+| `schemas`       | `skills/schemas/`       | Find and read implementation schemas; understand schema frontmatter fields                                                               |
+| `vault`         | `skills/vault/`         | Cross-section vault search and repository lookup                                                                                         |
+| `vault-cache`   | `skills/vault-cache/`   | Refresh the GitHub metadata cache (projects, milestones, labels)                                                                         |
+| `vault-gc`      | `skills/vault-gc/`      | Archive completed schemas and reviews; supports `--dry-run`                                                                              |
+| `vault-init`    | `skills/vault-init/`    | Initialize or verify the vault directory structure; runs `init.sh`                                                                       |
+| `vault-lint`    | `skills/vault-lint/`    | Validate schemas and reviews against format templates                                                                                    |
+| `vault-triage`  | `skills/vault-triage/`  | Full triage skill for all agents — write triage entries, send push notifications, regenerate the inbox. Load after any significant work. |
 
 ### Skills with bundled scripts
 
@@ -329,11 +337,11 @@ repo. The vault is a git-tracked directory managed with Obsidian.
 
 ### Environment variables
 
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `AGENT_VAULT` | Absolute path to the vault root | `~/obsidian/agent.obs` |
-| `AGENT_REPOS` | Absolute path to local repo checkouts | `~/repos` |
-| `NTFY_TOPIC` | ntfy.sh topic for push notifications (optional) | `my-topic-abc123` |
+| Variable      | Purpose                                         | Example                |
+| ------------- | ----------------------------------------------- | ---------------------- |
+| `AGENT_VAULT` | Absolute path to the vault root                 | `~/obsidian/agent.obs` |
+| `AGENT_REPOS` | Absolute path to local repo checkouts           | `~/repos`              |
+| `NTFY_TOPIC`  | ntfy.sh topic for push notifications (optional) | `my-topic-abc123`      |
 
 `NTFY_TOPIC` falls back to the value in `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` if
 the environment variable is not set.
@@ -411,6 +419,7 @@ after writing the schema and waits for user approval before creating the issue.
 **Agent:** `@implementor` (manual) or `@auto-implementor` (autonomous)
 
 Choose based on how much oversight is needed:
+
 - `@implementor` — pauses after each commit group; the user reviews and says
   "continue". Good for unfamiliar codebases, risky changes, or when the user
   wants granular control.
@@ -460,6 +469,7 @@ There is no inheritance — each file is independently authoritative.
 ### Keeping vault and repo in sync
 
 The vault and this repo evolve together. When you add or rename an agent:
+
 - Update the vault note at `repo-notes/ada-x64/opencode-config/agent-permissions.md`
 - The vault's `AGENTS.md` (at `$AGENT_VAULT/AGENTS.md`) documents vault
   conventions independently — it is not the same document as this file.
@@ -526,11 +536,11 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 
 ## Environment Variable Reference
 
-| Variable | Required | Description | Fallback |
-|----------|----------|-------------|---------- |
-| `AGENT_VAULT` | Yes (for vault ops) | Absolute path to the Obsidian vault | None — must be set |
-| `AGENT_REPOS` | Yes (for repo ops) | Absolute path to local repo checkouts | None — must be set |
-| `NTFY_TOPIC` | No | ntfy.sh topic for push notifications | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
+| Variable      | Required            | Description                           | Fallback                                  |
+| ------------- | ------------------- | ------------------------------------- | ----------------------------------------- |
+| `AGENT_VAULT` | Yes (for vault ops) | Absolute path to the Obsidian vault   | None — must be set                        |
+| `AGENT_REPOS` | Yes (for repo ops)  | Absolute path to local repo checkouts | None — must be set                        |
+| `NTFY_TOPIC`  | No                  | ntfy.sh topic for push notifications  | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
 Both path variables are checked at the top of any agent session that uses
 the vault or operates on a repository. The `vault-init` skill can create and

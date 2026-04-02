@@ -41,13 +41,13 @@ $AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md
 
 ## Schema frontmatter fields
 
-| Field | Description |
-|-------|-------------|
-| `repo` | `<owner>/<repo>` |
-| `issue` | GitHub issue link |
-| `branch` | Target branch name |
+| Field    | Description                         |
+| -------- | ----------------------------------- |
+| `repo`   | `<owner>/<repo>`                    |
+| `issue`  | GitHub issue link                   |
+| `branch` | Target branch name                  |
 | `status` | `todo` / `in progress` / `complete` |
-| `date` | Creation date |
+| `date`   | Creation date                       |
 
 ## Fleet schemas
 

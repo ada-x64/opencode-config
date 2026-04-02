@@ -21,11 +21,11 @@ date: YYYY-MM-DD
 
 ### Frontmatter fields
 
-| Field | Description |
-|-------|-------------|
-| `repo` | `<owner>/<repo>` identifier |
+| Field    | Description                         |
+| -------- | ----------------------------------- |
+| `repo`   | `<owner>/<repo>` identifier         |
 | `status` | `todo` / `in progress` / `complete` |
-| `date` | Review date (YYYY-MM-DD) |
+| `date`   | Review date (YYYY-MM-DD)            |
 
 Branch and diff info go in the document body (below the H1) since they change per review round.
 
@@ -45,27 +45,27 @@ Each issue gets its own subsection. Issues are numbered sequentially.
 
 ### Severity levels (mutually exclusive)
 
-| Severity | Meaning |
-|----------|---------|
-| **nit** | Stylistic or trivial. Not worth blocking merge. |
-| **low** | Minor improvement. Nice to fix but acceptable as-is. |
-| **medium** | Should be fixed before merge. Affects correctness, clarity, or maintainability. |
-| **high** | Must be fixed. Bug, security issue, or data loss risk. |
-| **critical** | Blocking. Fundamentally broken or dangerous. |
+| Severity     | Meaning                                                                         |
+| ------------ | ------------------------------------------------------------------------------- |
+| **nit**      | Stylistic or trivial. Not worth blocking merge.                                 |
+| **low**      | Minor improvement. Nice to fix but acceptable as-is.                            |
+| **medium**   | Should be fixed before merge. Affects correctness, clarity, or maintainability. |
+| **high**     | Must be fixed. Bug, security issue, or data loss risk.                          |
+| **critical** | Blocking. Fundamentally broken or dangerous.                                    |
 
 ### Issue categories (can combine, e.g. "bug, performance")
 
-| Category | Meaning |
-|----------|---------|
-| **bug** | Incorrect behavior at runtime. |
-| **performance** | Unnecessary work, O(n) where O(1) is possible, etc. |
-| **design** | Architectural or API design concern. |
-| **types** | Type safety gap, missing narrowing, incorrect annotations. |
-| **maintenance** | Makes future changes harder (coupling, duplication, etc.) |
-| **security** | Potential vulnerability or unsafe pattern. |
-| **docs** | Missing, incorrect, or misleading documentation. |
-| **testing** | Missing test coverage, flaky test, or incorrect assertion. |
-| **style** | Formatting, naming, or convention inconsistency. |
+| Category        | Meaning                                                    |
+| --------------- | ---------------------------------------------------------- |
+| **bug**         | Incorrect behavior at runtime.                             |
+| **performance** | Unnecessary work, O(n) where O(1) is possible, etc.        |
+| **design**      | Architectural or API design concern.                       |
+| **types**       | Type safety gap, missing narrowing, incorrect annotations. |
+| **maintenance** | Makes future changes harder (coupling, duplication, etc.)  |
+| **security**    | Potential vulnerability or unsafe pattern.                 |
+| **docs**        | Missing, incorrect, or misleading documentation.           |
+| **testing**     | Missing test coverage, flaky test, or incorrect assertion. |
+| **style**       | Formatting, naming, or convention inconsistency.           |
 
 ### Issue format
 
@@ -75,7 +75,7 @@ Each issue gets its own subsection. Issues are numbered sequentially.
 **Severity:** <severity> · **Category:** <category>[, <category>...]
 
 <Description of the issue. Be specific — reference file paths, line numbers,
-and code snippets. Explain *why* it's a problem, not just *what* is wrong.>
+and code snippets. Explain _why_ it's a problem, not just _what_ is wrong.>
 
 **Suggested fix:**
 
@@ -105,7 +105,7 @@ A table summarizing per-file changes. Useful for large diffs.
 ```markdown
 ## File summary
 
-| File | LOC Δ | Notes |
-|------|-------|-------|
+| File              | LOC Δ    | Notes        |
+| ----------------- | -------- | ------------ |
 | `path/to/file.py` | +100/−20 | <Brief note> |
 ```

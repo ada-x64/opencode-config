@@ -28,11 +28,11 @@ bash ~/.config/opencode/skills/vault-cache/refresh.sh ada-x64/wf
 
 ## What Gets Cached
 
-| Data | Source | Cache key |
-|------|--------|-----------|
-| Projects | `gh project list --owner <owner>` | `.projects` |
+| Data       | Source                                   | Cache key                  |
+| ---------- | ---------------------------------------- | -------------------------- |
+| Projects   | `gh project list --owner <owner>`        | `.projects`                |
 | Milestones | `gh api repos/<owner>/<repo>/milestones` | `.repos.<repo>.milestones` |
-| Labels | `gh api repos/<owner>/<repo>/labels` | `.repos.<repo>.labels` |
+| Labels     | `gh api repos/<owner>/<repo>/labels`     | `.repos.<repo>.labels`     |
 
 ## Cache Location
 
