@@ -110,6 +110,15 @@ rsync -a --delete \
 
 echo "Rsync complete."
 
+# --- Deploy AoE config ---
+AOE_SRC="$SCRIPT_DIR/docker/aoe-config.toml"
+AOE_DEST="${HOME}/.config/aoe/config.toml"
+if [[ -f "$AOE_SRC" ]]; then
+	mkdir -p "$(dirname "$AOE_DEST")"
+	cp "$AOE_SRC" "$AOE_DEST"
+	echo "AoE config deployed to: $AOE_DEST"
+fi
+
 # --- Step 4: Resolve {{CONFIG_DIR}} in target agent files ---
 echo "Resolving {{CONFIG_DIR}} → $OPENCODE_CONFIG_SRC in agent files..."
 resolved_count=0
