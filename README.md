@@ -72,3 +72,41 @@ vault's `AGENTS.md` for conventions.
 | `AGENT_VAULT` | Path to the agent vault (e.g. `~/obsidian/agent.obs`) |
 | `AGENT_REPOS` | Path to local repository checkouts (e.g. `~/repos`) |
 | `NTFY_TOPIC` | ntfy.sh topic for push notifications (optional; falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt`) |
+
+## Docker Sandbox
+
+Agent sessions run in isolated Docker containers via [Agent of Empires](https://github.com/njbrake/agent-of-empires) (AoE). The `docker/` directory contains the sandbox configuration:
+
+```
+docker/
+├── Dockerfile           # Custom Ubuntu 24.04 image with opencode + agent toolchain
+├── .dockerignore        # Build context filter
+└── aoe-config.toml      # AoE config template (deploy to ~/.config/aoe/config.toml)
+```
+
+### Building the image
+
+```bash
+docker build -t opencode-sandbox:latest ~/.config/opencode/docker/
+```
+
+### AoE config
+
+`docker/aoe-config.toml` is a versioned template. Deploy it to the AoE config directory:
+
+```bash
+# Copy (one-time):
+cp ~/.config/opencode/docker/aoe-config.toml ~/.config/aoe/config.toml
+
+# Or symlink (auto-updates on pull):
+ln -sf ~/.config/opencode/docker/aoe-config.toml ~/.config/aoe/config.toml
+```
+
+The config sets up: sandbox-by-default, custom image, vault bind-mount (RW), credential passthrough (`GH_TOKEN`, `GIT_CONFIG_COUNT`), and resource limits (4 CPU / 8 GB RAM).
+
+Requires host env vars:
+
+| Variable | Setup |
+|----------|-------|
+| `GH_TOKEN` | `export GH_TOKEN=$(gh auth token 2>/dev/null)` |
+| `NTFY_TOPIC` | ntfy.sh topic for push notifications |
