@@ -34,6 +34,7 @@ bash ~/.config/opencode/skills/vault-triage/setup.sh
 ```
 
 This will:
+
 - Detect your platform (Linux / macOS / WSL)
 - Generate a random ntfy topic and save it to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt`
 - Write an ntfy client config to `~/.config/ntfy/client.yml`
@@ -54,12 +55,12 @@ The ntfy CLI runs as a background subscriber and forwards all messages to your
 OS notification system. If you skip this step you still get phone notifications;
 you just won't get desktop pop-ups.
 
-| Platform | Install |
-|----------|---------|
-| Linux (apt) | `sudo apt install ntfy` |
-| Linux (pip) | `pip install ntfy` |
-| macOS | `brew install ntfy` |
-| WSL | Install on the Linux side via apt/pip |
+| Platform    | Install                               |
+| ----------- | ------------------------------------- |
+| Linux (apt) | `sudo apt install ntfy`               |
+| Linux (pip) | `pip install ntfy`                    |
+| macOS       | `brew install ntfy`                   |
+| WSL         | Install on the Linux side via apt/pip |
 
 Then start the subscriber daemon:
 
@@ -73,6 +74,7 @@ run `ntfy subscribe --from-config &` in a startup script.
 > **WSL note:** Desktop notifications use `New-BurntToastNotification` via
 > `pwsh.exe` (PowerShell 7). `setup.sh` auto-detects the absolute path so
 > systemd services can find it. Install BurntToast on the Windows side first:
+>
 > ```powershell
 > Install-Module BurntToast -Scope CurrentUser
 > ```
@@ -114,10 +116,10 @@ bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh --notify-summary
 
 ## Environment variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `AGENT_VAULT` | Yes | Path to the vault (e.g. `~/obsidian/agent.obs`) |
-| `NTFY_TOPIC` | No | ntfy topic name; falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
+| Variable      | Required | Description                                                              |
+| ------------- | -------- | ------------------------------------------------------------------------ |
+| `AGENT_VAULT` | Yes      | Path to the vault (e.g. `~/obsidian/agent.obs`)                          |
+| `NTFY_TOPIC`  | No       | ntfy topic name; falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
 ## Re-running setup
 
@@ -126,10 +128,10 @@ existing topic. Run it again after migrating to a new machine.
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `setup.sh` | One-time platform setup (run manually) |
-| `triage-dashboard.sh` | Dashboard generator and summary notifier (run on demand or by timer) |
-| `notify.sh` | `notify_triage` function — sourced by agents, not run directly |
-| `toast-handler.sh` | Cross-platform toast handler for ntfy subscribe (icon + platform dispatch) |
-| `SKILL.md` | Agent-facing descriptor loaded by the `vault-triage` skill |
+| File                  | Purpose                                                                    |
+| --------------------- | -------------------------------------------------------------------------- |
+| `setup.sh`            | One-time platform setup (run manually)                                     |
+| `triage-dashboard.sh` | Dashboard generator and summary notifier (run on demand or by timer)       |
+| `notify.sh`           | `notify_triage` function — sourced by agents, not run directly             |
+| `toast-handler.sh`    | Cross-platform toast handler for ntfy subscribe (icon + platform dispatch) |
+| `SKILL.md`            | Agent-facing descriptor loaded by the `vault-triage` skill                 |

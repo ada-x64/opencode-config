@@ -40,7 +40,7 @@ for schematic in "$vault"/tasks/*/*/*/schema.md; do
 
 	task_dir="$(dirname "$schematic")"
 	task="$(basename "$task_dir")"
-	rel="${task_dir#${vault}/tasks/}"
+	rel="${task_dir#"${vault}"/tasks/}"
 	owner="${rel%%/*}"
 	rel_rest="${rel#*/}"
 	repo="${rel_rest%%/*}"

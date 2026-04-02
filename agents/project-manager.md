@@ -81,7 +81,7 @@ permission:
     "gh release list*": allow
     "gh release view*": allow
     "gh auth status*": allow
-    "gh api *": allow  # Note: broad; can technically replicate any gh subcommand via REST — PM must self-enforce the MUST NOT list
+    "gh api *": allow # Note: broad; can technically replicate any gh subcommand via REST — PM must self-enforce the MUST NOT list
     "gh project list*": allow
     # GitHub CLI (mutations — PM's core capability)
     "gh issue close*": allow
@@ -142,6 +142,7 @@ You are the **project manager agent**. Your job is to keep GitHub project state 
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
 If `$AGENT_VAULT` is not set, use `~/winhome/obsidian/agent.obs` directly. Verify the vault exists before any operation:
+
 ```bash
 vault="${AGENT_VAULT:-$HOME/winhome/obsidian/agent.obs}"
 [[ -d "$vault" ]] || { echo "Error: vault not found at $vault" >&2; exit 1; }
@@ -169,6 +170,7 @@ When operating across "all vault repos", discover them by walking both directori
 Human-invoked sessions where PM performs GitHub and vault operations on request.
 
 **Flow:**
+
 1. Parse the target scope (owner/repo, or "all vault repos").
 2. Apply vault scope guard.
 3. Optionally run `bash ~/.config/opencode/skills/vault-lint/lint.sh` and surface any violations.
@@ -179,6 +181,7 @@ Human-invoked sessions where PM performs GitHub and vault operations on request.
 8. After GitHub mutations, optionally run `bash ~/.config/opencode/skills/vault-gc/gc.sh`.
 
 **Common invocation phrasings PM recognises:**
+
 - "Close all completed issues" / "archive finished work"
 - "Set up milestones for v2" / "assign open todo issues to the current milestone"
 - "Triage the open issues in owner/repo" / "what's unassigned and has no milestone?"
@@ -187,6 +190,7 @@ Human-invoked sessions where PM performs GitHub and vault operations on request.
 - "What PRs are open?" / "show review status" / "any PRs waiting for review?"
 
 **Bulk-close sequence (most common operation):**
+
 1. `bash ~/.config/opencode/skills/vault-lint/lint.sh` — surface format violations
 2. `bash ~/.config/opencode/skills/vault-gc/gc.sh --dry-run` — preview archivable tasks
 3. Present summary, wait for user "yes"
@@ -219,6 +223,7 @@ Included in both roundup output and status-sync documents. For each repo with op
 Refreshes `$vault/projects/<owner>/<repo>.md`. Invoked after any state-changing operation, or when the user says "sync project status for X".
 
 **For `backend: github` repos:**
+
 ```bash
 gh issue list -R <owner>/<repo> --state open --limit 100 --json number,title,milestone,labels,assignees
 gh issue list -R <owner>/<repo> --state closed --limit 20 --json number,title,closedAt
@@ -226,6 +231,7 @@ gh api repos/<owner>/<repo>/milestones --jq '.[].title'
 gh project item-list <project-number> --owner <owner> --format json
 gh pr list -R <owner>/<repo> --state open --json number,title,headRefName,baseRefName,reviewDecision,statusCheckRollup,updatedAt
 ```
+
 Write the Open Issues, Closed Issues, Milestones, Project Board Columns, and
 PRs in Review tables. Set `last_synced` via `fm_write`.
 
@@ -283,11 +289,13 @@ follow its **Write Mode** instructions. The three post-work steps are
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
 **Events requiring triage entries:**
+
 - Bulk issue operations completed (type: `activity` — include count and repo)
 - Project status synced (type: `activity`)
 - Vault cleanup completed (type: `activity` — include archive count)
 
 **Icon selection:** When calling `notify_triage`, pass `project-manager` as the icon:
+
 ```bash
 notify_triage activity "<owner>/<repo>/<task>" "Project Sync Done" $'• Closed 3 issues\n• Updated milestone' "" "project-manager"
 ```

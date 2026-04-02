@@ -118,19 +118,19 @@ state of the vault after every write.
 Pass as the 6th argument to `notify_triage`. The icon name maps to a PNG served
 from the opencode-config repo.
 
-| Agent / Mode | Icon argument |
-|--------------|--------------|
-| `@implementor` | `implementor` |
+| Agent / Mode        | Icon argument      |
+| ------------------- | ------------------ |
+| `@implementor`      | `implementor`      |
 | `@auto-implementor` | `auto-implementor` |
-| `@auto-auditor` | `auto-auditor` |
-| Audit mode | `auditor` |
-| `@reviewer` | `reviewer` |
-| `@planner` | `planner` |
-| `@designer` | `designer` |
-| `@project-manager` | `project-manager` |
-| Build mode | `build` |
-| Plan mode | `plan` |
-| Fallback | `default` |
+| `@auto-auditor`     | `auto-auditor`     |
+| Audit mode          | `auditor`          |
+| `@reviewer`         | `reviewer`         |
+| `@planner`          | `planner`          |
+| `@designer`         | `designer`         |
+| `@project-manager`  | `project-manager`  |
+| Build mode          | `build`            |
+| Plan mode           | `plan`             |
+| Fallback            | `default`          |
 
 ### Semantic keys (7th argument — emoji resolution)
 
@@ -142,24 +142,24 @@ If the 7th argument is omitted, a default emoji is derived from the triage type.
 
 #### Type-based defaults (when 7th arg is omitted)
 
-| Triage type | Emoji |
-|-------------|-------|
-| `escalation` | ❗ |
-| `design-question` | ❓ |
-| `activity` | 📋 |
-| `handoff` | 📋 |
-| `run-summary` | 📋 |
+| Triage type       | Emoji |
+| ----------------- | ----- |
+| `escalation`      | ❗    |
+| `design-question` | ❓    |
+| `activity`        | 📋    |
+| `handoff`         | 📋    |
+| `run-summary`     | 📋    |
 
 #### Explicit semantic keys
 
-| Key | Emoji | Used when |
-|-----|-------|-----------|
-| `activity` | 📋 | General work completion |
-| `clean` | 🟢 | Review/audit: 0 high+ findings |
-| `warn` | 🟡 | Review/audit: nit/low findings only |
-| `reject` | 🔴 | Review/audit: high or critical findings |
-| `escalation` | ❗ | Review loop exhausted or blocking issue |
-| `design-question` | ❓ | Design ambiguity needing human input |
+| Key               | Emoji | Used when                               |
+| ----------------- | ----- | --------------------------------------- |
+| `activity`        | 📋    | General work completion                 |
+| `clean`           | 🟢    | Review/audit: 0 high+ findings          |
+| `warn`            | 🟡    | Review/audit: nit/low findings only     |
+| `reject`          | 🔴    | Review/audit: high or critical findings |
+| `escalation`      | ❗    | Review loop exhausted or blocking issue |
+| `design-question` | ❓    | Design ambiguity needing human input    |
 
 **Auto-agent prefix:** When the `icon` parameter starts with `auto-` (e.g.
 `"auto-implementor"`), `notify.sh` strips the prefix for the PNG URL lookup
@@ -192,11 +192,13 @@ notify_triage escalation "ada-x64/qproj/fix-tests" "Review Loop Exhausted" "• 
 audit complete, implementation commit group finished, project sync done, etc.)
 
 **Format:** Brief — 2-3 sentences:
+
 - What the agent did
 - The outcome / result
 - Next steps (if any)
 
 **Example:**
+
 ```yaml
 ---
 type: activity
@@ -205,7 +207,6 @@ task: my-task
 date: 2026-03-31
 status: pending
 ---
-
 Completed code review of commit group 2. Found 3 nits and 1 medium finding
 (missing error handling in retry loop). Implementor should address the medium
 finding before proceeding to group 3.
@@ -219,6 +220,7 @@ finding before proceeding to group 3.
 the agent is blocked and cannot proceed without human input.
 
 **Format:** Detailed — must include:
+
 - **Diagnosis** — one of: `implementation-gap`, `schema-ambiguity`,
   `design-contradiction`, `underspecified-requirement`
 - **Persistent findings** — verbatim from the last review
@@ -226,6 +228,7 @@ the agent is blocked and cannot proceed without human input.
 - **Recommendation** — suggested human action
 
 **Example:**
+
 ```yaml
 ---
 type: escalation
@@ -264,6 +267,7 @@ the backoff logic without coverage. Schema §2c is underspecified on this point.
 a non-trivial judgment call was made that the schema did not resolve.
 
 **Format:** Detailed — must include:
+
 - **Decision point** — the specific ambiguity encountered
 - **Options considered** — list of options evaluated
 - **Why the agent couldn't resolve autonomously** — what was unclear
@@ -271,6 +275,7 @@ a non-trivial judgment call was made that the schema did not resolve.
 - **Recommendation for human review** — whether the choice should be revisited
 
 **Example:**
+
 ```yaml
 ---
 type: design-question
@@ -313,6 +318,7 @@ Review whether this is consistent with the team's preferred pattern.
 **When:** At completion of a full autonomous implementation run.
 
 **Format:** Comprehensive — must include:
+
 - Commit groups completed (list with validation results)
 - Total review rounds
 - Escalations filed (filenames or "none")
@@ -327,6 +333,7 @@ Review whether this is consistent with the team's preferred pattern.
 context to continue.
 
 **Format:** Clear and complete — must include:
+
 - Last completed work
 - What remains
 - Any context the next agent/human needs to pick up cleanly
@@ -335,18 +342,18 @@ context to continue.
 
 ## Notification Events by Agent Role
 
-| Agent | Events | Type |
-|-------|--------|------|
-| `@planner` | Schema written; Issue created | `activity` |
-| `@reviewer` | Review completed (include finding counts + max severity) | `activity` |
-| `@designer` | Repo notes or design document written | `activity` |
-| `@implementor` | Commit group completed; Full implementation complete | `activity` |
-| `@auto-implementor` | Review loop exhausted | `escalation` |
-| `@auto-implementor` | Design ambiguity resolved | `design-question` |
-| `@auto-implementor` | Run complete | `run-summary` |
-| `@auto-implementor` | Commit group completed | `activity` |
-| `@auto-auditor` | Audit report completed (include critical/high counts) | `activity` |
-| `@project-manager` | Bulk operations completed; Vault cleanup; Project sync | `activity` |
+| Agent               | Events                                                   | Type              |
+| ------------------- | -------------------------------------------------------- | ----------------- |
+| `@planner`          | Schema written; Issue created                            | `activity`        |
+| `@reviewer`         | Review completed (include finding counts + max severity) | `activity`        |
+| `@designer`         | Repo notes or design document written                    | `activity`        |
+| `@implementor`      | Commit group completed; Full implementation complete     | `activity`        |
+| `@auto-implementor` | Review loop exhausted                                    | `escalation`      |
+| `@auto-implementor` | Design ambiguity resolved                                | `design-question` |
+| `@auto-implementor` | Run complete                                             | `run-summary`     |
+| `@auto-implementor` | Commit group completed                                   | `activity`        |
+| `@auto-auditor`     | Audit report completed (include critical/high counts)    | `activity`        |
+| `@project-manager`  | Bulk operations completed; Vault cleanup; Project sync   | `activity`        |
 
 ---
 
@@ -355,15 +362,19 @@ context to continue.
 To read triage files and generate a summary of pending items:
 
 1. Collect all triage files in scope:
+
    ```bash
    find "$AGENT_VAULT/tasks/<owner>/<repo>/" -name "triage*.md" | sort
    ```
+
    Or across the entire vault:
+
    ```bash
    find "$AGENT_VAULT/tasks/" -name "triage*.md" | sort
    ```
 
 2. Read each file and extract frontmatter fields:
+
    ```bash
    source ~/.config/opencode/skills/lib/frontmatter.sh
    fm_read "$file" "type" "unknown"
@@ -416,10 +427,10 @@ bash ~/.config/opencode/skills/vault-triage/setup.sh
 
 ## Environment
 
-| Variable | Required | Source |
-|----------|----------|--------|
-| `AGENT_VAULT` | Yes | Agent environment |
-| `NTFY_TOPIC` | No | Falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
+| Variable      | Required | Source                                                  |
+| ------------- | -------- | ------------------------------------------------------- |
+| `AGENT_VAULT` | Yes      | Agent environment                                       |
+| `NTFY_TOPIC`  | No       | Falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
 ## Dashboard output
 
@@ -431,10 +442,10 @@ Dismissed. Each row has a wiki-link to the triage file, type, agent, and date.
 All triage types produce desktop toasts (via ntfy subscriber) and phone
 notifications. Priority controls audible alerts on mobile:
 
-| Triage type | ntfy priority | Phone audible |
-|-------------|---------------|---------------|
-| `escalation` | high | Yes |
-| `design-question` | high | Yes |
-| `activity` | default | No |
-| `handoff` | default | No |
-| `run-summary` | low | No |
+| Triage type       | ntfy priority | Phone audible |
+| ----------------- | ------------- | ------------- |
+| `escalation`      | high          | Yes           |
+| `design-question` | high          | Yes           |
+| `activity`        | default       | No            |
+| `handoff`         | default       | No            |
+| `run-summary`     | low           | No            |

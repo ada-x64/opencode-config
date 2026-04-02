@@ -16,10 +16,10 @@ images/              # Notification icons (64x64 PNG, served via raw.githubuserc
 
 Three modes, each with its own system prompt:
 
-| Mode | Prompt | Description |
-|------|--------|-------------|
-| **build** | `prompts/build.md` | Full tool access — file edits, commands, subagent dispatch |
-| **plan** | `prompts/plan.md` | Read-only exploration and schema authoring |
+| Mode      | Prompt             | Description                                                         |
+| --------- | ------------------ | ------------------------------------------------------------------- |
+| **build** | `prompts/build.md` | Full tool access — file edits, commands, subagent dispatch          |
+| **plan**  | `prompts/plan.md`  | Read-only exploration and schema authoring                          |
 | **audit** | `prompts/audit.md` | Read-only quality analysis — tool dispatch and report orchestration |
 
 Switch modes with the Tab key in the opencode TUI.
@@ -28,34 +28,34 @@ Switch modes with the Tab key in the opencode TUI.
 
 Subagents dispatched via the Task tool. Each is defined in `agents/`:
 
-| Agent | File | Role |
-|-------|------|------|
-| `@planner` | `agents/planner.md` | Explores codebase, writes schemas, creates GitHub issues |
-| `@project-manager` | `agents/project-manager.md` | GitHub issue lifecycle, project board ops, milestone management, vault project status |
-| `@implementor` | `agents/implementor.md` | Executes schemas step-by-step with manual approval gates |
-| `@auto-implementor` | `agents/auto-implementor.md` | Executes schemas autonomously with a bounded review loop |
-| `@reviewer` | `agents/reviewer.md` | Structured code review; writes findings to the vault |
-| `@auto-auditor` | `agents/auto-auditor.md` | Headless audit agent — static analysis, coverage, vault report |
+| Agent               | File                         | Role                                                                                  |
+| ------------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
+| `@planner`          | `agents/planner.md`          | Explores codebase, writes schemas, creates GitHub issues                              |
+| `@project-manager`  | `agents/project-manager.md`  | GitHub issue lifecycle, project board ops, milestone management, vault project status |
+| `@implementor`      | `agents/implementor.md`      | Executes schemas step-by-step with manual approval gates                              |
+| `@auto-implementor` | `agents/auto-implementor.md` | Executes schemas autonomously with a bounded review loop                              |
+| `@reviewer`         | `agents/reviewer.md`         | Structured code review; writes findings to the vault                                  |
+| `@auto-auditor`     | `agents/auto-auditor.md`     | Headless audit agent — static analysis, coverage, vault report                        |
 
 ## Skills
 
 Skills are loadable instruction sets injected into context on demand. Each lives
 in `skills/<name>/` with a `SKILL.md` descriptor and optional scripts.
 
-| Skill | Purpose |
-|-------|---------|
-| `archive` | Find and read archived schemas and reviews from the vault |
-| `fleet-schemas` | Find and read cross-repo (fleet) schemas |
-| `local-ci` | Run and debug GitHub Actions workflows locally via `gh act` |
-| `repo-notes` | Find and read repository reference notes |
-| `reviews` | Find and read code review files |
-| `schemas` | Find and read implementation schemas |
-| `vault` | Cross-section vault search and repo lookup |
-| `vault-cache` | Refresh GitHub metadata cache (projects, milestones, labels) |
-| `vault-gc` | Archive completed schemas and reviews |
-| `vault-init` | Initialize or verify the vault directory structure |
-| `vault-lint` | Validate schemas and reviews against format templates |
-| `vault-triage` | Generate triage dashboard; send push notifications for agent triage entries |
+| Skill           | Purpose                                                                     |
+| --------------- | --------------------------------------------------------------------------- |
+| `archive`       | Find and read archived schemas and reviews from the vault                   |
+| `fleet-schemas` | Find and read cross-repo (fleet) schemas                                    |
+| `local-ci`      | Run and debug GitHub Actions workflows locally via `gh act`                 |
+| `repo-notes`    | Find and read repository reference notes                                    |
+| `reviews`       | Find and read code review files                                             |
+| `schemas`       | Find and read implementation schemas                                        |
+| `vault`         | Cross-section vault search and repo lookup                                  |
+| `vault-cache`   | Refresh GitHub metadata cache (projects, milestones, labels)                |
+| `vault-gc`      | Archive completed schemas and reviews                                       |
+| `vault-init`    | Initialize or verify the vault directory structure                          |
+| `vault-lint`    | Validate schemas and reviews against format templates                       |
+| `vault-triage`  | Generate triage dashboard; send push notifications for agent triage entries |
 
 See `skills/vault-triage/README.md` for first-time notification setup.
 

@@ -1,7 +1,7 @@
 ---
 repo: <owner>/<repo>
-backend: github   # or: local
-last_synced:      # ISO-8601 UTC; leave blank until first sync
+backend: github # or: local
+last_synced: # ISO-8601 UTC; leave blank until first sync
 stale_after_hours: 24
 ---
 
@@ -15,39 +15,39 @@ stale_after_hours: 24
 
 _Last synced:_ <!-- populated by PM on sync -->
 
-| Metric | Value |
-|--------|-------|
-| Open issues | — |
-| Closed issues | — |
-| Open milestones | — |
-| Active milestone | — |
+| Metric           | Value |
+| ---------------- | ----- |
+| Open issues      | —     |
+| Closed issues    | —     |
+| Open milestones  | —     |
+| Active milestone | —     |
 
 ## Milestones
 
-| Milestone | State | Open | Closed | Due |
-|-----------|-------|------|--------|-----|
-| <!-- PM fills this in on sync --> | | | | |
+| Milestone                         | State | Open | Closed | Due |
+| --------------------------------- | ----- | ---- | ------ | --- |
+| <!-- PM fills this in on sync --> |       |      |        |     |
 
 ## Open Issues
 
 _Note: the Column field is omitted for `backend: local` repos._
 
-| # | Title | Milestone | Labels | Assignee | Column |
-|---|-------|-----------|--------|----------|--------|
-| <!-- PM fills this in on sync --> | | | | | |
+| #                                 | Title | Milestone | Labels | Assignee | Column |
+| --------------------------------- | ----- | --------- | ------ | -------- | ------ |
+| <!-- PM fills this in on sync --> |       |           |        |          |        |
 
 ## Closed Issues (recent)
 
 <!-- Capped at 20 entries. Older closed issues are not shown. -->
 
-| # | Title | Closed at |
-|---|-------|-----------|
-| <!-- PM fills this in on sync --> | | |
+| #                                 | Title | Closed at |
+| --------------------------------- | ----- | --------- |
+| <!-- PM fills this in on sync --> |       |           |
 
 ## Project Board Columns
 
 _Note: this section is omitted for `backend: local` repos._
 
-| Column | Item count |
-|--------|------------|
-| <!-- PM fills this in on sync --> | |
+| Column                            | Item count |
+| --------------------------------- | ---------- |
+| <!-- PM fills this in on sync --> |            |

@@ -142,6 +142,7 @@ audit report to the vault. You operate read-only with respect to the repository
 
 Confirm both are set before proceeding. Derive `<owner>/<repo>` from `repo_path`
 by stripping the `$AGENT_REPOS/` prefix:
+
 ```bash
 owner_repo=$(realpath "$repo_path" | sed "s|$AGENT_REPOS/||")
 ```
@@ -156,6 +157,7 @@ owner_repo=$(realpath "$repo_path" | sed "s|$AGENT_REPOS/||")
 ## Output
 
 Write the audit report to:
+
 ```
 $AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md
 ```
@@ -170,6 +172,7 @@ Return a one-paragraph summary to the caller: the path written, overall health
 Before running any tool:
 
 1. Record the commit SHA and current branch:
+
    ```bash
    git -C "$repo_path" rev-parse HEAD
    git -C "$repo_path" branch --show-current
@@ -200,18 +203,21 @@ on. If a tool fails due to an environment issue, record it as
 "failed (<reason>)" and continue.
 
 **Rust:**
+
 1. `cargo clippy --message-format=json 2>&1`
 2. `cargo audit 2>&1`
 3. `cargo deny check 2>&1`
 4. `cargo llvm-cov --json 2>&1` (if coverage requested or inferred useful)
 
 **Node:**
+
 1. `npm audit --json 2>&1` (or `pnpm audit --json` / `yarn audit --json`)
 2. `eslint . 2>&1`
 3. `tsc --noEmit 2>&1`
 4. `npx jest --coverage --json 2>&1` or `npx vitest --coverage 2>&1` (if coverage)
 
 **Python:**
+
 1. `pip-audit 2>&1`
 2. `ruff check . 2>&1`
 3. `mypy . 2>&1`
@@ -219,6 +225,7 @@ on. If a tool fails due to an environment issue, record it as
 5. `pytest --cov 2>&1` (if coverage)
 
 **Cross-language:**
+
 1. `semgrep --config=auto . 2>&1`
 2. `trivy fs . 2>&1`
 
@@ -236,6 +243,7 @@ Read the codebase within scope and synthesise findings:
 1. Read all source files matching the scope (or the full repo if `scope == "full"`).
 
 2. Read git log for churn analysis:
+
    ```bash
    git -C "$repo_path" log --oneline --follow --stat -- <scope> 2>&1 | head -200
    ```
@@ -260,6 +268,7 @@ Read the codebase within scope and synthesise findings:
 ### Phase 4: Write Report
 
 Construct the output path:
+
 ```bash
 date_str=$(date +%Y-%m-%d)
 owner_repo=$(realpath "$repo_path" | sed "s|$AGENT_REPOS/||")
@@ -285,22 +294,24 @@ After writing the audit report, load the `vault-triage` skill and follow its
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
 **Events requiring triage entries:**
+
 - Audit report completed (type: `activity` — include critical/high finding counts and top recommendation)
 
 ## Severity Reference
 
-| Severity | Audit meaning |
-|----------|--------------|
-| **critical** | Active exploit, data loss risk, or regulatory violation. Fix immediately. |
-| **high** | Significant vulnerability or quality failure; address within the current sprint. |
-| **medium** | Noteworthy pattern; address within the quarter. |
-| **low** | Minor quality issue or best-practice gap; worth tracking, not urgent. |
-| **info** | Neutral observation with no negative valence. |
+| Severity     | Audit meaning                                                                    |
+| ------------ | -------------------------------------------------------------------------------- |
+| **critical** | Active exploit, data loss risk, or regulatory violation. Fix immediately.        |
+| **high**     | Significant vulnerability or quality failure; address within the current sprint. |
+| **medium**   | Noteworthy pattern; address within the quarter.                                  |
+| **low**      | Minor quality issue or best-practice gap; worth tracking, not urgent.            |
+| **info**     | Neutral observation with no negative valence.                                    |
 
 Severity uses **roadmap-priority semantics** — a critical audit finding means
 "urgent engineering attention", not "blocks this PR".
 
 **Icon selection:** When calling `notify_triage`, pass `auto-auditor` as the icon (the `auto-` prefix triggers ⚙️ prepending automatically) and use the base semantic key:
+
 - 0 high+ findings → semantic key `clean` (resolves to ⚙️🟢)
 - Medium findings only → semantic key `warn` (resolves to ⚙️🟡)
 - Any high/critical findings → semantic key `reject` (resolves to ⚙️🔴)

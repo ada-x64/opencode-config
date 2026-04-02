@@ -16,12 +16,12 @@ relative to `$AGENT_VAULT`.
 
 ## Vault section index
 
-| Skill       | Section             | Path                                              |
-|-------------|---------------------|---------------------------------------------------|
-| schemas     | Implementation specs | `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md` |
-| reviews     | Code reviews        | `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md` |
-| repo-notes  | Reference docs      | `$AGENT_VAULT/repo-notes/<owner>/<repo>/`         |
-| archive     | Completed work      | `$AGENT_VAULT/_misc/archive/tasks/<owner>/<repo>/<task>/` |
+| Skill      | Section              | Path                                                      |
+| ---------- | -------------------- | --------------------------------------------------------- |
+| schemas    | Implementation specs | `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`      |
+| reviews    | Code reviews         | `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`      |
+| repo-notes | Reference docs       | `$AGENT_VAULT/repo-notes/<owner>/<repo>/`                 |
+| archive    | Completed work       | `$AGENT_VAULT/_misc/archive/tasks/<owner>/<repo>/<task>/` |
 
 ## Cross-section search
 

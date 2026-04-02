@@ -38,11 +38,11 @@ $AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md
 
 ## Review frontmatter fields
 
-| Field | Description |
-|-------|-------------|
-| `repo` | `<owner>/<repo>` |
+| Field    | Description                         |
+| -------- | ----------------------------------- |
+| `repo`   | `<owner>/<repo>`                    |
 | `status` | `todo` / `in progress` / `complete` |
-| `date` | Review date |
+| `date`   | Review date                         |
 
 ## Format template
 
