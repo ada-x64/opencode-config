@@ -1,0 +1,2 @@
+# Mark PNG files as binary to prevent text-diff noise on icon replacements
+images/*.png binary
