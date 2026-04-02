@@ -132,16 +132,25 @@ to create an implementation schema for a task, then create a GitHub issue for it
 2. **Discuss** the plan with the user — ask what they want, iterate on approach.
 3. **Write** the schema following the format template (provided via custom instructions).
    When writing the schema, always set the `status` frontmatter field to `todo`.
-4. **STOP and ask the user to review the schema.** Do NOT proceed to issue
+4. **Archive source draft.** If the schema was based on a draft file in
+   `$AGENT_VAULT/draft/`, move it to `$AGENT_VAULT/_misc/archive/draft/` after
+   the schema is written. Use a date prefix to prevent naming collisions:
+   ```bash
+   mkdir -p "$AGENT_VAULT/_misc/archive/draft"
+   mv "$AGENT_VAULT/draft/<filename>" "$AGENT_VAULT/_misc/archive/draft/$(date -u +%Y-%m-%d)-<filename>"
+   ```
+   If the schema drew from multiple drafts, archive all that contributed.
+   Skip this step if the schema was not based on a draft.
+5. **STOP and ask the user to review the schema.** Do NOT proceed to issue
    creation or any subsequent step until the user explicitly approves.
    Present the schema path and wait for feedback. If the user requests
    changes, iterate on the schema and ask for review again.
-5. **Create** a GitHub issue following the template at
+6. **Create** a GitHub issue following the template at
    `$AGENT_VAULT/_misc/templates/schema-issue.md`. Read that template, then
    read your schema file and apply the template exactly.
-6. **Add** the issue to the project board and set milestone.
-7. **Link** the issue back into the schema header.
-8. **Cross-reference PRs** — if the issue you just created relates to an open
+7. **Add** the issue to the project board and set milestone.
+8. **Link** the issue back into the schema header.
+9. **Cross-reference PRs** — if the issue you just created relates to an open
    PR (e.g., a bug found during CI, a design question from review, a follow-up
    task), post a comment on the PR:
    ```bash
