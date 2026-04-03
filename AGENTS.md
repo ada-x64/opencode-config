@@ -64,7 +64,7 @@ opencode-config/
 ├── .github/workflows/         # CI
 │   ├── lint.yml               #   shfmt, shellcheck, prettier, ruff, basedpyright
 │   ├── release.yml            #   Tarball + PyPI publish on tag push
-│   └── docker.yml             #   Build & push opencode-sandbox to ghcr.io
+│   └── docker.yml             #   Build & push cubething-occonf-sandbox to ghcr.io
 ├── AGENTS.md                  # This file (loaded as system context)
 └── README.md                  # Public-facing summary
 ```
@@ -506,16 +506,16 @@ The `docker/Dockerfile` builds an Ubuntu 24.04 image with the full agent
 toolchain: opencode, gh CLI, Node.js, pnpm, bun, Rust, uv, ripgrep, yq.
 
 ```bash
-docker build -t opencode-sandbox:latest docker/
+docker build -t cubething-occonf-sandbox:latest docker/
 ```
 
-The image is also published to `ghcr.io/ada-x64/opencode-sandbox:latest` via
+The image is also published to `ghcr.io/ada-x64/cubething-occonf-sandbox:latest` via
 the Docker workflow on pushes to `main` that touch `docker/`.
 
 ### AoE config
 
 `src/aoe-config.toml` is a versioned template. The `install.py` script
-deploys it to `~/.config/aoe/config.toml`, resolving `{{AGENT_VAULT}}` and
+deploys it to `~/.config/agent-of-empires/config.toml`, resolving `{{AGENT_VAULT}}` and
 `{{OPENCODE_CONFIG_SRC}}` placeholders. The config sets up: sandbox-by-default,
 custom image, vault bind-mount (RW), credential passthrough (`GH_TOKEN`,
 `GIT_CONFIG_COUNT`), and resource limits (4 CPU / 8 GB RAM).
@@ -623,7 +623,7 @@ Three GitHub Actions workflows:
 | ----------- | --------------------------------- | ----------------------------------------------------------- |
 | **Lint**    | Push/PR to `main`                 | shfmt, shellcheck, prettier, ruff format/lint, basedpyright |
 | **Release** | Tag push (`v*`) or manual         | Build tarball + wheel, publish to PyPI + GitHub Releases    |
-| **Docker**  | Push to `main` touching `docker/` | Build & push `opencode-sandbox` to ghcr.io                  |
+| **Docker**  | Push to `main` touching `docker/` | Build & push `cubething-occonf-sandbox` to ghcr.io          |
 
 Both CI and the local pre-push hook run `scripts/lint.sh`. To activate the
 hook after cloning:

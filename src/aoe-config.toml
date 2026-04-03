@@ -1,8 +1,8 @@
 # AoE (Agent of Empires) configuration template
 #
-# This file is a versioned template with placeholders. To deploy, run setup.sh
-# or install.sh — they resolve {{AGENT_VAULT}} and {{OPENCODE_CONFIG_SRC}}
-# automatically using your environment.
+# This file is a versioned template with placeholders. install.py resolves
+# {{AGENT_VAULT}} and {{OPENCODE_CONFIG_SRC}} and deploys the result to
+# ~/.config/agent-of-empires/config.toml.
 #
 # Requires on host:
 #   export GH_TOKEN=$(gh auth token 2>/dev/null)
@@ -13,8 +13,8 @@ default_tool = "opencode"
 
 [sandbox]
 enabled_by_default = true
-default_image = "opencode-sandbox:latest"
-auto_cleanup = true
+default_image = "cubething-occonf-sandbox:latest"
+auto_cleanup = false
 cpu_limit = "4"
 memory_limit = "8g"
 mount_ssh = false
