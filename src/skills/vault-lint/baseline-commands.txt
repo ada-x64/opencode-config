@@ -54,6 +54,7 @@ git cat-file*
 git reflog*
 git config --get*
 git stash list*
+git worktree list*
 gh pr list*
 gh pr view*
 gh pr diff*
@@ -74,4 +75,9 @@ gh project list*
 fm_read *
 fm_write *
 source */lib/frontmatter.sh*
+source */lib/worktree.sh*
+wt_detect *
+wt_owner_repo *
+wt_switch_branch *
+wt_cleanup *
 ntfy publish*

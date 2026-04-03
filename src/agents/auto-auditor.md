@@ -5,121 +5,7 @@ mode: subagent
 permission:
   edit: allow
   write: allow
-  bash:
-    # Deny everything by default, then allow specific commands
-    "*": deny
-    # File system (read-only)
-    "cat *": allow
-    "head *": allow
-    "tail *": allow
-    "less *": allow
-    "file *": allow
-    "stat *": allow
-    "wc *": allow
-    "ls*": allow
-    "tree *": allow
-    "find *": allow
-    "fd *": allow
-    "grep *": allow
-    "rg *": allow
-    "ag *": allow
-    "sort *": allow
-    "uniq *": allow
-    "cut *": allow
-    "tr *": allow
-    "awk *": allow
-    "jq *": allow
-    "source */lib/frontmatter.sh*": allow
-    "fm_read *": allow
-    "fm_write *": allow
-    "diff *": allow
-    "comm *": allow
-    "column *": allow
-    "basename *": allow
-    "dirname *": allow
-    "readlink *": allow
-    "realpath *": allow
-    "which *": allow
-    "printenv*": allow
-    "env": allow
-    "echo *": allow
-    "pwd": allow
-    "whoami": allow
-    "id": allow
-    "uname *": allow
-    "date *": allow
-    "hostname": allow
-    # Git (read-only)
-    "git status*": allow
-    "git log*": allow
-    "git diff*": allow
-    "git show*": allow
-    "git blame*": allow
-    "git branch*": allow
-    "git tag*": allow
-    "git remote*": allow
-    "git rev-parse*": allow
-    "git rev-list*": allow
-    "git shortlog*": allow
-    "git describe*": allow
-    "git ls-files*": allow
-    "git ls-tree*": allow
-    "git cat-file*": allow
-    "git reflog*": allow
-    "git config --get*": allow
-    "git stash list*": allow
-    # GitHub CLI (read-only)
-    "gh pr list*": allow
-    "gh pr view*": allow
-    "gh pr diff*": allow
-    "gh pr status*": allow
-    "gh pr checks*": allow
-    "gh issue list*": allow
-    "gh issue view*": allow
-    "gh issue status*": allow
-    "gh repo view*": allow
-    "gh repo list*": allow
-    "gh run list*": allow
-    "gh run view*": allow
-    "gh release list*": allow
-    "gh release view*": allow
-    "gh auth status*": allow
-    "gh api *": allow
-    "gh project list*": allow
-    # Notifications
-    "ntfy publish*": allow
-    # Triage skill (write + notify + inbox)
-    "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
-    "notify_triage *": allow
-    "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow
-    # curl (for fetching advisory databases, documentation)
-    "curl*": allow
-    # Rust static analysis + coverage
-    "cargo clippy*": allow
-    "cargo audit*": allow
-    "cargo deny*": allow
-    "cargo llvm-cov*": allow
-    "cargo test*": allow
-    # Node static analysis + coverage
-    "npm audit*": allow
-    "pnpm audit*": allow
-    "yarn audit*": allow
-    "eslint*": allow
-    "tsc*": allow
-    "jest*": allow
-    "vitest*": allow
-    "npx jest*": allow
-    "npx vitest*": allow
-    # Python static analysis + coverage
-    "pip-audit*": allow
-    "safety*": allow
-    "ruff*": allow
-    "mypy*": allow
-    "bandit*": allow
-    "pytest*": allow
-    # Cross-language
-    "semgrep*": allow
-    "trivy*": allow
+  {{BASH_PERMISSIONS}}
   external_directory:
     "{env:AGENT_REPOS}/**": allow
     "{env:AGENT_VAULT}/**": allow
@@ -140,12 +26,21 @@ audit report to the vault. You operate read-only with respect to the repository
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
-Confirm both are set before proceeding. Derive `<owner>/<repo>` from `repo_path`
-by stripping the `$AGENT_REPOS/` prefix:
+Confirm both are set before proceeding. Source the worktree library and derive
+`<owner>/<repo>` using it (handles both traditional clones and worktree paths):
 
 ```bash
-owner_repo=$(realpath "$repo_path" | sed "s|$AGENT_REPOS/||")
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+owner_repo="$(wt_owner_repo "$repo_path")"
 ```
+
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout. The `repo_path` you
+receive may be a worktree directory (`.git` is a file, not a directory). All
+standard git read commands work normally inside worktrees. The `wt_owner_repo`
+function always returns `<owner>/<repo>` (2 components) regardless of worktree
+depth — e.g. `$AGENT_REPOS/ada-x64/foo/main` → `ada-x64/foo`.
 
 ## Caller Provides
 
@@ -271,7 +166,7 @@ Construct the output path:
 
 ```bash
 date_str=$(date +%Y-%m-%d)
-owner_repo=$(realpath "$repo_path" | sed "s|$AGENT_REPOS/||")
+owner_repo="$(wt_owner_repo "$repo_path")"
 out_dir="$AGENT_VAULT/audits/$owner_repo"
 out_file="$out_dir/${date_str}-${label}.md"
 ```

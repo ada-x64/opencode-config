@@ -1,0 +1,188 @@
+bash:
+  # Deny everything by default, then allow specific commands
+  "*": deny
+  # File system (read-only)
+  "cat *": allow
+  "head *": allow
+  "tail *": allow
+  "less *": allow
+  "file *": allow
+  "stat *": allow
+  "wc *": allow
+  "ls*": allow
+  "tree *": allow
+  "find *": allow
+  "fd *": allow
+  "grep *": allow
+  "rg *": allow
+  "ag *": allow
+  "sort *": allow
+  "uniq *": allow
+  "cut *": allow
+  "tr *": allow
+  "awk *": allow
+  "jq *": allow
+  "source */lib/frontmatter.sh*": allow
+  "source */lib/worktree.sh*": allow
+  "fm_read *": allow
+  "fm_write *": allow
+  "wt_detect *": allow
+  "wt_owner_repo *": allow
+  "wt_switch_branch *": allow
+  "wt_cleanup *": allow
+  "diff *": allow
+  "comm *": allow
+  "column *": allow
+  "basename *": allow
+  "dirname *": allow
+  "readlink *": allow
+  "realpath *": allow
+  "which *": allow
+  "printenv*": allow
+  "env": allow
+  "echo *": allow
+  "pwd": allow
+  "whoami": allow
+  "id": allow
+  "uname *": allow
+  "date *": allow
+  "hostname": allow
+  # Git (read-only)
+  "git status*": allow
+  "git log*": allow
+  "git diff*": allow
+  "git show*": allow
+  "git blame*": allow
+  "git branch*": allow
+  "git tag*": allow
+  "git remote*": allow
+  "git rev-parse*": allow
+  "git rev-list*": allow
+  "git shortlog*": allow
+  "git describe*": allow
+  "git ls-files*": allow
+  "git ls-tree*": allow
+  "git cat-file*": allow
+  "git reflog*": allow
+  "git config --get*": allow
+  "git stash list*": allow
+  "git worktree list*": allow
+  # GitHub CLI (read-only)
+  "gh pr list*": allow
+  "gh pr view*": allow
+  "gh pr diff*": allow
+  "gh pr status*": allow
+  "gh pr checks*": allow
+  "gh issue list*": allow
+  "gh issue view*": allow
+  "gh issue status*": allow
+  "gh repo view*": allow
+  "gh repo list*": allow
+  "gh run list*": allow
+  "gh run view*": allow
+  "gh release list*": allow
+  "gh release view*": allow
+  "gh auth status*": allow
+  "gh api *": allow
+  "gh project list*": allow
+  # GitHub CLI (mutations — label state transitions, issue comments, and PR comments)
+  "gh issue edit*": allow
+  "gh issue comment*": allow
+  "gh pr comment*": allow
+  # Vault write (filesystem)
+  "mv *": allow
+  "rm *": allow
+  "mkdir *": allow
+  # Notifications
+  "ntfy publish*": allow
+  # Git (write — staging, committing, branching, worktree management; never push)
+  "git add*": allow
+  "git switch*": allow
+  "git checkout*": allow
+  "git commit*": allow
+  "git stash*": allow
+  "git worktree add*": allow
+  "git worktree remove*": allow
+  # Build tools (needed to run validation steps)
+  # make — kept as wildcard; targets are project-specific
+  "make*": allow
+  # cargo — no publish/yank/login/owner/credential
+  "cargo build*": allow
+  "cargo test*": allow
+  "cargo clippy*": allow
+  "cargo run*": allow
+  "cargo check*": allow
+  "cargo fmt*": allow
+  "cargo doc*": allow
+  "cargo bench*": allow
+  "cargo clean*": allow
+  "cargo fix*": allow
+  "cargo add*": allow
+  "cargo remove*": allow
+  "cargo update*": allow
+  "cargo tree*": allow
+  "cargo metadata*": allow
+  "cargo generate-lockfile*": allow
+  "cargo nextest*": allow
+  "cargo llvm-cov*": allow
+  # python / uv
+  "uv *": allow
+  "python*": allow
+  # pip — no uninstall/download
+  "pip install*": allow
+  "pip list*": allow
+  "pip show*": allow
+  "pip freeze*": allow
+  "pip check*": allow
+  # npm — no publish/unpublish/deprecate/access
+  "npm install*": allow
+  "npm ci*": allow
+  "npm run*": allow
+  "npm run-script*": allow
+  "npm test*": allow
+  "npm audit*": allow
+  "npm ls*": allow
+  "npm list*": allow
+  "npm outdated*": allow
+  "npm update*": allow
+  "npm dedupe*": allow
+  # npx — kept as wildcard (by design runs arbitrary packages)
+  "npx*": allow
+  # pnpm
+  "pnpm install*": allow
+  "pnpm run*": allow
+  "pnpm test*": allow
+  "pnpm audit*": allow
+  "pnpm dlx *": allow
+  "pnpm exec *": allow
+  # yarn
+  "yarn install*": allow
+  "yarn run*": allow
+  "yarn test*": allow
+  "yarn build*": allow
+  "yarn add*": allow
+  "yarn remove*": allow
+  "yarn audit*": allow
+  # bun — no publish
+  "bun install*": allow
+  "bun run*": allow
+  "bun test*": allow
+  "bun build*": allow
+  "bun add*": allow
+  "bun remove*": allow
+  "bun x*": allow
+  # go
+  "go *": allow
+  # test runners
+  "pytest*": allow
+  "jest*": allow
+  "vitest*": allow
+  "tsc*": allow
+  # Shell sourcing (notify helper — trailing * allows && chaining)
+  "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
+  # notify_triage function (called standalone after sourcing)
+  "notify_triage *": allow
+  # curl (used by notify.sh send path)
+  "curl *": allow
+  # Triage skill (inbox regeneration)
+  "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow

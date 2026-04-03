@@ -6,183 +6,7 @@ mode: subagent
 permission:
   edit: allow
   write: allow
-  bash:
-    # Deny everything by default, then allow specific commands
-    "*": deny
-    # File system (read-only)
-    "cat *": allow
-    "head *": allow
-    "tail *": allow
-    "less *": allow
-    "file *": allow
-    "stat *": allow
-    "wc *": allow
-    "ls*": allow
-    "tree *": allow
-    "find *": allow
-    "fd *": allow
-    "grep *": allow
-    "rg *": allow
-    "ag *": allow
-    "sort *": allow
-    "uniq *": allow
-    "cut *": allow
-    "tr *": allow
-    "awk *": allow
-    "jq *": allow
-    "source */lib/frontmatter.sh*": allow
-    "fm_read *": allow
-    "fm_write *": allow
-    "diff *": allow
-    "comm *": allow
-    "column *": allow
-    "basename *": allow
-    "dirname *": allow
-    "readlink *": allow
-    "realpath *": allow
-    "which *": allow
-    "printenv*": allow
-    "env": allow
-    "echo *": allow
-    "pwd": allow
-    "whoami": allow
-    "id": allow
-    "uname *": allow
-    "date *": allow
-    "hostname": allow
-    # Git (read-only)
-    "git status*": allow
-    "git log*": allow
-    "git diff*": allow
-    "git show*": allow
-    "git blame*": allow
-    "git branch*": allow
-    "git tag*": allow
-    "git remote*": allow
-    "git rev-parse*": allow
-    "git rev-list*": allow
-    "git shortlog*": allow
-    "git describe*": allow
-    "git ls-files*": allow
-    "git ls-tree*": allow
-    "git cat-file*": allow
-    "git reflog*": allow
-    "git config --get*": allow
-    "git stash list*": allow
-    # GitHub CLI (read-only)
-    "gh pr list*": allow
-    "gh pr view*": allow
-    "gh pr diff*": allow
-    "gh pr status*": allow
-    "gh pr checks*": allow
-    "gh issue list*": allow
-    "gh issue view*": allow
-    "gh issue status*": allow
-    "gh repo view*": allow
-    "gh repo list*": allow
-    "gh run list*": allow
-    "gh run view*": allow
-    "gh release list*": allow
-    "gh release view*": allow
-    "gh auth status*": allow
-    "gh api *": allow
-    "gh project list*": allow
-    # GitHub CLI (mutations — label state transitions and issue comments)
-    "gh issue edit*": allow
-    "gh issue comment*": allow
-    # Vault write (filesystem)
-    "mv *": allow
-    "rm *": allow
-    "mkdir *": allow
-    # Notifications
-    "ntfy publish*": allow
-    # Git (write — staging and branch switching only)
-    "git add*": allow
-    "git switch*": allow
-    "git checkout*": allow
-    # Build tools (needed to run validation steps)
-    # make — kept as wildcard; targets are project-specific
-    "make*": allow
-    # cargo — no publish/yank/login/owner/credential
-    "cargo build*": allow
-    "cargo test*": allow
-    "cargo clippy*": allow
-    "cargo run*": allow
-    "cargo check*": allow
-    "cargo fmt*": allow
-    "cargo doc*": allow
-    "cargo bench*": allow
-    "cargo clean*": allow
-    "cargo fix*": allow
-    "cargo add*": allow
-    "cargo remove*": allow
-    "cargo update*": allow
-    "cargo tree*": allow
-    "cargo metadata*": allow
-    "cargo generate-lockfile*": allow
-    "cargo nextest*": allow
-    "cargo llvm-cov*": allow
-    # python / uv
-    "uv *": allow
-    "python*": allow
-    # pip — no uninstall/download
-    "pip install*": allow
-    "pip list*": allow
-    "pip show*": allow
-    "pip freeze*": allow
-    "pip check*": allow
-    # npm — no publish/unpublish/deprecate/access
-    "npm install*": allow
-    "npm ci*": allow
-    "npm run*": allow
-    "npm run-script*": allow
-    "npm test*": allow
-    "npm audit*": allow
-    "npm ls*": allow
-    "npm list*": allow
-    "npm outdated*": allow
-    "npm update*": allow
-    "npm dedupe*": allow
-    # npx — kept as wildcard (by design runs arbitrary packages)
-    "npx*": allow
-    # pnpm
-    "pnpm install*": allow
-    "pnpm run*": allow
-    "pnpm test*": allow
-    "pnpm audit*": allow
-    "pnpm dlx *": allow
-    "pnpm exec *": allow
-    # yarn
-    "yarn install*": allow
-    "yarn run*": allow
-    "yarn test*": allow
-    "yarn build*": allow
-    "yarn add*": allow
-    "yarn remove*": allow
-    "yarn audit*": allow
-    # bun — no publish
-    "bun install*": allow
-    "bun run*": allow
-    "bun test*": allow
-    "bun build*": allow
-    "bun add*": allow
-    "bun remove*": allow
-    "bun x*": allow
-    # go
-    "go *": allow
-    # test runners
-    "pytest*": allow
-    "jest*": allow
-    "vitest*": allow
-    "tsc*": allow
-    # Shell sourcing (notify helper — trailing * allows && chaining)
-    "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
-    # notify_triage function (called standalone after sourcing)
-    "notify_triage *": allow
-    # curl (used by notify.sh send path)
-    "curl *": allow
-    # Triage skill (inbox regeneration)
-    "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow
+  {{BASH_PERMISSIONS}}
   external_directory:
     "{env:AGENT_REPOS}/**": allow
     "{env:AGENT_VAULT}/**": allow
@@ -214,6 +38,21 @@ schema_file="$task_dir/schema.md"
 review_file="$task_dir/review.md"
 ```
 
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout where each branch lives
+in its own directory. Always detect the repo type at startup and use the
+`worktree.sh` library for branch operations:
+
+```bash
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+repo_type="$(wt_detect "$repo_path")"
+```
+
+When the repo type is `worktree`, **never use `git switch`** — use
+`wt_switch_branch` instead. It creates a new worktree for the target branch
+and prints the updated working path (see Behavior §3 below).
+
 ## Permissions
 
 - **Read-write:** the repository directory provided by the caller
@@ -228,12 +67,18 @@ review_file="$task_dir/review.md"
 1. Read `CONTRIBUTING.md` from the repository root (if it exists) to understand
    project conventions, coding standards, and contribution guidelines.
 2. Read the schema provided as context.
-3. Read the branch from the schema's frontmatter and switch to it (will prompt for approval):
+3. Read the branch from the schema's frontmatter and switch to it using the
+   worktree-aware helper:
    ```bash
    source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh"
+   source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
    branch="$(fm_read "$schema_file" "branch")"
-   git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
+   repo_path="$(wt_switch_branch "$repo_path" "$branch")"
    ```
+   In a bare repo / worktree setup this creates a new worktree directory and
+   updates `repo_path` to point to it. In a traditional clone it runs
+   `git switch` as before. All subsequent `git -C "$repo_path"` commands and
+   file operations use the (possibly updated) path.
 4. For each commit group in the schema's Todos section:
    a. **Announce** which commit group is starting.
    b. **Execute** each sub-task in order (1a, 1b, …).
@@ -302,6 +147,10 @@ review_file="$task_dir/review.md"
   unset _issue_field _issue_num _repo_slug
   ```
   This is best-effort and never blocks the completion sequence.
+- **Worktree cleanup suggestion:** If a new worktree was created during startup
+  (i.e. `repo_path` changed), mention to the user that they can clean it up
+  after merging with `wt_cleanup "$repo_path"` or
+  `git worktree remove <worktree_path>`. Do not run it automatically.
 
 ### Review status tracking
 

@@ -5,98 +5,7 @@ mode: subagent
 permission:
   edit: allow
   write: allow
-  bash:
-    # Deny everything by default, then allow specific commands
-    "*": deny
-    # File system (read-only)
-    "cat *": allow
-    "head *": allow
-    "tail *": allow
-    "less *": allow
-    "file *": allow
-    "stat *": allow
-    "wc *": allow
-    "ls*": allow
-    "tree *": allow
-    "find *": allow
-    "fd *": allow
-    "grep *": allow
-    "rg *": allow
-    "ag *": allow
-    "sort *": allow
-    "uniq *": allow
-    "cut *": allow
-    "tr *": allow
-    "awk *": allow
-    "jq *": allow
-    "source */lib/frontmatter.sh*": allow
-    "fm_read *": allow
-    "fm_write *": allow
-    "diff *": allow
-    "comm *": allow
-    "column *": allow
-    "basename *": allow
-    "dirname *": allow
-    "readlink *": allow
-    "realpath *": allow
-    "which *": allow
-    "printenv*": allow
-    "env": allow
-    "echo *": allow
-    "pwd": allow
-    "whoami": allow
-    "id": allow
-    "uname *": allow
-    "date *": allow
-    "hostname": allow
-    # Git (read-only)
-    "git status*": allow
-    "git log*": allow
-    "git diff*": allow
-    "git show*": allow
-    "git blame*": allow
-    "git branch*": allow
-    "git tag*": allow
-    "git remote*": allow
-    "git rev-parse*": allow
-    "git rev-list*": allow
-    "git shortlog*": allow
-    "git describe*": allow
-    "git ls-files*": allow
-    "git ls-tree*": allow
-    "git cat-file*": allow
-    "git reflog*": allow
-    "git config --get*": allow
-    "git stash list*": allow
-    # GitHub CLI (read-only)
-    "gh pr list*": allow
-    "gh pr view*": allow
-    "gh pr diff*": allow
-    "gh pr status*": allow
-    "gh pr checks*": allow
-    "gh issue list*": allow
-    "gh issue view*": allow
-    "gh issue status*": allow
-    "gh repo view*": allow
-    "gh repo list*": allow
-    "gh run list*": allow
-    "gh run view*": allow
-    "gh release list*": allow
-    "gh release view*": allow
-    "gh auth status*": allow
-    "gh api *": allow
-    "gh project list*": allow
-    # Vault write (filesystem)
-    "mv *": allow
-    "rm *": allow
-    "mkdir *": allow
-    # Notifications
-    "ntfy publish*": allow
-    # Triage skill (write + notify + inbox)
-    "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
-    "notify_triage *": allow
-    "curl *": allow
-    "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow
+  {{BASH_PERMISSIONS}}
   external_directory:
     "{env:AGENT_REPOS}/**": allow
     "{env:AGENT_VAULT}/**": allow
@@ -113,6 +22,25 @@ take reference notes, and write design documents in the vault.
 
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
+
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout where each branch lives
+in its own directory. When exploring repositories, the path you receive may be
+a worktree directory. All git read commands work normally inside worktrees.
+
+When deriving `<owner>/<repo>` from a repo path, use the worktree library:
+
+```bash
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+owner_repo="$(wt_owner_repo "$repo_path")"
+```
+
+To list all worktrees (and thus all active branches) for a repo:
+
+```bash
+git -C "$repo_path" worktree list
+```
 
 ## Permissions
 

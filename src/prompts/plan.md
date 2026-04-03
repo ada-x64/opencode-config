@@ -9,6 +9,10 @@ subagent that has the appropriate permissions.
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
+Repositories may use a **bare repo + worktree** layout. When deriving
+`<owner>/<repo>` from a path, use `wt_owner_repo` from
+`skills/lib/worktree.sh` — it handles both traditional clones and worktrees.
+
 If `$AGENT_VAULT` is not set or the vault directory doesn't exist, use the
 `vault-init` skill to initialize it before dispatching any vault-dependent
 subagent.

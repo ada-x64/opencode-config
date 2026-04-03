@@ -2,130 +2,9 @@
 description: Project manager agent — GitHub issue lifecycle, project board ops, milestone management, and vault project status documents. Never touches source code.
 mode: subagent
 permission:
-  bash:
-    # Deny everything by default, then allow specific commands
-    "*": deny
-    # File system (read-only)
-    "cat *": allow
-    "head *": allow
-    "tail *": allow
-    "less *": allow
-    "file *": allow
-    "stat *": allow
-    "wc *": allow
-    "ls*": allow
-    "tree *": allow
-    "find *": allow
-    "fd *": allow
-    "grep *": allow
-    "rg *": allow
-    "ag *": allow
-    "sort *": allow
-    "uniq *": allow
-    "cut *": allow
-    "tr *": allow
-    "awk *": allow
-    "jq *": allow
-    "source */lib/frontmatter.sh*": allow
-    "fm_read *": allow
-    "fm_write *": allow
-    "diff *": allow
-    "comm *": allow
-    "column *": allow
-    "basename *": allow
-    "dirname *": allow
-    "readlink *": allow
-    "realpath *": allow
-    "which *": allow
-    "printenv*": allow
-    "env": allow
-    "echo *": allow
-    "pwd": allow
-    "whoami": allow
-    "id": allow
-    "uname *": allow
-    "date *": allow
-    "hostname": allow
-    # Git (read-only)
-    "git status*": allow
-    "git log*": allow
-    "git diff*": allow
-    "git show*": allow
-    "git blame*": allow
-    "git branch*": allow
-    "git tag*": allow
-    "git remote*": allow
-    "git rev-parse*": allow
-    "git rev-list*": allow
-    "git shortlog*": allow
-    "git describe*": allow
-    "git ls-files*": allow
-    "git ls-tree*": allow
-    "git cat-file*": allow
-    "git reflog*": allow
-    "git config --get*": allow
-    "git stash list*": allow
-    # GitHub CLI (read-only)
-    "gh pr list*": allow
-    "gh pr view*": allow
-    "gh pr diff*": allow
-    "gh pr status*": allow
-    "gh pr checks*": allow
-    "gh issue list*": allow
-    "gh issue view*": allow
-    "gh issue status*": allow
-    "gh repo view*": allow
-    "gh repo list*": allow
-    "gh run list*": allow
-    "gh run view*": allow
-    "gh release list*": allow
-    "gh release view*": allow
-    "gh auth status*": allow
-    "gh api *": allow # Note: broad; can technically replicate any gh subcommand via REST — PM must self-enforce the MUST NOT list
-    "gh project list*": allow
-    # GitHub CLI (mutations — PM's core capability)
-    "gh issue close*": allow
-    "gh issue reopen*": allow
-    "gh issue edit*": allow
-    "gh issue comment*": allow
-    "gh issue create*": allow
-    "bash {{CONFIG_DIR}}/skills/gh-helpers/create-issue.sh*": allow
-    "gh pr comment*": allow
-    "gh project view*": allow
-    "gh project field-list*": allow
-    "gh project item-list*": allow
-    "gh project item-add*": allow
-    "gh project item-edit*": allow
-    "gh project item-archive*": allow
-    "gh project item-delete*": allow
-    "gh label list*": allow
-    "gh label create*": allow
-    "gh label edit*": allow
-    "gh label delete*": allow
-    # Vault tools
-    "bash {{CONFIG_DIR}}/skills/vault-gc/gc.sh*": allow
-    "bash {{CONFIG_DIR}}/skills/vault-lint/lint.sh*": allow
-    # Vault directory creation
-    "mkdir *": allow
-    # Notifications
-    "ntfy publish*": allow
-    # Triage skill (write + notify + inbox)
-    "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
-    "notify_triage *": allow
-    "curl *": allow
-    "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow
-    # Hard denies — PM never touches code or git history
-    "git add*": deny
-    "git commit*": deny
-    "git push*": deny
-    "git merge*": deny
-    "git rebase*": deny
-    "git reset*": deny
-    "gh pr merge*": deny
-    "gh pr close*": deny
-    "gh pr create*": deny
-    "gh repo delete*": deny
-    "gh repo create*": deny
+  edit: allow
+  write: allow
+  {{BASH_PERMISSIONS}}
   external_directory:
     "{env:AGENT_REPOS}/**": allow
     "{env:AGENT_VAULT}/**": allow
@@ -149,6 +28,20 @@ If `$AGENT_VAULT` is not set, abort with an error. Verify the vault exists befor
 vault="${AGENT_VAULT:?AGENT_VAULT must be set}"
 [[ -d "$vault" ]] || { echo "Error: vault not found at $vault" >&2; exit 1; }
 ```
+
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout. When deriving
+`<owner>/<repo>` from a repo path, use the worktree library to handle both
+traditional clones and worktree directories:
+
+```bash
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+owner_repo="$(wt_owner_repo "$repo_path")"
+```
+
+When listing branches for a repo, use `git worktree list` to see all active
+worktrees — each one represents an active branch in the bare repo setup.
 
 ## Vault Scope
 

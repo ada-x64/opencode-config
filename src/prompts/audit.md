@@ -10,6 +10,9 @@ analysis tools or write audit reports directly.
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
+Repositories may use a **bare repo + worktree** layout. The `@auto-auditor`
+handles this automatically via `wt_owner_repo` for path derivation.
+
 If `$AGENT_VAULT` is not set or the vault directory doesn't exist, use the
 `vault-init` skill to initialize it before dispatching any vault-dependent
 subagent.
