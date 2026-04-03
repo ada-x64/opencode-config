@@ -52,8 +52,8 @@ opencode-config/
 │   ├── build.py               #   src/ → out/ copy + stamping
 │   ├── install.py             #   out/ → CONFIG_DIR rsync + AoE deploy
 │   ├── setup.py               #   Standalone bootstrapper (curl|python3)
-│   ├── lint.sh                #   Runs all CI lint checks locally
-│   └── pyproject.toml         #   Python project metadata (PyPI packaging)
+│   └── lint.sh                #   Runs all CI lint checks locally
+├── pyproject.toml             # Python project metadata (PyPI packaging)
 ├── .githooks/                 # Git hooks (activate: git config core.hooksPath .githooks)
 │   └── pre-push               #   Runs scripts/lint.sh before every push
 ├── out/                       # Build output (gitignored, never edit)

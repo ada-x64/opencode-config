@@ -44,10 +44,10 @@ jobs:
         run: |
           TAG="${{ steps.tag.outputs.name }}"
           VERSION="${TAG#v}"
-          sed -i "s/^version = .*/version = \"${VERSION}\"/" scripts/pyproject.toml
+          sed -i "s/^version = .*/version = \"${VERSION}\"/" pyproject.toml
 
       - name: Build wheel + sdist
-        run: python -m build scripts/ --outdir dist/
+        run: python -m build --outdir dist/
 
       - name: Build tarball
         run: |

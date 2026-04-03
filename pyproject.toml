@@ -14,7 +14,7 @@ authors = [{ name = "ada-x64" }]
 cubething-occonf = "scripts.setup:main"
 
 [tool.hatch.build.targets.wheel]
-include = ["scripts/setup.py"]
+include = ["scripts/__init__.py", "scripts/setup.py"]
 
 [tool.ruff]
 target-version = "py312"
