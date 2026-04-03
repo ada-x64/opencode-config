@@ -27,7 +27,14 @@ title=$(grep -m1 '^# ' "$schema_file" | sed 's/^# //')
 	exit 1
 }
 
-content=$(<"$schema_file")
+# Read file content, stripping YAML frontmatter (--- delimited block at top)
+content=$(awk '
+	BEGIN { in_fm=0; past_fm=0 }
+	NR==1 && /^---\s*$/ { in_fm=1; next }
+	in_fm && /^---\s*$/ { in_fm=0; past_fm=1; next }
+	in_fm { next }
+	{ print }
+' "$schema_file" | sed -e '/./,$!d')
 
 # Extract the "## Problem" section: everything from "## Problem" up to the
 # next H2 heading (or end of file). Trim leading/trailing blank lines.

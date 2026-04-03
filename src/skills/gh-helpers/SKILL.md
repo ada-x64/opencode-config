@@ -55,8 +55,9 @@ bash {{CONFIG_DIR}}/skills/gh-helpers/create-issue.sh <schema.md> <owner/repo>
 2. Extracts the first `# Heading` line as the issue title.
 3. Extracts the `## Problem` section content (everything between `## Problem`
    and the next `## ` heading) as a visible summary.
-4. Reads the full file content.
-5. Builds the issue body: problem summary (if found), then the full content
+4. Reads the full file content, stripping YAML frontmatter (the `---`-delimited
+   block at the top of the file).
+5. Builds the issue body: problem summary (if found), then the stripped content
    wrapped in a `<details>` / `<summary>Full schema</summary>` block.
 6. Writes the body to a temp file and calls:
    ```bash
