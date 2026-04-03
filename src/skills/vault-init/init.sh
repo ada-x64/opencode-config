@@ -44,6 +44,7 @@ echo ""
 # Create directory structure
 ensure_dir "$vault/tasks"
 ensure_dir "$vault/_misc/archive/tasks"
+ensure_dir "$vault/_misc/archive/draft"
 ensure_dir "$vault/audits"
 ensure_dir "$vault/projects"
 ensure_dir "$vault/_misc/cache"
