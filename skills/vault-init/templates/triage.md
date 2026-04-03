@@ -40,7 +40,7 @@ status: pending | addressed | dismissed
 |          | `design-question`                         | Agent encountered an ambiguous design decision             |
 |          | `run-summary`                             | Summary of an autonomous run (what was done, what remains) |
 |          | `activity`                                | Routine work completion notification                       |
-|          | `permissions-request`                     | Bash command denied by permission model                    |
+|          | `permissions-request`                     | Command denied by permission model                         |
 | `agent`  | `auto-implementor`, `planner`, `designer`, `reviewer`, `implementor`, `auto-auditor`, `project-manager` | Which agent wrote this |
 | `task`   | string or empty                           | Task name (empty for non-task-bound work)                  |
 | `repo`   | `<owner>/<repo>` or empty                 | Repository context (empty for non-repo-bound work)         |

@@ -411,7 +411,7 @@ Add to `agents/auto-implementor.md` in the build tools section.
 | `@auto-implementor` | Commit group completed                                   | `activity`        |
 | `@auto-auditor`     | Audit report completed (include critical/high counts)    | `activity`            |
 | `@project-manager`  | Bulk operations completed; Vault cleanup; Project sync   | `activity`            |
-| All agents          | Bash command denied by permission model                  | `permissions-request` |
+| All agents          | Command denied by permission model                       | `permissions-request` |
 
 ---
 

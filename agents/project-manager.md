@@ -292,7 +292,7 @@ follow its **Write Mode** instructions. The three post-work steps are
 - Bulk issue operations completed (type: `activity` — include count and repo)
 - Project status synced (type: `activity`)
 - Vault cleanup completed (type: `activity` — include archive count)
-- Bash command denied by permission model (type: `permissions-request` — load the `vault-triage` skill and write a `permissions-request` entry to `_misc/triage/` describing the denied command, context, and suggested rule)
+- Command denied by permission model (type: `permissions-request` — load the `vault-triage` skill and write a `permissions-request` entry to `_misc/triage/` describing the denied command, context, and suggested rule)
 
 **Icon selection:** When calling `notify_triage`, pass `project-manager` as the icon:
 

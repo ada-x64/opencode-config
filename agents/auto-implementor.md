@@ -396,7 +396,7 @@ follow its **Write Mode** instructions. The three post-work steps are
 | Review loop exhausted (3 rounds, high+ persists) | `escalation`          | Step d                           |
 | Design ambiguity resolved                        | `design-question`     | Step e                           |
 | Run complete                                     | `run-summary`         | Completion                       |
-| Bash command denied by permission model          | `permissions-request` | Any time a command is blocked — write to `_misc/triage/` with denied command, context, and suggested rule |
+| Command denied by permission model            | `permissions-request` | Any time a command is blocked — write to `_misc/triage/` with denied command, context, and suggested rule |
 
 For `escalation` and `design-question` entries, follow the detailed format
 instructions in the vault-triage skill — these require diagnosis categories,
