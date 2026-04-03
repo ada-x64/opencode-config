@@ -223,7 +223,7 @@ a draft review), **verify the output before proceeding**. Specifically:
 After completing significant work, load the `vault-triage` skill and follow
 its **Write Mode** instructions. The three post-work steps are **mandatory**:
 
-1. Write a triage entry to the task directory
+1. Write a triage entry (load `vault-triage` skill for directory routing: `_misc/triage/`, `_misc/activity/`, or `_misc/handoffs/`)
 2. Send a push notification via `notify_triage`
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
@@ -231,6 +231,7 @@ its **Write Mode** instructions. The three post-work steps are **mandatory**:
 
 - Schema written to the vault (type: `activity`)
 - GitHub issue created for the schema (type: `activity`)
+- Command denied by permission model (type: `permissions-request` — load the `vault-triage` skill and write a `permissions-request` entry to `_misc/triage/` describing the denied command, context, and suggested rule)
 
 **Icon selection:** When calling `notify_triage`, pass `planner` as the icon:
 

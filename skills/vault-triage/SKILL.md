@@ -14,7 +14,7 @@ Every agent loads this skill after completing significant work. The three
 post-work steps are **mandatory** — skipping notify or inbox update is a
 protocol violation:
 
-1. **Write** a triage entry to the task directory
+1. **Write** a triage entry to the appropriate `_misc/` directory (`triage/`, `activity/`, or `handoffs/`)
 2. **Send** a push notification via `notify_triage`
 3. **Regenerate** the triage inbox via `triage-dashboard.sh`
 
@@ -39,37 +39,32 @@ source ~/.config/opencode/skills/vault-triage/notify.sh 2>/dev/null || true
 echo "${AGENT_VAULT:?AGENT_VAULT must be set}"
 ```
 
-### Step 3 — Determine the task directory
+### Step 3 — Determine the target directory
+
+Choose the directory based on the entry type:
+
+| Entry type | Directory |
+|-----------|-----------|
+| `escalation`, `design-question`, `permissions-request` | `$AGENT_VAULT/_misc/triage/` |
+| `activity` | `$AGENT_VAULT/_misc/activity/` |
+| `handoff`, `run-summary` | `$AGENT_VAULT/_misc/handoffs/` |
 
 ```bash
-task_dir="$AGENT_VAULT/tasks/<owner>/<repo>/<task>/"
+# Set target_dir based on entry type — example for activity:
+target_dir="$AGENT_VAULT/_misc/activity"
+mkdir -p "$target_dir"
 ```
 
-If no task context exists (e.g. designer writing repo notes, auto-auditor
-running a standalone audit), use the agent-specific fallback:
+No nesting by owner, repo, task, or agent. All context goes in YAML frontmatter.
 
-- `@designer` → `$AGENT_VAULT/tasks/_activity/designer/`
-- `@auto-auditor` → `$AGENT_VAULT/tasks/_activity/auto-auditor/`
-- `@project-manager` → `$AGENT_VAULT/tasks/_activity/project-manager/`
-
-Task-bound agents (`@planner`, `@reviewer`, `@implementor`, `@auto-implementor`)
-always have a task context and do not need a fallback.
-
-Create the directory if it does not exist:
+### Step 4 — Generate the filename from the current UTC timestamp
 
 ```bash
-mkdir -p "$task_dir"
+triage_file="$target_dir/$(date -u '+%Y-%m-%dT%H-%M-%S').md"
 ```
 
-### Step 4 — Find the next available filename
-
-```bash
-find "$task_dir" -name "triage*.md" | sort
-```
-
-- If no files exist → use `triage.md`
-- If `triage.md` exists but not `triage-2.md` → use `triage-2.md`
-- Continue incrementing: `triage-3.md`, `triage-4.md`, etc.
+The UTC timestamp ensures natural sort order and uniqueness. If by chance a
+collision occurs (two entries in the same second), append `-2` before `.md`.
 
 ### Step 5 — Read the format template
 
@@ -85,8 +80,10 @@ entry type (see **Entry Types** below). Set `status: pending`.
 ### Step 7 — MANDATORY: Send notification
 
 ```bash
-notify_triage "<type>" "<owner>/<repo>/<task>" "<headline>" "<body>" "" "<icon>" "<semantic-key>"
+notify_triage "<type>" "<owner>/<repo>/<task>" "<headline>" "<body>" "_misc/<dir>/<filename>.md" "<icon>" "<semantic-key>"
 ```
+
+> **Note:** Pass the actual vault-relative path to the triage file (e.g. `_misc/activity/2026-04-01T14-30-00.md`) as the 5th argument so the Obsidian click URL points to the correct file. Use the directory matching the entry type (`triage/`, `activity/`, or `handoffs/`). Callers who omit this argument will get the `unknown.md` fallback.
 
 This is not optional. Failing to notify means the human has no real-time
 awareness of completed work. The function fails silently if ntfy is not
@@ -188,6 +185,8 @@ notify_triage escalation "ada-x64/qproj/fix-tests" "Review Loop Exhausted" "• 
 
 ### `activity` — routine work completion
 
+**Directory:** `_misc/activity/`
+
 **When:** After any significant completed work (schema written, review done,
 audit complete, implementation commit group finished, project sync done, etc.)
 
@@ -204,6 +203,7 @@ audit complete, implementation commit group finished, project sync done, etc.)
 type: activity
 agent: reviewer
 task: my-task
+repo: owner/repo
 date: 2026-03-31
 status: pending
 ---
@@ -215,6 +215,8 @@ finding before proceeding to group 3.
 ---
 
 ### `escalation` — review loop exhausted / agent stuck
+
+**Directory:** `_misc/triage/`
 
 **When:** After 3 review rounds with high+ findings persisting, or any time
 the agent is blocked and cannot proceed without human input.
@@ -234,6 +236,7 @@ the agent is blocked and cannot proceed without human input.
 type: escalation
 agent: auto-implementor
 task: my-task
+repo: owner/repo
 date: 2026-03-31
 status: pending
 ---
@@ -263,6 +266,8 @@ the backoff logic without coverage. Schema §2c is underspecified on this point.
 
 ### `design-question` — ambiguity resolved with judgment call
 
+**Directory:** `_misc/triage/`
+
 **When:** A genuine design ambiguity was encountered during implementation and
 a non-trivial judgment call was made that the schema did not resolve.
 
@@ -281,6 +286,7 @@ a non-trivial judgment call was made that the schema did not resolve.
 type: design-question
 agent: auto-implementor
 task: my-task
+repo: owner/repo
 date: YYYY-MM-DD
 status: pending
 ---
@@ -315,6 +321,8 @@ Review whether this is consistent with the team's preferred pattern.
 
 ### `run-summary` — end-of-run summary
 
+**Directory:** `_misc/handoffs/`
+
 **When:** At completion of a full autonomous implementation run.
 
 **Format:** Comprehensive — must include:
@@ -329,6 +337,8 @@ Review whether this is consistent with the team's preferred pattern.
 
 ### `handoff` — context transfer
 
+**Directory:** `_misc/handoffs/`
+
 **When:** Work is interrupted mid-run and the next agent or human needs
 context to continue.
 
@@ -337,6 +347,53 @@ context to continue.
 - Last completed work
 - What remains
 - Any context the next agent/human needs to pick up cleanly
+
+---
+
+### `permissions-request` — bash command blocked by permission model
+
+**Directory:** `_misc/triage/`
+
+**When:** Any time a bash command is denied by the agent's permission model.
+This captures needed permissions that the user may want to add.
+
+**Format:** Structured — must include:
+- **Command** — the exact command string that was denied
+- **Context** — what the agent was trying to accomplish
+- **Suggested rule** — the permission rule to add (e.g. `"./z *": allow`)
+
+**Example:**
+
+```yaml
+---
+type: permissions-request
+agent: auto-implementor
+task: fix-build
+repo: nanvix/microkernel
+date: 2026-04-01
+status: pending
+---
+
+## Command Denied
+
+```
+./z build
+```
+
+## Context
+
+Attempting to run the project's bootstrap build script as specified in commit
+group 1a of the schema. The `./z` script is the standard build entry point
+for all nanvix repositories.
+
+## Suggested Permission Rule
+
+```yaml
+"./z *": allow
+```
+
+Add to `agents/auto-implementor.md` in the build tools section.
+```
 
 ---
 
@@ -352,8 +409,9 @@ context to continue.
 | `@auto-implementor` | Design ambiguity resolved                                | `design-question` |
 | `@auto-implementor` | Run complete                                             | `run-summary`     |
 | `@auto-implementor` | Commit group completed                                   | `activity`        |
-| `@auto-auditor`     | Audit report completed (include critical/high counts)    | `activity`        |
-| `@project-manager`  | Bulk operations completed; Vault cleanup; Project sync   | `activity`        |
+| `@auto-auditor`     | Audit report completed (include critical/high counts)    | `activity`            |
+| `@project-manager`  | Bulk operations completed; Vault cleanup; Project sync   | `activity`            |
+| All agents          | Command denied by permission model                       | `permissions-request` |
 
 ---
 
@@ -364,14 +422,20 @@ To read triage files and generate a summary of pending items:
 1. Collect all triage files in scope:
 
    ```bash
-   find "$AGENT_VAULT/tasks/<owner>/<repo>/" -name "triage*.md" | sort
+   # Action-required items (dashboard):
+   find "$AGENT_VAULT/_misc/triage/" -name "*.md" | sort
+
+   # Activity logs:
+   find "$AGENT_VAULT/_misc/activity/" -name "*.md" | sort
+
+   # Handoffs and run summaries:
+   find "$AGENT_VAULT/_misc/handoffs/" -name "*.md" | sort
+
+   # All entries across all three directories:
+   find "$AGENT_VAULT/_misc/triage/" "$AGENT_VAULT/_misc/activity/" "$AGENT_VAULT/_misc/handoffs/" -name "*.md" | sort
    ```
 
-   Or across the entire vault:
-
-   ```bash
-   find "$AGENT_VAULT/tasks/" -name "triage*.md" | sort
-   ```
+   To filter by repo or task, grep the frontmatter fields after reading each file.
 
 2. Read each file and extract frontmatter fields:
 
@@ -381,17 +445,16 @@ To read triage files and generate a summary of pending items:
    fm_read "$file" "status" "unknown"
    fm_read "$file" "date" "unknown"
    fm_read "$file" "agent" "unknown"
+   fm_read "$file" "repo" "unknown"
    ```
 
 3. Group by type. Filter to `status: pending` by default (unless the human
    asks for addressed or dismissed items too).
 
 4. Produce a Markdown summary grouped by type:
-   - **Escalations** (action required — highest priority)
-   - **Design questions** (human judgment needed)
-   - **Handoffs** (pick up where agent left off)
-   - **Run summaries** (review at leisure)
-   - **Activity** (FYI — no action required)
+   - **Escalations** and **Design questions** → scanned from `_misc/triage/` (action-required)
+   - **Activity** → scanned from `_misc/activity/` (FYI)
+   - **Handoffs** and **Run summaries** → scanned from `_misc/handoffs/` (context transfers)
 
 ---
 
@@ -423,6 +486,19 @@ notify_triage activity "ada-x64/qproj/fix-tests" "Commit group 1 complete" "• 
 bash ~/.config/opencode/skills/vault-triage/setup.sh
 ```
 
+### Resolve a triage entry
+
+```bash
+# Mark as addressed (default)
+bash ~/.config/opencode/skills/vault-triage/triage-resolve.sh "$AGENT_VAULT/_misc/triage/2026-04-01T14-30-00.md"
+
+# Mark as dismissed
+bash ~/.config/opencode/skills/vault-triage/triage-resolve.sh "$AGENT_VAULT/_misc/triage/2026-04-01T14-30-00.md" dismissed
+
+# Then regenerate the dashboard
+bash ~/.config/opencode/skills/vault-triage/triage-dashboard.sh
+```
+
 ---
 
 ## Environment
@@ -434,18 +510,26 @@ bash ~/.config/opencode/skills/vault-triage/setup.sh
 
 ## Dashboard output
 
-Generated at `$AGENT_VAULT/triage-inbox.md`. Sections: Pending, Addressed,
-Dismissed. Each row has a wiki-link to the triage file, type, agent, and date.
+Generated at `$AGENT_VAULT/triage-inbox.md`. Pending items render as `- [ ]`
+checkboxes. Addressed items render as `- [x]`; dismissed items render as
+`- [x] ~~link~~` with a `_(dismissed)_` suffix. Both appear inside a collapsed
+`<details>` block. Each item includes a wiki-link to the entry file, type
+(bolded), agent, repo, and date.
+
+Checkboxes in the dashboard are **visual only** — toggling them in Obsidian
+modifies the generated file, but the next regeneration overwrites it. Use
+`triage-resolve.sh` to persistently update the entry's frontmatter status.
 
 ## Notification priorities
 
 All triage types produce desktop toasts (via ntfy subscriber) and phone
 notifications. Priority controls audible alerts on mobile:
 
-| Triage type       | ntfy priority | Phone audible |
-| ----------------- | ------------- | ------------- |
-| `escalation`      | high          | Yes           |
-| `design-question` | high          | Yes           |
-| `activity`        | default       | No            |
-| `handoff`         | default       | No            |
-| `run-summary`     | low           | No            |
+| Triage type           | ntfy priority | Phone audible |
+| --------------------- | ------------- | ------------- |
+| `escalation`          | high          | Yes           |
+| `design-question`     | high          | Yes           |
+| `permissions-request` | high          | Yes           |
+| `activity`            | default       | No            |
+| `handoff`             | default       | No            |
+| `run-summary`         | low           | No            |

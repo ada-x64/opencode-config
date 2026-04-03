@@ -332,7 +332,7 @@ After completing each commit group and after final completion, load the
 `vault-triage` skill and follow its **Write Mode** instructions. The three
 post-work steps are **mandatory**:
 
-1. Write a triage entry to the task directory
+1. Write a triage entry (load `vault-triage` skill for directory routing: `_misc/triage/`, `_misc/activity/`, or `_misc/handoffs/`)
 2. Send a push notification via `notify_triage`
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
@@ -340,6 +340,7 @@ post-work steps are **mandatory**:
 
 - Commit group completed (type: `activity` — include group number and validation result; `activity` fires at default/non-audible priority since the user is watching)
 - Full implementation complete (type: `activity` — include total groups and branch name)
+- Command denied by permission model (type: `permissions-request` — load the `vault-triage` skill and write a `permissions-request` entry to `_misc/triage/` describing the denied command, context, and suggested rule)
 
 **Icon selection:** When calling `notify_triage`, pass `implementor` as the icon:
 

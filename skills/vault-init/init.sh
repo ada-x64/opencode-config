@@ -77,10 +77,10 @@ entries — not source code. There are no build systems, tests, or linters.
 
 ### `tasks/<owner>/<repo>/<task>/` — Implementation tasks
 
-Each task directory contains up to three files:
+Each task directory contains up to two files:
 - `schema.md` — Actionable implementation spec that an AI agent can execute step-by-step.
 - `review.md` — Structured code review for work done against the schema.
-- `triage.md` — Escalation notes, design questions, and run summaries.
+- (Triage entries are stored separately in `_misc/`, not in task directories.)
 
 ### `tasks/_fleet/<task>.md` — Fleet (cross-repo) schemas
 
@@ -111,6 +111,9 @@ Collapsed by default in the Obsidian file explorer. Contains:
 - `_misc/cache/` — GitHub metadata cache
 - `_misc/templates/` — Format templates
 - `_misc/images/` — Notification icons and image assets
+- `_misc/triage/` — Action-required entries: escalations, design questions, permissions requests. Flat timestamped files. Scanned by the triage dashboard.
+- `_misc/activity/` — Routine completion logs. Flat timestamped files. Not in dashboard.
+- `_misc/handoffs/` — Handoffs and run summaries. Flat timestamped files. Not in dashboard.
 
 #### `_misc/archive/` — Completed work
 

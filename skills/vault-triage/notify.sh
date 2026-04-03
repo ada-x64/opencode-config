@@ -5,11 +5,11 @@
 #        notify_triage <type> <task> <headline> [body] [file] [icon] [emoji]
 #
 # Parameters:
-#   type     — triage type (activity, escalation, design-question, handoff, run-summary)
+#   type     — triage type (activity, escalation, design-question, handoff, run-summary, permissions-request)
 #   task     — owner/repo/task path (task name extracted for notification title)
 #   headline — short action phrase for the notification title (e.g. "Commit Group 1 Finished")
 #   body     — optional bullet-point detail text for the notification body
-#   file     — vault-relative path to the triage file (default: tasks/<task>/triage.md)
+#   file     — vault-relative path to the triage file (default: _misc/triage/unknown.md)
 #              used to compute the Obsidian click URL
 #   icon     — agent/icon name without extension (optional; e.g. "planner", "reviewer")
 #              maps to https://raw.githubusercontent.com/ada-x64/opencode-config/main/images/<icon>.png
@@ -17,7 +17,7 @@
 #              stripped for the PNG URL and ⚙️ is prepended to the emoji automatically
 #              if omitted, defaults to "default"
 #   emoji    — semantic key for emoji prefix in notification title
-#              known keys: activity, clean, warn, reject, escalation, design-question
+#              known keys: activity, clean, warn, reject, escalation, design-question, permissions-request
 #              unknown keys are ignored and fall back to the type-based default
 #              if omitted, derived from triage type (❗ escalation, ❓ design-question, 📋 others)
 #
@@ -32,7 +32,7 @@ notify_triage() {
 	# Default file path when not provided.
 	# NOTE: agents writing triage-2.md, triage-3.md etc. must pass the file arg
 	# explicitly for the click URL to point to the correct file.
-	[[ -z "$file" ]] && file="tasks/${task}/triage.md"
+	[[ -z "$file" ]] && file="_misc/triage/unknown.md"
 
 	case "$type" in
 	escalation)
@@ -54,6 +54,10 @@ notify_triage() {
 	run-summary)
 		priority="low"
 		tag="memo"
+		;;
+	permissions-request)
+		priority="high"
+		tag="lock"
 		;;
 	esac
 
@@ -89,6 +93,7 @@ notify_triage() {
 		case "$type" in
 		escalation) emoji_prefix="❗" ;;
 		design-question) emoji_prefix="❓" ;;
+		permissions-request) emoji_prefix="🔒" ;;
 		*) emoji_prefix="📋" ;;
 		esac
 	fi

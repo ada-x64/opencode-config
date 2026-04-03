@@ -1,14 +1,20 @@
 # Triage Document Format
 
-Triage documents capture autonomous agent output within a task directory. They are written by agents (especially the auto-implementor) to record decisions, escalations, and handoff notes for human review.
+Triage documents capture autonomous agent output. They are written by agents (especially the auto-implementor) to record decisions, escalations, and handoff notes for human review.
 
 ## Location
 
-Triage documents live inside task directories:
+Triage entries live in one of three flat directories under `_misc/`, named by UTC timestamp:
 
-```
-tasks/<owner>/<repo>/<task>/triage.md
-```
+| Directory | Entry types | In dashboard? |
+|-----------|------------|--------------|
+| `_misc/triage/` | `escalation`, `design-question`, `permissions-request` | **Yes** |
+| `_misc/activity/` | `activity` | No |
+| `_misc/handoffs/` | `handoff`, `run-summary` | No |
+
+Example filename: `_misc/triage/2026-04-01T14-30-00.md`
+
+All context (task, repo, agent) is in YAML frontmatter — not encoded in the path.
 
 ## Frontmatter
 
@@ -16,9 +22,10 @@ Every triage document starts with YAML frontmatter:
 
 ```yaml
 ---
-type: escalation | handoff | design-question | run-summary
-agent: auto-implementor | planner | designer
-task: task-name
+type: escalation | handoff | design-question | run-summary | activity | permissions-request
+agent: auto-implementor | planner | designer | reviewer | implementor | auto-auditor | project-manager
+task: <task-name or empty>
+repo: <owner/repo or empty>
 date: YYYY-MM-DD
 status: pending | addressed | dismissed
 ---
@@ -32,8 +39,11 @@ status: pending | addressed | dismissed
 |          | `handoff`                                 | Agent completed partial work, handing off context          |
 |          | `design-question`                         | Agent encountered an ambiguous design decision             |
 |          | `run-summary`                             | Summary of an autonomous run (what was done, what remains) |
-| `agent`  | `auto-implementor`, `planner`, `designer` | Which agent wrote this                                     |
-| `task`   | string                                    | Task name matching the parent directory                    |
+|          | `activity`                                | Routine work completion notification                       |
+|          | `permissions-request`                     | Command denied by permission model                         |
+| `agent`  | `auto-implementor`, `planner`, `designer`, `reviewer`, `implementor`, `auto-auditor`, `project-manager` | Which agent wrote this |
+| `task`   | string or empty                           | Task name (empty for non-task-bound work)                  |
+| `repo`   | `<owner>/<repo>` or empty                 | Repository context (empty for non-repo-bound work)         |
 | `date`   | `YYYY-MM-DD`                              | When the triage was written                                |
 | `status` | `pending`                                 | Awaiting human review                                      |
 |          | `addressed`                               | Human has reviewed and acted on this                       |

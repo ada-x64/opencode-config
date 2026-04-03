@@ -283,8 +283,7 @@ After completing significant operations, load the `vault-triage` skill and
 follow its **Write Mode** instructions. The three post-work steps are
 **mandatory**:
 
-1. Write a triage entry to the relevant task directory (or to
-   `$AGENT_VAULT/tasks/_activity/project-manager/` for cross-repo operations)
+1. Write a triage entry (load `vault-triage` skill for directory routing: `_misc/triage/`, `_misc/activity/`, or `_misc/handoffs/`)
 2. Send a push notification via `notify_triage`
 3. Regenerate the triage inbox via `triage-dashboard.sh`
 
@@ -293,6 +292,7 @@ follow its **Write Mode** instructions. The three post-work steps are
 - Bulk issue operations completed (type: `activity` — include count and repo)
 - Project status synced (type: `activity`)
 - Vault cleanup completed (type: `activity` — include archive count)
+- Command denied by permission model (type: `permissions-request` — load the `vault-triage` skill and write a `permissions-request` entry to `_misc/triage/` describing the denied command, context, and suggested rule)
 
 **Icon selection:** When calling `notify_triage`, pass `project-manager` as the icon:
 
