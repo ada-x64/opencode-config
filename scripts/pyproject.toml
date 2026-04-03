@@ -6,7 +6,6 @@ build-backend = "hatchling.build"
 name = "cubething-occonf"
 version = "0.1.0"
 description = "Standalone installer for ada-x64/opencode-config"
-readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "ada-x64" }]
