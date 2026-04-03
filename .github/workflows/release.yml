@@ -47,7 +47,7 @@ jobs:
           sed -i "s/^version = .*/version = \"${VERSION}\"/" scripts/pyproject.toml
 
       - name: Build wheel + sdist
-        run: python -m build scripts/
+        run: python -m build scripts/ --outdir dist/
 
       - name: Build tarball
         run: |
