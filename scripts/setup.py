@@ -218,7 +218,7 @@ def main() -> None:
     info("Setup complete!")
     print()
     print(f"  Config:    {CONFIG_DIR}")
-    print("  AoE:       ~/.config/aoe/config.toml")
+    print("  AoE:       ~/.config/agent-of-empires/config.toml")
     print(f"  Vault:     {agent_vault}")
     print(f"  Repos:     {agent_repos}")
     print()
