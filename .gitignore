@@ -4,3 +4,5 @@ bun.lock
 *.bak
 sandbox/
 build
+__pycache__
+.ruff_cache

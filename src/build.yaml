@@ -18,4 +18,5 @@ tiers:
     model: null
 
   execute:
+    # TODO: This needs to be stamped in.
     model: github-copilot/claude-sonnet-4.6

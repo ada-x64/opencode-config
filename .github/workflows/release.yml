@@ -12,10 +12,13 @@ on:
 
 permissions:
   contents: write
+  id-token: write # required for PyPI trusted publishing
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: pypi # configure trusted publishing in PyPI project settings
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,31 +32,33 @@ jobs:
             echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install build tools
+        run: pip install hatchling build
+
+      - name: Stamp version from tag
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          VERSION="${TAG#v}"
+          sed -i "s/^version = .*/version = \"${VERSION}\"/" scripts/pyproject.toml
+
+      - name: Build wheel + sdist
+        run: python -m build scripts/
+
       - name: Build tarball
         run: |
           tar -czf opencode-config.tar.gz \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='setup.sh' \
-            --exclude='docker/Dockerfile' \
-            --exclude='docker/.dockerignore' \
-            --exclude='README.md' \
-            --exclude='.gitignore' \
-            --exclude='sandbox/' \
-            --exclude='node_modules/' \
-            agents/ \
-            skills/ \
-            prompts/ \
-            images/ \
-            docker/aoe-config.toml \
-            opencode.json \
-            build.yaml \
-            build.sh \
-            install.sh \
-            profiles/ \
-            AGENTS.md \
-            package.json \
-            bun.lock
+            --exclude='src/profiles/' \
+            src/ \
+            scripts/ \
+            AGENTS.md
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -62,5 +67,5 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            setup.sh
+            scripts/setup.py
             opencode-config.tar.gz
