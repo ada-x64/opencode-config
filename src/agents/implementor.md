@@ -38,6 +38,21 @@ schema_file="$task_dir/schema.md"
 review_file="$task_dir/review.md"
 ```
 
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout where each branch lives
+in its own directory. Always detect the repo type at startup and use the
+`worktree.sh` library for branch operations:
+
+```bash
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+repo_type="$(wt_detect "$repo_path")"
+```
+
+When the repo type is `worktree`, **never use `git switch`** — use
+`wt_switch_branch` instead. It creates a new worktree for the target branch
+and prints the updated working path (see Behavior §3 below).
+
 ## Permissions
 
 - **Read-write:** the repository directory provided by the caller
@@ -52,12 +67,18 @@ review_file="$task_dir/review.md"
 1. Read `CONTRIBUTING.md` from the repository root (if it exists) to understand
    project conventions, coding standards, and contribution guidelines.
 2. Read the schema provided as context.
-3. Read the branch from the schema's frontmatter and switch to it (will prompt for approval):
+3. Read the branch from the schema's frontmatter and switch to it using the
+   worktree-aware helper:
    ```bash
    source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh"
+   source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
    branch="$(fm_read "$schema_file" "branch")"
-   git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
+   repo_path="$(wt_switch_branch "$repo_path" "$branch")"
    ```
+   In a bare repo / worktree setup this creates a new worktree directory and
+   updates `repo_path` to point to it. In a traditional clone it runs
+   `git switch` as before. All subsequent `git -C "$repo_path"` commands and
+   file operations use the (possibly updated) path.
 4. For each commit group in the schema's Todos section:
    a. **Announce** which commit group is starting.
    b. **Execute** each sub-task in order (1a, 1b, …).
@@ -126,6 +147,10 @@ review_file="$task_dir/review.md"
   unset _issue_field _issue_num _repo_slug
   ```
   This is best-effort and never blocks the completion sequence.
+- **Worktree cleanup suggestion:** If a new worktree was created during startup
+  (i.e. `repo_path` changed), mention to the user that they can clean it up
+  after merging with `wt_cleanup "$repo_path"` or
+  `git worktree remove <worktree_path>`. Do not run it automatically.
 
 ### Review status tracking
 

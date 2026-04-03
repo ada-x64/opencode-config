@@ -41,7 +41,7 @@ opencode-config/
 │   │   ├── plan.md
 │   │   └── audit.md
 │   ├── skills/                #   Loadable skill instruction sets
-│   │   ├── lib/               #     Shared libraries (frontmatter.sh)
+│   │   ├── lib/               #     Shared libraries (frontmatter.sh, worktree.sh)
 │   │   ├── archive/
 │   │   ├── fleet-schemas/
 │   │   ├── local-ci/
@@ -184,9 +184,9 @@ Profiles live in `src/profiles/` and are excluded from the build output.
 Each is a shell-style `.env` file defining `CONFIG_DIR`, `OPENCODE_CONFIG_SRC`,
 and `SANDBOX_CONFIG_DIR`.
 
-| Profile | File                    | CONFIG_DIR               | SANDBOX_CONFIG_DIR                    |
-| ------- | ----------------------- | ------------------------ | ------------------------------------- |
-| `host`  | `src/profiles/host.env` | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox`      |
+| Profile | File                    | CONFIG_DIR               | SANDBOX_CONFIG_DIR               |
+| ------- | ----------------------- | ------------------------ | -------------------------------- |
+| `host`  | `src/profiles/host.env` | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` |
 
 The sandbox build variant (`out/sandbox/`) replaces the former `docker` profile.
 The sandbox config is built with universal `allow` permissions (minus `gh api *`
@@ -414,6 +414,7 @@ detailed instructions and references to bundled scripts.
 Some skills include executable scripts:
 
 - `src/skills/lib/frontmatter.sh` — `fm_read`/`fm_write` helpers for YAML frontmatter
+- `src/skills/lib/worktree.sh` — `wt_detect`/`wt_owner_repo`/`wt_switch_branch`/`wt_cleanup` for bare-repo worktree layouts
 - `src/skills/local-ci/act.sh` — wrapper around `gh act` for local CI runs
 - `src/skills/vault-cache/refresh.sh` — refresh the GitHub metadata cache
 - `src/skills/vault-gc/gc.sh` — archive completed schemas and reviews
@@ -552,6 +553,76 @@ config mounts `$SANDBOX_CONFIG_DIR` (the pre-built sandbox config tree) into
 the container at `/root/.config/opencode`, sets up: sandbox-by-default,
 custom image, vault bind-mount (RW), credential passthrough (`GH_TOKEN`,
 `GIT_CONFIG_COUNT`), and resource limits (4 CPU / 8 GB RAM).
+
+---
+
+## Bare Repo / Worktree Convention
+
+Repositories under `$AGENT_REPOS` may use a **bare repo + worktree** layout
+instead of a traditional `git clone`. This is the preferred repository format.
+
+### Layout
+
+```
+$AGENT_REPOS/<owner>/<repo>/
+├── .bare/                # Bare git repository (objects, refs, etc.)
+├── .git                  # File containing "gitdir: .bare"
+├── main/                 # Worktree for the main branch
+├── feat/my-feature/      # Worktree for a feature branch
+└── fix/bug-123/          # Worktree for a bugfix branch
+```
+
+Each branch lives in its own worktree directory. The `.git` at the repo root
+is a **file** (not a directory) that points to `.bare`.
+
+### Detection
+
+Agents detect repo type by checking `.git`:
+
+| `.git` is a…                              | Repo type  | Meaning                                  |
+| ----------------------------------------- | ---------- | ---------------------------------------- |
+| **Directory**                             | `clone`    | Traditional `git clone`                  |
+| **File**                                  | `worktree` | Git worktree (part of a bare repo setup) |
+| **Absent** (but `HEAD` + `refs/` present) | `bare`     | Bare repository root                     |
+| **Absent**                                | `unknown`  | Not a git repository                     |
+
+### Worktree library: `skills/lib/worktree.sh`
+
+A shell library (parallel to `frontmatter.sh`) that provides four functions:
+
+| Function           | Signature                               | Behaviour                                                                                       |
+| ------------------ | --------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `wt_detect`        | `wt_detect <path>`                      | Prints `clone`, `worktree`, `bare`, or `unknown`                                                |
+| `wt_owner_repo`    | `wt_owner_repo <path>`                  | Prints `<owner>/<repo>` — always 2 path components after `$AGENT_REPOS`, regardless of depth    |
+| `wt_switch_branch` | `wt_switch_branch <repo_path> <branch>` | Creates a new worktree (bare setup) or `git switch` (clone). Prints the working directory path. |
+| `wt_cleanup`       | `wt_cleanup <worktree_path>`            | Removes a worktree. Best-effort, never fails the caller.                                        |
+
+Source it the same way as `frontmatter.sh`:
+
+```bash
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+```
+
+### Key rules for agents
+
+1. **Always detect** — run `wt_detect` or check `.git` at startup when
+   operating on a repository. Never assume a traditional clone.
+2. **Use `wt_owner_repo`** for `<owner>/<repo>` derivation — never manually
+   strip `$AGENT_REPOS/` with `sed`, as that breaks for worktree paths.
+3. **Use `wt_switch_branch`** instead of `git switch` for branch operations.
+   In a worktree setup this creates a new worktree at
+   `<bare_root>/<branch>` and returns the new path. The caller must
+   reassign: `repo_path="$(wt_switch_branch "$repo_path" "$branch")"`.
+4. **One branch per worktree** — never use `git switch` inside a worktree
+   to change its branch. Each worktree is pinned to one branch.
+5. **Cleanup after merge** — after a branch is merged, the worktree can be
+   removed with `wt_cleanup <path>`. Agents should suggest this to the user
+   but never run it automatically.
+
+### Permissions
+
+- All agents: `"git worktree list*": allow` (read-only), `"source */lib/worktree.sh*": allow`, `"wt_detect *"` / `"wt_owner_repo *"` allow
+- `@implementor` and `@auto-implementor`: additionally `"git worktree add*": allow` and `"git worktree remove*": allow`, plus `"wt_switch_branch *"` / `"wt_cleanup *"` allow
 
 ---
 

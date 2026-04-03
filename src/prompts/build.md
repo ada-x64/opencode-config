@@ -184,6 +184,23 @@ the reality.
 - `git commit`, `git push`, `gh pr create`, `gh issue create` — always prompt
   the user before running
 
+### Bare Repo / Worktree Support
+
+Repositories may use a **bare repo + worktree** layout (`$AGENT_REPOS/<owner>/<repo>/.bare/`
+with branch worktrees as sibling directories). Always source the worktree library
+and use it for repo detection, path derivation, and branch operations:
+
+```bash
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+repo_type="$(wt_detect "$repo_path")"      # clone | worktree | bare | unknown
+owner_repo="$(wt_owner_repo "$repo_path")" # always <owner>/<repo>
+```
+
+When dispatching subagents that operate on a repo, pass the **worktree path**
+as `repo_path` — the subagent's prompt instructs it to detect and handle the
+layout. For branch switching, the subagent uses `wt_switch_branch` which
+creates a new worktree automatically in bare-repo setups.
+
 **Reading remote source code:** To read files from a repo that isn't cloned
 locally (not under `$AGENT_REPOS`), use `gh api`:
 

@@ -23,6 +23,20 @@ in a repository and write a structured review document.
 
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout. The `repo_path` you
+receive may be a worktree directory (`.git` is a file, not a directory). All
+standard git read commands (`git diff`, `git show`, `git log`, etc.) work
+normally inside worktrees — no special handling is needed for review operations.
+
+When deriving `<owner>/<repo>` from a repo path, use the worktree library:
+
+```bash
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+owner_repo="$(wt_owner_repo "$repo_path")"
+```
+
 ## Permissions
 
 - **Read:** the entire repository (source, tests, config, git history)

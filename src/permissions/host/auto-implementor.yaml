@@ -23,8 +23,13 @@ bash:
   "awk *": allow
   "jq *": allow
   "source */lib/frontmatter.sh*": allow
+  "source */lib/worktree.sh*": allow
   "fm_read *": allow
   "fm_write *": allow
+  "wt_detect *": allow
+  "wt_owner_repo *": allow
+  "wt_switch_branch *": allow
+  "wt_cleanup *": allow
   "diff *": allow
   "comm *": allow
   "column *": allow
@@ -61,6 +66,7 @@ bash:
   "git reflog*": allow
   "git config --get*": allow
   "git stash list*": allow
+  "git worktree list*": allow
   # GitHub CLI (read-only)
   "gh pr list*": allow
   "gh pr view*": allow
@@ -89,12 +95,14 @@ bash:
   "mkdir *": allow
   # Notifications
   "ntfy publish*": allow
-  # Git (write — staging, committing, branching; never push)
+  # Git (write — staging, committing, branching, worktree management; never push)
   "git add*": allow
   "git switch*": allow
   "git checkout*": allow
   "git commit*": allow
   "git stash*": allow
+  "git worktree add*": allow
+  "git worktree remove*": allow
   # Build tools (needed to run validation steps)
   # make — kept as wildcard; targets are project-specific
   "make*": allow

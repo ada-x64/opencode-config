@@ -23,6 +23,25 @@ take reference notes, and write design documents in the vault.
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout where each branch lives
+in its own directory. When exploring repositories, the path you receive may be
+a worktree directory. All git read commands work normally inside worktrees.
+
+When deriving `<owner>/<repo>` from a repo path, use the worktree library:
+
+```bash
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+owner_repo="$(wt_owner_repo "$repo_path")"
+```
+
+To list all worktrees (and thus all active branches) for a repo:
+
+```bash
+git -C "$repo_path" worktree list
+```
+
 ## Permissions
 
 - **Read:** all local repositories under `$AGENT_REPOS/`, the entire vault, GitHub (read-only)

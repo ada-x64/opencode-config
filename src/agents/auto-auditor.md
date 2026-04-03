@@ -26,12 +26,21 @@ audit report to the vault. You operate read-only with respect to the repository
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
-Confirm both are set before proceeding. Derive `<owner>/<repo>` from `repo_path`
-by stripping the `$AGENT_REPOS/` prefix:
+Confirm both are set before proceeding. Source the worktree library and derive
+`<owner>/<repo>` using it (handles both traditional clones and worktree paths):
 
 ```bash
-owner_repo=$(realpath "$repo_path" | sed "s|$AGENT_REPOS/||")
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+owner_repo="$(wt_owner_repo "$repo_path")"
 ```
+
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout. The `repo_path` you
+receive may be a worktree directory (`.git` is a file, not a directory). All
+standard git read commands work normally inside worktrees. The `wt_owner_repo`
+function always returns `<owner>/<repo>` (2 components) regardless of worktree
+depth — e.g. `$AGENT_REPOS/ada-x64/foo/main` → `ada-x64/foo`.
 
 ## Caller Provides
 
@@ -157,7 +166,7 @@ Construct the output path:
 
 ```bash
 date_str=$(date +%Y-%m-%d)
-owner_repo=$(realpath "$repo_path" | sed "s|$AGENT_REPOS/||")
+owner_repo="$(wt_owner_repo "$repo_path")"
 out_dir="$AGENT_VAULT/audits/$owner_repo"
 out_file="$out_dir/${date_str}-${label}.md"
 ```

@@ -23,8 +23,11 @@ bash:
   "awk *": allow
   "jq *": allow
   "source */lib/frontmatter.sh*": allow
+  "source */lib/worktree.sh*": allow
   "fm_read *": allow
   "fm_write *": allow
+  "wt_detect *": allow
+  "wt_owner_repo *": allow
   "diff *": allow
   "comm *": allow
   "column *": allow
@@ -61,6 +64,7 @@ bash:
   "git reflog*": allow
   "git config --get*": allow
   "git stash list*": allow
+  "git worktree list*": allow
   # GitHub CLI (read-only)
   "gh pr list*": allow
   "gh pr view*": allow

@@ -29,6 +29,20 @@ vault="${AGENT_VAULT:?AGENT_VAULT must be set}"
 [[ -d "$vault" ]] || { echo "Error: vault not found at $vault" >&2; exit 1; }
 ```
 
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout. When deriving
+`<owner>/<repo>` from a repo path, use the worktree library to handle both
+traditional clones and worktree directories:
+
+```bash
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+owner_repo="$(wt_owner_repo "$repo_path")"
+```
+
+When listing branches for a repo, use `git worktree list` to see all active
+worktrees — each one represents an active branch in the bare repo setup.
+
 ## Vault Scope
 
 PM must refuse to operate on repos not tracked in the vault. Apply this guard at the start of any repo-specific operation:

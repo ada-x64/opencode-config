@@ -48,12 +48,27 @@ schema_file="$task_dir/schema.md"
 review_file="$task_dir/review.md"
 ```
 
-Load the notification helper (fails silently if not configured):
+Load the notification and library helpers (fail silently if not configured):
 
 ```bash
 source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh" 2>/dev/null || true
 source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh" 2>/dev/null || true
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh" 2>/dev/null || true
 ```
+
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout where each branch lives
+in its own directory. Always detect the repo type at startup and use the
+`worktree.sh` library for branch operations:
+
+```bash
+repo_type="$(wt_detect "$repo_path")"
+```
+
+When the repo type is `worktree`, **never use `git switch`** — use
+`wt_switch_branch` instead. It creates a new worktree for the target branch
+and prints the updated working path (see Behavior / Startup §3 below).
 
 ## Behavior
 
@@ -62,15 +77,20 @@ source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh" 2>/dev/null || true
 1.  Read `CONTRIBUTING.md` from the repository root (if it exists).
 2.  Read the full schema at `$schema_file`.
 3.  Read the `branch` field from the schema's YAML frontmatter and switch to that
-    branch, creating it if it does not exist:
+    branch using the worktree-aware helper:
     ```bash
     branch="$(fm_read "$schema_file" "branch" "")"
     if [[ -z "$branch" || "$branch" == "null" ]]; then
       echo "Warning: schema has no branch field — staying on current branch." >&2
       branch="$(git -C "$repo_path" branch --show-current)"
+    else
+      repo_path="$(wt_switch_branch "$repo_path" "$branch")"
     fi
-    git -C "$repo_path" switch -c "$branch" 2>/dev/null || git -C "$repo_path" switch "$branch"
     ```
+    In a bare repo / worktree setup this creates a new worktree directory and
+    updates `repo_path` to point to it. In a traditional clone it runs
+    `git switch` as before. All subsequent `git -C "$repo_path"` commands and
+    file operations use the (possibly updated) path.
 4.  Update the schema status to `in progress`:
     ```bash
     fm_write "$schema_file" "status" "in progress"
@@ -264,6 +284,9 @@ After all commit groups are done and validated:
    - Total review rounds
    - Escalations filed (filenames)
    - Whether the run-summary triage entry was written successfully
+   - If a new worktree was created during startup, remind the user they can
+     clean it up after merging: `wt_cleanup "$repo_path"` or
+     `git worktree remove <worktree_path>`
 
 **Icon selection:** When calling `notify_triage`, pass `auto-implementor` as the icon (the `auto-` prefix triggers ⚙️ prepending automatically) and use the base semantic key:
 

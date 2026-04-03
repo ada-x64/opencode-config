@@ -25,6 +25,22 @@ to create an implementation schema for a task, then create a GitHub issue for it
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
+## Bare Repo / Worktree Awareness
+
+Repositories may use a **bare repo + worktree** layout where each branch lives
+in its own directory under the repo root. Source the worktree library and use
+it for repo-type detection and path derivation:
+
+```bash
+source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
+repo_type="$(wt_detect "$repo_path")"
+owner_repo="$(wt_owner_repo "$repo_path")"
+```
+
+When writing a schema, always set the `branch` field. The implementor agents
+will use `wt_switch_branch` to create a new worktree for that branch
+automatically if the repo uses the bare/worktree layout.
+
 ## Permissions
 
 - **Read:** the entire repository, vault instructions, existing schemas, format templates

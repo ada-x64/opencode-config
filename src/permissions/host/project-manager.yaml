@@ -23,8 +23,11 @@ bash:
   "awk *": allow
   "jq *": allow
   "source */lib/frontmatter.sh*": allow
+  "source */lib/worktree.sh*": allow
   "fm_read *": allow
   "fm_write *": allow
+  "wt_detect *": allow
+  "wt_owner_repo *": allow
   "diff *": allow
   "comm *": allow
   "column *": allow
@@ -61,6 +64,7 @@ bash:
   "git reflog*": allow
   "git config --get*": allow
   "git stash list*": allow
+  "git worktree list*": allow
   # GitHub CLI (read-only)
   "gh pr list*": allow
   "gh pr view*": allow
@@ -77,7 +81,7 @@ bash:
   "gh release list*": allow
   "gh release view*": allow
   "gh auth status*": allow
-  "gh api *": allow  # Note: broad; can technically replicate any gh subcommand via REST — PM must self-enforce the MUST NOT list
+  "gh api *": allow # Note: broad; can technically replicate any gh subcommand via REST — PM must self-enforce the MUST NOT list
   "gh project list*": allow
   # GitHub CLI (mutations — PM's core capability)
   "gh issue close*": allow
