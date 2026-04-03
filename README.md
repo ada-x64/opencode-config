@@ -157,12 +157,12 @@ On first run, `build.py` prompts for model configuration and writes
 The installer writes these to your shell profile. If installing from source,
 set them manually:
 
-| Variable              | Required            | Description                                   |
-| --------------------- | ------------------- | --------------------------------------------- |
+| Variable              | Required            | Description                                                |
+| --------------------- | ------------------- | ---------------------------------------------------------- |
 | `OPENCODE_CONFIG_SRC` | No                  | Path to the deployed config (`~/.config/opencode` default) |
-| `AGENT_VAULT`         | Yes (for vault ops) | Path to the vault directory                   |
-| `AGENT_REPOS`         | Yes (for repo ops)  | Path to local repo checkouts                  |
-| `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications          |
+| `AGENT_VAULT`         | Yes (for vault ops) | Path to the vault directory                                |
+| `AGENT_REPOS`         | Yes (for repo ops)  | Path to local repo checkouts                               |
+| `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications                       |
 
 ## License
 

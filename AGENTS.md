@@ -52,7 +52,10 @@ opencode-config/
 │   ├── build.py               #   src/ → out/ copy + stamping
 │   ├── install.py             #   out/ → CONFIG_DIR rsync + AoE deploy
 │   ├── setup.py               #   Standalone bootstrapper (curl|python3)
+│   ├── lint.sh                #   Runs all CI lint checks locally
 │   └── pyproject.toml         #   Python project metadata (PyPI packaging)
+├── .githooks/                 # Git hooks (activate: git config core.hooksPath .githooks)
+│   └── pre-push               #   Runs scripts/lint.sh before every push
 ├── out/                       # Build output (gitignored, never edit)
 ├── build.json                 # Model tier definitions (gitignored, per-machine)
 ├── docker/                    # Docker sandbox image
@@ -154,10 +157,10 @@ Profiles live in `src/profiles/` and are excluded from the build output.
 Each is a shell-style `.env` file defining `CONFIG_DIR` and
 `OPENCODE_CONFIG_SRC`.
 
-| Profile      | File                     | CONFIG_DIR                 |
-| ------------ | ------------------------ | -------------------------- |
-| `host`       | `src/profiles/host.env`  | `$HOME/.config/opencode`   |
-| `docker`     | `src/profiles/docker.env`| `/root/.config/opencode`   |
+| Profile  | File                      | CONFIG_DIR               |
+| -------- | ------------------------- | ------------------------ |
+| `host`   | `src/profiles/host.env`   | `$HOME/.config/opencode` |
+| `docker` | `src/profiles/docker.env` | `/root/.config/opencode` |
 
 ### Changing models
 
@@ -360,20 +363,20 @@ detailed instructions and references to bundled scripts.
 
 ### Available skills
 
-| Skill           | Directory                   | Purpose                                                                  |
-| --------------- | --------------------------- | ------------------------------------------------------------------------ |
-| `archive`       | `src/skills/archive/`       | Find and read archived schemas and reviews from the vault                |
-| `fleet-schemas` | `src/skills/fleet-schemas/` | Find and read cross-repo (fleet) schemas                                 |
-| `local-ci`      | `src/skills/local-ci/`      | Run and debug GitHub Actions workflows locally via `gh act`              |
-| `repo-notes`    | `src/skills/repo-notes/`    | Find and read repository reference notes from the vault                  |
-| `reviews`       | `src/skills/reviews/`       | Find and read code review files from the vault                           |
-| `schemas`       | `src/skills/schemas/`       | Find and read implementation schemas; understand schema frontmatter      |
-| `vault`         | `src/skills/vault/`         | Cross-section vault search and repository lookup                         |
-| `vault-cache`   | `src/skills/vault-cache/`   | Refresh the GitHub metadata cache (projects, milestones, labels)         |
-| `vault-gc`      | `src/skills/vault-gc/`      | Archive completed schemas and reviews; supports `--dry-run`              |
-| `vault-init`    | `src/skills/vault-init/`    | Initialize or verify the vault directory structure                       |
-| `vault-lint`    | `src/skills/vault-lint/`    | Validate schemas and reviews against format templates                    |
-| `vault-triage`  | `src/skills/vault-triage/`  | Write triage entries, send push notifications, regenerate the inbox      |
+| Skill           | Directory                   | Purpose                                                             |
+| --------------- | --------------------------- | ------------------------------------------------------------------- |
+| `archive`       | `src/skills/archive/`       | Find and read archived schemas and reviews from the vault           |
+| `fleet-schemas` | `src/skills/fleet-schemas/` | Find and read cross-repo (fleet) schemas                            |
+| `local-ci`      | `src/skills/local-ci/`      | Run and debug GitHub Actions workflows locally via `gh act`         |
+| `repo-notes`    | `src/skills/repo-notes/`    | Find and read repository reference notes from the vault             |
+| `reviews`       | `src/skills/reviews/`       | Find and read code review files from the vault                      |
+| `schemas`       | `src/skills/schemas/`       | Find and read implementation schemas; understand schema frontmatter |
+| `vault`         | `src/skills/vault/`         | Cross-section vault search and repository lookup                    |
+| `vault-cache`   | `src/skills/vault-cache/`   | Refresh the GitHub metadata cache (projects, milestones, labels)    |
+| `vault-gc`      | `src/skills/vault-gc/`      | Archive completed schemas and reviews; supports `--dry-run`         |
+| `vault-init`    | `src/skills/vault-init/`    | Initialize or verify the vault directory structure                  |
+| `vault-lint`    | `src/skills/vault-lint/`    | Validate schemas and reviews against format templates               |
+| `vault-triage`  | `src/skills/vault-triage/`  | Write triage entries, send push notifications, regenerate the inbox |
 
 ### Skills with bundled scripts
 
@@ -616,22 +619,29 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 
 Three GitHub Actions workflows:
 
-| Workflow    | Trigger                          | Purpose                                             |
-| ----------- | -------------------------------- | --------------------------------------------------- |
-| **Lint**    | Push/PR to `main`                | shfmt, shellcheck, prettier, ruff format/lint, basedpyright |
-| **Release** | Tag push (`v*`) or manual        | Build tarball + wheel, publish to PyPI + GitHub Releases    |
-| **Docker**  | Push to `main` touching `docker/`| Build & push `opencode-sandbox` to ghcr.io                  |
+| Workflow    | Trigger                           | Purpose                                                     |
+| ----------- | --------------------------------- | ----------------------------------------------------------- |
+| **Lint**    | Push/PR to `main`                 | shfmt, shellcheck, prettier, ruff format/lint, basedpyright |
+| **Release** | Tag push (`v*`) or manual         | Build tarball + wheel, publish to PyPI + GitHub Releases    |
+| **Docker**  | Push to `main` touching `docker/` | Build & push `opencode-sandbox` to ghcr.io                  |
+
+Both CI and the local pre-push hook run `scripts/lint.sh`. To activate the
+hook after cloning:
+
+```bash
+git config core.hooksPath .githooks
+```
 
 ---
 
 ## Environment Variable Reference
 
-| Variable              | Required            | Description                                           | Fallback                                  |
-| --------------------- | ------------------- | ----------------------------------------------------- | ----------------------------------------- |
-| `OPENCODE_CONFIG_SRC` | No                  | Absolute path to the deployed opencode config         | `$HOME/.config/opencode`                  |
-| `AGENT_VAULT`         | Yes (for vault ops) | Absolute path to the Obsidian vault                   | None — must be set                        |
-| `AGENT_REPOS`         | Yes (for repo ops)  | Absolute path to local repo checkouts                 | None — must be set                        |
-| `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications                  | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
+| Variable              | Required            | Description                                   | Fallback                                  |
+| --------------------- | ------------------- | --------------------------------------------- | ----------------------------------------- |
+| `OPENCODE_CONFIG_SRC` | No                  | Absolute path to the deployed opencode config | `$HOME/.config/opencode`                  |
+| `AGENT_VAULT`         | Yes (for vault ops) | Absolute path to the Obsidian vault           | None — must be set                        |
+| `AGENT_REPOS`         | Yes (for repo ops)  | Absolute path to local repo checkouts         | None — must be set                        |
+| `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications          | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
 `AGENT_VAULT` and `AGENT_REPOS` are checked at the top of any agent session
 that uses the vault or operates on a repository. The `vault-init` skill can
