@@ -151,8 +151,9 @@ to create an implementation schema for a task, then create a GitHub issue for it
    ```bash
    bash ~/.config/opencode/skills/gh-helpers/create-issue.sh "$schema_file" "<owner>/<repo>"
    ```
-   The script reads the file from disk, extracts the H1 as the title, and wraps
-   the full content in a `<details>` block per the schema-issue template. You do
+   The script reads the file from disk, extracts the H1 as the title, extracts
+   the `## Problem` section as a visible summary, and wraps the full content in
+   a `<details>` block. You do
    NOT need to read the schema file into context for this step.
 7. **Add** the issue to the project board and set milestone.
 8. **Link** the issue back into the schema header.
