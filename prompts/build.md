@@ -183,6 +183,8 @@ the reality.
   `git switch`, `git checkout` — pre-approved
 - `git commit`, `git push`, `gh pr create`, `gh issue create` — always prompt
   the user before running
+- For PR creation, prefer the `gh-helpers` skill script which generates a body
+  from commit history: `bash ~/.config/opencode/skills/gh-helpers/create-pr.sh <owner/repo> [base] [head] [title]`
 
 **Reading remote source code:** To read files from a repo that isn't cloned
 locally (not under `$AGENT_REPOS`), use `gh api`:
