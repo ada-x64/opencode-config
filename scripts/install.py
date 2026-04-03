@@ -216,6 +216,31 @@ def main() -> None:
     if out_sandbox_dir.is_dir():
         print()
         print(f"Deploying sandbox config to: {sandbox_config_dir}")
+
+        # --- Safety: refuse if out/sandbox/ == SANDBOX_CONFIG_DIR ---
+        try:
+            resolved_out_sandbox = out_sandbox_dir.resolve()
+            resolved_sandbox = sandbox_config_dir.resolve()
+        except Exception:
+            resolved_out_sandbox = out_sandbox_dir
+            resolved_sandbox = sandbox_config_dir
+
+        if resolved_out_sandbox == resolved_sandbox:
+            print(
+                "Error: out/sandbox/ directory equals target SANDBOX_CONFIG_DIR.",
+                file=sys.stderr,
+            )
+            print("", file=sys.stderr)
+            print(f"  out/sandbox/:       {resolved_out_sandbox}", file=sys.stderr)
+            print(f"  SANDBOX_CONFIG_DIR: {resolved_sandbox}", file=sys.stderr)
+            print("", file=sys.stderr)
+            print(
+                "Rsyncing out/sandbox/ onto itself would be destructive."
+                " Check your profile.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
         sandbox_config_dir.mkdir(parents=True, exist_ok=True)
 
         rsync_sandbox_cmd = [

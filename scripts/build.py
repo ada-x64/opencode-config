@@ -462,7 +462,7 @@ def resolve_config_dir(agents_dir: Path, config_dir_value: str) -> None:
 def build(
     config: dict[str, Any],
     config_dir_value: str = "",
-    sandbox_config_dir_value: str = "/root/.config/opencode",
+    sandbox_config_dir_value: str | None = None,
 ) -> Path:
     """Full build: copy src/ → out/host/ and out/sandbox/, apply all stamps.
 
@@ -474,7 +474,8 @@ def build(
                           files. If empty, uses OPENCODE_CONFIG_SRC env var,
                           falling back to the default ~/.config/opencode.
         sandbox_config_dir_value: Value to substitute for {{CONFIG_DIR}} in
-                                  sandbox agent files. Defaults to
+                                  sandbox agent files. If None, falls back to
+                                  build.json global.sandbox_config_dir, then
                                   /root/.config/opencode (container path).
     """
     import os
@@ -488,11 +489,10 @@ def build(
     global_section = dict(config["global"])
     global_model: str = str(global_section["model"])
     ext_dirs: list[str] = list(global_section["external_directory"])
-    sandbox_config_dir_from_config: str = str(
-        global_section.get("sandbox_config_dir", sandbox_config_dir_value)
-    )
-    if sandbox_config_dir_value == "/root/.config/opencode":
-        sandbox_config_dir_value = sandbox_config_dir_from_config
+    if sandbox_config_dir_value is None:
+        sandbox_config_dir_value = str(
+            global_section.get("sandbox_config_dir", "/root/.config/opencode")
+        )
 
     permissions_dir = SRC_DIR / "permissions"
 
@@ -581,7 +581,7 @@ def main() -> None:
     )
     _ = parser.add_argument(
         "--sandbox-config-dir",
-        default="/root/.config/opencode",
+        default=None,
         metavar="<path>",
         dest="sandbox_config_dir_value",
         help=(
@@ -595,7 +595,7 @@ def main() -> None:
     _ = build(
         config,
         config_dir_value=str(args.config_dir_value),
-        sandbox_config_dir_value=str(args.sandbox_config_dir_value),
+        sandbox_config_dir_value=args.sandbox_config_dir_value,
     )
 
 

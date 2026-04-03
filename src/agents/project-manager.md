@@ -2,6 +2,8 @@
 description: Project manager agent — GitHub issue lifecycle, project board ops, milestone management, and vault project status documents. Never touches source code.
 mode: subagent
 permission:
+  edit: allow
+  write: allow
   {{BASH_PERMISSIONS}}
   external_directory:
     "{env:AGENT_REPOS}/**": allow
