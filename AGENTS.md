@@ -1,89 +1,100 @@
 # opencode-config — Repository Overview
 
-This repository (`ada-x64/opencode-config`, deployed to `$OPENCODE_CONFIG_SRC`) is
-the opencode configuration for this workstation. It defines the AI models,
-operation modes, subagent personas, skill libraries, and bash permission
-policies that govern every agent session.
+This repository (`ada-x64/opencode-config`) is the opencode configuration for
+this workstation. It defines AI models, operation modes, subagent personas,
+skill libraries, and bash permission policies that govern every agent session.
 
-Everything here is loaded automatically by opencode at startup. Changing a
-file in this repo immediately changes the behaviour of the next session.
-Model configuration is managed via `build.json` + `build.py` (see
-[Build System](#build-system)).
+Source templates live in `src/`. The build system stamps them with model
+assignments and environment-specific values, producing deployable output in
+`out/`. The output is then installed to `$OPENCODE_CONFIG_SRC` (typically
+`~/.config/opencode`), where opencode loads it at startup.
 
 ---
 
 ## Repository Layout
 
 ```
-$OPENCODE_CONFIG_SRC/
-├── opencode.json          # Core config: model, mode prompts, global bash permissions
-├── build.json             # Model tier definitions (source of truth for model assignment)
-├── build.py               # Applies build.json → opencode.json + agent frontmatter
-├── package.json           # Node dependency (@opencode-ai/plugin)
-├── agents/                # Subagent definitions (dispatched via Task tool)
-│   ├── planner.md
-│   ├── project-manager.md
-│   ├── implementor.md
-│   ├── auto-implementor.md
-│   ├── reviewer.md
-│   ├── designer.md
-│   └── auto-auditor.md
-├── prompts/               # Mode system prompts (build, plan, audit)
-│   ├── build.md
-│   ├── plan.md
-│   └── audit.md
-├── skills/                # Loadable skill instruction sets
-│   ├── archive/
-│   ├── fleet-schemas/
-│   ├── local-ci/
-│   ├── repo-notes/
-│   ├── reviews/
-│   ├── schemas/
-│   ├── vault/
-│   ├── vault-cache/
-│   ├── vault-gc/
-│   ├── vault-init/
-│   ├── vault-lint/
-│   └── vault-triage/
-├── images/                # Notification icons (64x64 PNG)
-├── AGENTS.md              # This file
-└── README.md              # Short public summary
+opencode-config/
+├── src/                       # Source templates (never modified by build)
+│   ├── opencode.json          #   Core config: model, mode prompts
+│   ├── aoe-config.toml        #   AoE sandbox config template
+│   ├── agents/                #   Subagent definitions (7 agents)
+│   │   ├── planner.md
+│   │   ├── project-manager.md
+│   │   ├── implementor.md
+│   │   ├── auto-implementor.md
+│   │   ├── reviewer.md
+│   │   ├── designer.md
+│   │   └── auto-auditor.md
+│   ├── prompts/               #   Mode system prompts
+│   │   ├── build.md
+│   │   ├── plan.md
+│   │   └── audit.md
+│   ├── skills/                #   Loadable skill instruction sets
+│   │   ├── lib/               #     Shared libraries (frontmatter.sh)
+│   │   ├── archive/
+│   │   ├── fleet-schemas/
+│   │   ├── local-ci/
+│   │   ├── repo-notes/
+│   │   ├── reviews/
+│   │   ├── schemas/
+│   │   ├── vault/
+│   │   ├── vault-cache/
+│   │   ├── vault-gc/
+│   │   ├── vault-init/
+│   │   ├── vault-lint/
+│   │   └── vault-triage/
+│   ├── profiles/              #   Deployment profiles (excluded from out/)
+│   │   ├── host.env           #     Standard Linux/WSL workstation
+│   │   └── docker.env         #     Docker/AoE sandbox containers
+│   └── images/                #   Notification icons (64x64 PNG)
+├── scripts/                   # Build and install tooling (Python)
+│   ├── build.py               #   src/ → out/ copy + stamping
+│   ├── install.py             #   out/ → CONFIG_DIR rsync + AoE deploy
+│   ├── setup.py               #   Standalone bootstrapper (curl|python3)
+│   └── pyproject.toml         #   Python project metadata (PyPI packaging)
+├── out/                       # Build output (gitignored, never edit)
+├── build.json                 # Model tier definitions (gitignored, per-machine)
+├── docker/                    # Docker sandbox image
+│   ├── Dockerfile             #   Ubuntu 24.04 + opencode + agent toolchain
+│   └── .dockerignore
+├── .github/workflows/         # CI
+│   ├── lint.yml               #   shfmt, shellcheck, prettier, ruff, basedpyright
+│   ├── release.yml            #   Tarball + PyPI publish on tag push
+│   └── docker.yml             #   Build & push opencode-sandbox to ghcr.io
+├── AGENTS.md                  # This file (loaded as system context)
+└── README.md                  # Public-facing summary
 ```
-
----
-
-## opencode.json
-
-`opencode.json` is the root configuration file. It does three things:
-
-1. **Sets the default model** — currently `github-copilot/claude-opus-4.6` (managed by `build.py`; do not edit by hand).
-2. **Registers mode prompts** — each mode name (`build`, `plan`, `audit`) maps
-   to a system prompt file via `{file:./prompts/<name>.md}`.
-3. **Defines the global bash permission list** — a broad set of read-only
-   commands that are pre-approved for interactive sessions. Subagents override
-   this with a deny-first policy (see [Agents](#agents) below).
-
-The `@opencode-ai/plugin` package (`package.json`) provides the opencode plugin
-interface; `bun.lock` pins the exact version.
 
 ---
 
 ## Build System
 
-Model assignment is managed declaratively via `build.json` and applied by
-`build.py`. Do not edit model fields in `opencode.json` or agent frontmatter
-by hand — the build script will overwrite manual changes.
+The build system uses a **src/ → out/ → install** pipeline. Source templates
+in `src/` are never modified. All stamping happens on the copies in `out/`.
 
-### `build.json`
+### Pipeline overview
 
-Defines two model tiers:
+```
+src/ ──build.py──► out/ ──install.py──► ~/.config/opencode
+                     ▲                          (or custom CONFIG_DIR)
+              build.json
+           (model tiers, external_directory)
+```
+
+### `build.json` (gitignored, per-machine)
+
+Defines the global model, external directory allowlist, and two model tiers:
 
 | Tier      | Model                              | Inherits global?                               |
 | --------- | ---------------------------------- | ---------------------------------------------- |
-| `design`  | `github-copilot/claude-opus-4.6`   | Yes (no `model` override in agent frontmatter) |
+| `design`  | _(null — inherits global)_         | Yes (no `model` override in agent frontmatter) |
 | `execute` | `github-copilot/claude-sonnet-4.6` | No (explicit `model` override)                 |
 
 Each agent declares its tier via a `tier:` field in its YAML frontmatter.
+
+On first run, if `build.json` does not exist, `build.py` prompts interactively
+for model configuration and writes the file. Use `--reconfigure` to re-prompt.
 
 ### Tier assignments
 
@@ -96,25 +107,77 @@ Each agent declares its tier via a `tier:` field in its YAML frontmatter.
 | `@auto-implementor` | `execute` |
 | `@reviewer`         | `execute` |
 
-### `build.py`
+### `scripts/build.py`
 
-Reads `build.json` and:
+Copies `src/` to `out/` (excluding `profiles/`), then applies all stamps:
 
-1. Sets the `model` field in `opencode.json` to `global.model`.
-2. For each agent file, reads its `tier` from frontmatter, looks up the tier
-   in `build.json`, and sets or removes the `model` field accordingly.
-3. Prints a summary of changes.
+1. Sets the `model` field in `out/opencode.json` to `global.model`.
+2. For each agent file, reads `tier` from frontmatter, looks up the tier in
+   `build.json`, and sets or removes the `model` field accordingly.
+3. Stamps the `external_directory` block in all agent frontmatter.
+4. Resolves `{{CONFIG_DIR}}` placeholders in agent files.
 
 The script is idempotent — running it multiple times produces the same result.
 
-On first run, if `build.json` does not exist, `build.py` prompts interactively
-for model configuration and writes the file. Use `--reconfigure` to re-prompt.
+```bash
+python3 scripts/build.py                # build using existing build.json
+python3 scripts/build.py --reconfigure  # re-prompt for model config
+python3 scripts/build.py --config-dir /path/to/config  # override CONFIG_DIR
+```
+
+### `scripts/install.py`
+
+Deploys built output to the target config directory:
+
+1. Loads the selected profile (`src/profiles/<name>.env`) to determine
+   `CONFIG_DIR` and `OPENCODE_CONFIG_SRC`.
+2. Rsyncs `out/` contents to `CONFIG_DIR`.
+3. Deploys the AoE config (resolving `{{AGENT_VAULT}}` and
+   `{{OPENCODE_CONFIG_SRC}}` in `src/aoe-config.toml`).
+
+```bash
+python3 scripts/install.py                        # host profile (default)
+python3 scripts/install.py --profile docker       # docker profile
+python3 scripts/install.py --config-dir /custom   # override CONFIG_DIR
+```
+
+### `scripts/setup.py`
+
+Standalone bootstrapper for first-time installation. Downloads the release
+tarball, prompts for environment paths, runs `build.py` + `install.py`, and
+writes environment variables to the user's shell profile. See
+[Getting Started in README.md](README.md#getting-started).
+
+### Profiles
+
+Profiles live in `src/profiles/` and are excluded from the build output.
+Each is a shell-style `.env` file defining `CONFIG_DIR` and
+`OPENCODE_CONFIG_SRC`.
+
+| Profile      | File                     | CONFIG_DIR                 |
+| ------------ | ------------------------ | -------------------------- |
+| `host`       | `src/profiles/host.env`  | `$HOME/.config/opencode`   |
+| `docker`     | `src/profiles/docker.env`| `/root/.config/opencode`   |
 
 ### Changing models
 
-1. Edit `build.json` (change a tier's model, or move an agent between tiers by editing its `tier:` frontmatter field).
+1. Edit `build.json` (change a tier's model, or move an agent between tiers
+   by editing its `tier:` frontmatter field in `src/agents/`).
 2. Run `python3 scripts/build.py`.
-3. Commit the resulting changes.
+3. Run `python3 scripts/install.py`.
+
+---
+
+## opencode.json
+
+`src/opencode.json` is the core configuration template. It does two things:
+
+1. **Sets the default model** — stamped by `build.py` from `build.json`.
+2. **Registers mode prompts** — each mode name (`build`, `plan`, `audit`) maps
+   to a system prompt file via `{file:./prompts/<name>.md}`.
+
+Do not edit the `model` field in `out/opencode.json` by hand — the build
+script will overwrite it.
 
 ---
 
@@ -156,7 +219,7 @@ reviews. Does not modify repositories or create commits.
 ## Agents
 
 Subagents are dispatched from within a session using the **Task tool**
-(`@agentname`). Each agent is a Markdown file in `agents/` with a YAML
+(`@agentname`). Each agent is a Markdown file in `src/agents/` with a YAML
 frontmatter block that declares its permissions, followed by its system prompt.
 
 ### Workflow roles
@@ -175,7 +238,7 @@ Plan ──────► Implement ──────► Review
 
 #### `@planner` — schema authoring
 
-- **File:** `agents/planner.md`
+- **File:** `src/agents/planner.md`
 - **Role:** Explores a codebase, discusses design with the user, writes an
   implementation schema to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`,
   creates a GitHub issue, and links it into the schema.
@@ -186,61 +249,58 @@ Plan ──────► Implement ──────► Review
 
 #### `@project-manager` — issue lifecycle and project board
 
-- **File:** `agents/project-manager.md`
-- **Role:** Keeps GitHub project state and vault task state synchronized. Closes completed issues, manages milestones, moves project board items, maintains `$AGENT_VAULT/projects/<owner>/<repo>.md` status documents, and runs `vault-gc`/`vault-lint` as part of project cleanup.
-- **Write access:** All `gh issue *`, `gh project *`, `gh label *`, and `gh api repos/*/milestones` mutations; `gh pr comment*` (to cross-reference PRs when creating related issues); `vault-gc` and `vault-lint` scripts directly.
-- **Does not:** Edit source files; run any git write command; merge or close PRs; create or delete repositories; operate on repos not in the vault.
-- **Modes:** Interactive (bulk-confirm) and status-sync. See `agents/project-manager.md` for full documentation.
+- **File:** `src/agents/project-manager.md`
+- **Role:** Keeps GitHub project state and vault task state synchronized. Closes
+  completed issues, manages milestones, moves project board items, maintains
+  `$AGENT_VAULT/projects/<owner>/<repo>.md` status documents, and runs
+  `vault-gc`/`vault-lint` as part of project cleanup.
+- **Write access:** All `gh issue *`, `gh project *`, `gh label *`, and
+  `gh api repos/*/milestones` mutations; `gh pr comment*`; `vault-gc` and
+  `vault-lint` scripts.
+- **Does not:** Edit source files; run any git write command; merge or close PRs;
+  create or delete repositories; operate on repos not in the vault.
 
 #### `@implementor` — manual schema execution
 
-- **File:** `agents/implementor.md`
+- **File:** `src/agents/implementor.md`
 - **Role:** Executes a schema commit-group by commit-group, **pausing after
   each group** for user review before proceeding. Reads `CONTRIBUTING.md` at
   startup to learn project conventions. On startup: applies `in-progress` label
   and posts a start comment on the linked GitHub issue. On completion: removes
   `in-progress` label and posts a completion comment.
 - **Write access:** Full repository edits, `git add`, `git switch`,
-  `git checkout`, build/test tools, `fm_read`/`fm_write` (frontmatter helpers for schema/review status updates),
-  `gh issue edit`/`comment` (label transitions and issue comments), `curl`
-  (for notify.sh), `source`/`notify_triage`/`triage-dashboard.sh` (for triage).
-- **Does not:** `git commit` (the user does that); push; skip approval gates;
-  apply `review-ready` label (that is manual/PM-agent only).
+  `git checkout`, build/test tools, `fm_read`/`fm_write`, `gh issue edit`/`comment`,
+  `curl`, `source`/`notify_triage`/`triage-dashboard.sh`.
+- **Does not:** `git commit` (the user does that); push; skip approval gates.
 
 #### `@auto-implementor` — autonomous schema execution
 
-- **File:** `agents/auto-implementor.md`
+- **File:** `src/agents/auto-implementor.md`
 - **Role:** Executes a schema **end-to-end without pausing**. After each commit
   group it stages, commits, then runs a bounded review loop (max 3 rounds of
-  `@reviewer`). Escalations and design-question decisions are recorded directly
-  via the vault-triage skill. Sends push notifications at key milestones. On
-  startup: applies `in-progress` label and posts a start comment on the linked
-  GitHub issue. On completion: removes `in-progress` label and posts a
-  completion comment.
+  `@reviewer`). Escalations are recorded via the vault-triage skill. Sends push
+  notifications at key milestones.
 - **Write access:** Everything `@implementor` has, plus `git commit`,
-  `git stash`, `gh pr comment*` (allow — to cross-reference PRs when an escalation creates an issue).
-- **Does not:** Push to remote (hard rule, no exceptions); apply `review-ready`
-  label (manual/PM only).
-- **Review loop:** After each commit, runs up to 3 review rounds. If high+
-  findings persist after round 3, escalates via the vault-triage skill and
-  continues — it never stops the run.
+  `git stash`, `gh pr comment*`.
+- **Does not:** Push to remote (hard rule, no exceptions).
+- **Review loop:** After each commit, up to 3 review rounds. If high+ findings
+  persist after round 3, escalates and continues.
 
 #### `@reviewer` — structured code review
 
-- **File:** `agents/reviewer.md`
+- **File:** `src/agents/reviewer.md`
 - **Role:** Reviews staged changes (`git diff --cached`) or the latest commit
   (`git show HEAD`). Every finding is tagged with severity
   (`nit/low/medium/high/critical`) and category
   (`bug/performance/design/types/maintenance/security/docs/testing/style`).
   Writes the structured review to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
-- **Write access:** Write tool (for review file); `fm_read`/`fm_write` (frontmatter helpers for review status updates); can run the test/lint suite
-  (`cargo test/clippy`, `pytest`, `jest`, `vitest`, `tsc`) for verification;
-  `curl`, `source`/`notify_triage`/`triage-dashboard.sh` (for triage).
+- **Write access:** Write tool (for review file); `fm_read`/`fm_write`; can run
+  the test/lint suite for verification.
 - **Does not:** Run build tools; create PRs or issues; write outside the review file.
 
 #### `@designer` — repo notes and design documents
 
-- **File:** `agents/designer.md`
+- **File:** `src/agents/designer.md`
 - **Role:** Explores repositories and produces written reference material:
   - Repo notes at `$AGENT_VAULT/repo-notes/<owner>/<repo>/`
   - Design documents at `$AGENT_VAULT/design/`
@@ -250,19 +310,14 @@ Plan ──────► Implement ──────► Review
 
 #### `@auto-auditor` — headless quality audit
 
-- **File:** `agents/auto-auditor.md`
+- **File:** `src/agents/auto-auditor.md`
 - **Role:** Detects project language, runs all available static analysis tools
   (degrading gracefully when tools are absent), synthesises findings across
   Security/Testing/Architecture/Performance/Maintenance, and writes a structured
   audit report to `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
-- **Write access:** Write tool and `yq` (for audit report frontmatter — plain YAML, not frontmatter syntax); a full
-  suite of static analysis tools (Rust: `cargo clippy/audit/deny/llvm-cov`;
-  Node: `npm/pnpm/yarn audit`, `eslint`, `tsc`, `jest`, `vitest`; Python:
-  `pip-audit`, `ruff`, `mypy`, `bandit`, `pytest`; cross-language: `semgrep`,
-  `trivy`); `curl`, `source`/`notify_triage`/`triage-dashboard.sh` (for triage).
-- **Does not:** Run build/install tools; modify the repository; commit; push;
-  get dispatched by implementor agents (only by audit mode or a human in
-  build/plan mode).
+- **Write access:** Write tool and `yq`; a full suite of static analysis tools
+  (Rust, Node, Python, cross-language).
+- **Does not:** Run build/install tools; modify the repository; commit; push.
 
 ### Permission model
 
@@ -289,7 +344,7 @@ adding a new agent — see the vault note:
 
 Skills are **loadable instruction sets** injected into context on demand. They
 are not loaded automatically — an agent uses the `skill` tool (or follows a
-human prompt) to load one. Each skill lives in `skills/<name>/` with a
+human prompt) to load one. Each skill lives in `src/skills/<name>/` with a
 `SKILL.md` descriptor and optional helper scripts.
 
 ### How to load a skill
@@ -305,30 +360,35 @@ detailed instructions and references to bundled scripts.
 
 ### Available skills
 
-| Skill           | Directory               | Purpose                                                                                                                                  |
-| --------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `archive`       | `skills/archive/`       | Find and read archived schemas and reviews from the vault                                                                                |
-| `fleet-schemas` | `skills/fleet-schemas/` | Find and read cross-repo (fleet) schemas                                                                                                 |
-| `local-ci`      | `skills/local-ci/`      | Run and debug GitHub Actions workflows locally via `gh act` (includes `act.sh` wrapper)                                                  |
-| `repo-notes`    | `skills/repo-notes/`    | Find and read repository reference notes from the vault                                                                                  |
-| `reviews`       | `skills/reviews/`       | Find and read code review files from the vault                                                                                           |
-| `schemas`       | `skills/schemas/`       | Find and read implementation schemas; understand schema frontmatter fields                                                               |
-| `vault`         | `skills/vault/`         | Cross-section vault search and repository lookup                                                                                         |
-| `vault-cache`   | `skills/vault-cache/`   | Refresh the GitHub metadata cache (projects, milestones, labels)                                                                         |
-| `vault-gc`      | `skills/vault-gc/`      | Archive completed schemas and reviews; supports `--dry-run`                                                                              |
-| `vault-init`    | `skills/vault-init/`    | Initialize or verify the vault directory structure; runs `init.sh`                                                                       |
-| `vault-lint`    | `skills/vault-lint/`    | Validate schemas and reviews against format templates                                                                                    |
-| `vault-triage`  | `skills/vault-triage/`  | Full triage skill for all agents — write triage entries, send push notifications, regenerate the inbox. Load after any significant work. |
+| Skill           | Directory                   | Purpose                                                                  |
+| --------------- | --------------------------- | ------------------------------------------------------------------------ |
+| `archive`       | `src/skills/archive/`       | Find and read archived schemas and reviews from the vault                |
+| `fleet-schemas` | `src/skills/fleet-schemas/` | Find and read cross-repo (fleet) schemas                                 |
+| `local-ci`      | `src/skills/local-ci/`      | Run and debug GitHub Actions workflows locally via `gh act`              |
+| `repo-notes`    | `src/skills/repo-notes/`    | Find and read repository reference notes from the vault                  |
+| `reviews`       | `src/skills/reviews/`       | Find and read code review files from the vault                           |
+| `schemas`       | `src/skills/schemas/`       | Find and read implementation schemas; understand schema frontmatter      |
+| `vault`         | `src/skills/vault/`         | Cross-section vault search and repository lookup                         |
+| `vault-cache`   | `src/skills/vault-cache/`   | Refresh the GitHub metadata cache (projects, milestones, labels)         |
+| `vault-gc`      | `src/skills/vault-gc/`      | Archive completed schemas and reviews; supports `--dry-run`              |
+| `vault-init`    | `src/skills/vault-init/`    | Initialize or verify the vault directory structure                       |
+| `vault-lint`    | `src/skills/vault-lint/`    | Validate schemas and reviews against format templates                    |
+| `vault-triage`  | `src/skills/vault-triage/`  | Write triage entries, send push notifications, regenerate the inbox      |
 
 ### Skills with bundled scripts
 
 Some skills include executable scripts:
 
-- `local-ci/act.sh` — wrapper around `gh act` for local CI runs
-- `vault-init/init.sh` — idempotent vault directory initializer
-- `vault-triage/notify.sh` — `notify_triage` bash function for push alerts
-- `vault-triage/triage-dashboard.sh` — generates `$AGENT_VAULT/triage-inbox.md`
-- `vault-triage/setup.sh` — one-time notification platform setup
+- `src/skills/lib/frontmatter.sh` — `fm_read`/`fm_write` helpers for YAML frontmatter
+- `src/skills/local-ci/act.sh` — wrapper around `gh act` for local CI runs
+- `src/skills/vault-cache/refresh.sh` — refresh the GitHub metadata cache
+- `src/skills/vault-gc/gc.sh` — archive completed schemas and reviews
+- `src/skills/vault-init/init.sh` — idempotent vault directory initializer
+- `src/skills/vault-lint/lint.sh` — validate vault files against format templates
+- `src/skills/vault-triage/notify.sh` — `notify_triage` bash function for push alerts
+- `src/skills/vault-triage/triage-dashboard.sh` — generates `$AGENT_VAULT/triage-inbox.md`
+- `src/skills/vault-triage/setup.sh` — one-time notification platform setup
+- `src/skills/vault-triage/toast-handler.sh` — desktop toast notification handler
 
 ---
 
@@ -337,17 +397,6 @@ Some skills include executable scripts:
 Agent work products (schemas, reviews, triage entries, audit reports, repo
 notes, design documents) live in a **separate Obsidian vault** — not in this
 repo. The vault is a git-tracked directory managed with Obsidian.
-
-### Environment variables
-
-| Variable      | Purpose                                         | Example                |
-| ------------- | ----------------------------------------------- | ---------------------- |
-| `AGENT_VAULT` | Absolute path to the vault root                 | `~/obsidian/agent.obs` |
-| `AGENT_REPOS` | Absolute path to local repo checkouts           | `~/repos`              |
-| `NTFY_TOPIC`  | ntfy.sh topic for push notifications (optional) | `my-topic-abc123`      |
-
-`NTFY_TOPIC` falls back to the value in `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` if
-the environment variable is not set.
 
 ### Vault directory layout
 
@@ -381,9 +430,10 @@ $AGENT_VAULT/
 The vault is a plain directory of Markdown files with YAML frontmatter. Agents
 access it directly via standard filesystem tools — no app needs to be running.
 
-- **Read:** Read tool, `cat`, `find`, `rg` — standard file reads and searches
-- **Create/modify:** Write and Edit tools — agents use these directly for vault file writes
-- **Frontmatter:** `source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh"` then `fm_read file.md "key"` to read; `fm_write file.md "key" "value"` to write
+- **Read:** Read tool, `cat`, `find`, `rg`
+- **Create/modify:** Write and Edit tools
+- **Frontmatter:** `source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh"` then
+  `fm_read file.md "key"` / `fm_write file.md "key" "value"`
 - **Move/rename:** `mv`
 - **Delete:** `rm`
 - **List:** `find "$AGENT_VAULT" -name "*.md"`
@@ -407,8 +457,8 @@ All non-trivial implementation work follows three sequential phases:
 
 ### Phase 1 — Plan
 
-**Mode:** plan (or build mode via `@planner`)  
-**Agent:** `@planner`  
+**Mode:** plan (or build mode via `@planner`)
+**Agent:** `@planner`
 **Output:** `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`, GitHub issue
 
 The planner explores the codebase, discusses design with the user, and writes
@@ -418,7 +468,7 @@ after writing the schema and waits for user approval before creating the issue.
 
 ### Phase 2 — Implement
 
-**Mode:** build  
+**Mode:** build
 **Agent:** `@implementor` (manual) or `@auto-implementor` (autonomous)
 
 Choose based on how much oversight is needed:
@@ -432,7 +482,7 @@ Choose based on how much oversight is needed:
 
 ### Phase 3 — Review
 
-**Mode:** build (or triggered automatically by `@auto-implementor`)  
+**Mode:** build (or triggered automatically by `@auto-implementor`)
 **Agent:** `@reviewer`
 
 The reviewer examines staged changes or the latest commit and writes a
@@ -442,30 +492,58 @@ dispatches it automatically after each commit.
 
 ---
 
+## Docker Sandbox
+
+Agent sessions can run in isolated Docker containers via
+[Agent of Empires](https://github.com/njbrake/agent-of-empires) (AoE).
+
+### Image
+
+The `docker/Dockerfile` builds an Ubuntu 24.04 image with the full agent
+toolchain: opencode, gh CLI, Node.js, pnpm, bun, Rust, uv, ripgrep, yq.
+
+```bash
+docker build -t opencode-sandbox:latest docker/
+```
+
+The image is also published to `ghcr.io/ada-x64/opencode-sandbox:latest` via
+the Docker workflow on pushes to `main` that touch `docker/`.
+
+### AoE config
+
+`src/aoe-config.toml` is a versioned template. The `install.py` script
+deploys it to `~/.config/aoe/config.toml`, resolving `{{AGENT_VAULT}}` and
+`{{OPENCODE_CONFIG_SRC}}` placeholders. The config sets up: sandbox-by-default,
+custom image, vault bind-mount (RW), credential passthrough (`GH_TOKEN`,
+`GIT_CONFIG_COUNT`), and resource limits (4 CPU / 8 GB RAM).
+
+---
+
 ## Conventions
 
 ### Adding a new agent
 
-1. Create `agents/<name>.md`.
+1. Create `src/agents/<name>.md`.
 2. Open the YAML frontmatter with `"*": deny` as the first bash rule.
-3. Copy the full read-only baseline from `agents/designer.md` (or any agent).
+3. Copy the full read-only baseline from `src/agents/designer.md` (or any agent).
 4. Add only the write permissions the new agent actually needs.
-5. Add `external_directory` entries if the agent needs paths beyond `$AGENT_REPOS/`
-   and `$AGENT_VAULT/`.
-6. Write the system prompt in the Markdown body after the closing `---`.
+5. Write the system prompt in the Markdown body after the closing `---`.
+6. Run `python3 scripts/build.py` to propagate `external_directory` and model
+   stamps to the new agent.
 7. Add the agent to the permission table in
    `repo-notes/ada-x64/opencode-config/agent-permissions.md` in the vault.
-8. Update the `AGENTS.md` agent reference table above.
+8. Update this file and `README.md`.
 
 ### Updating the global read-only baseline
 
-The global read-only command list lives in `opencode.json` under
+The global read-only command list lives in `src/opencode.json` under
 `permission.bash`. Every agent file duplicates this list in its own
 frontmatter. When you add a command to the global list:
 
-1. Add it to `opencode.json`.
-2. Add it to the baseline block in **every** `agents/*.md` file.
-3. Update the baseline table in the vault permission note.
+1. Add it to `src/opencode.json`.
+2. Add it to the baseline block in **every** `src/agents/*.md` file.
+3. Run `python3 scripts/build.py` to rebuild `out/`.
+4. Update the baseline table in the vault permission note.
 
 There is no inheritance — each file is independently authoritative.
 
@@ -488,10 +566,7 @@ Opened #<number> to track <short description>.
 
 This applies to `@planner` (ask), `@project-manager` (allow), and
 `@auto-implementor` (allow). `@reviewer` does not create issues and is
-therefore exempt. See the individual agent prompts for the exact insertion
-point in each agent's workflow.
-
-The CLI command to use:
+therefore exempt.
 
 ```bash
 gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."
@@ -537,15 +612,27 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 
 ---
 
+## CI
+
+Three GitHub Actions workflows:
+
+| Workflow    | Trigger                          | Purpose                                             |
+| ----------- | -------------------------------- | --------------------------------------------------- |
+| **Lint**    | Push/PR to `main`                | shfmt, shellcheck, prettier, ruff format/lint, basedpyright |
+| **Release** | Tag push (`v*`) or manual        | Build tarball + wheel, publish to PyPI + GitHub Releases    |
+| **Docker**  | Push to `main` touching `docker/`| Build & push `opencode-sandbox` to ghcr.io                  |
+
+---
+
 ## Environment Variable Reference
 
-| Variable              | Required            | Description                                         | Fallback                                  |
-| --------------------- | ------------------- | --------------------------------------------------- | ----------------------------------------- |
-| `OPENCODE_CONFIG_SRC` | No                  | Absolute path to the opencode config source directory | `$HOME/.config/opencode`                |
-| `AGENT_VAULT`         | Yes (for vault ops) | Absolute path to the Obsidian vault                 | None — must be set                        |
-| `AGENT_REPOS`         | Yes (for repo ops)  | Absolute path to local repo checkouts               | None — must be set                        |
-| `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications                | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
+| Variable              | Required            | Description                                           | Fallback                                  |
+| --------------------- | ------------------- | ----------------------------------------------------- | ----------------------------------------- |
+| `OPENCODE_CONFIG_SRC` | No                  | Absolute path to the deployed opencode config         | `$HOME/.config/opencode`                  |
+| `AGENT_VAULT`         | Yes (for vault ops) | Absolute path to the Obsidian vault                   | None — must be set                        |
+| `AGENT_REPOS`         | Yes (for repo ops)  | Absolute path to local repo checkouts                 | None — must be set                        |
+| `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications                  | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 
-`AGENT_VAULT` and `AGENT_REPOS` are checked at the top of any agent session that uses
-the vault or operates on a repository. The `vault-init` skill can create and
-populate the vault directory if it does not yet exist.
+`AGENT_VAULT` and `AGENT_REPOS` are checked at the top of any agent session
+that uses the vault or operates on a repository. The `vault-init` skill can
+create and populate the vault directory if it does not yet exist.

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "opencode-config"
+name = "cubething-occonf"
 version = "0.1.0"
 description = "Standalone installer for ada-x64/opencode-config"
 readme = "README.md"
@@ -12,7 +12,7 @@ license = { text = "MIT" }
 authors = [{ name = "ada-x64" }]
 
 [project.scripts]
-opencode-config = "scripts.setup:main"
+cubething-occonf = "scripts.setup:main"
 
 [tool.hatch.build.targets.wheel]
 include = ["scripts/setup.py"]

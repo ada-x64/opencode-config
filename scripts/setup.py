@@ -7,13 +7,13 @@ output, then rsyncs out/ to ~/.config/opencode and writes shell env vars.
 
 Usage:
   # Recommended — via uv (no install required):
-  uvx opencode-config
+  uvx cubething-occonf
 
   # Or via pipx:
-  pipx run opencode-config
+  pipx run cubething-occonf
 
   # Directly from a GitHub release (no PyPI needed):
-  uvx --from https://github.com/ada-x64/opencode-config/releases/latest/download/opencode-config.tar.gz opencode-config
+  uvx --from https://github.com/ada-x64/opencode-config/releases/latest/download/opencode-config.tar.gz cubething-occonf
 
   # Pipe from curl (classic):
   curl -fsSL https://github.com/ada-x64/opencode-config/releases/latest/download/setup.py | python3
@@ -117,7 +117,7 @@ def find_shell_profile() -> Path:
 
 def main() -> None:
     print()
-    print("  opencode-config setup")
+    print("  cubething-occonf setup")
     print("  =====================")
     print()
 
