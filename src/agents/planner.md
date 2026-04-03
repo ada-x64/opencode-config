@@ -133,7 +133,16 @@ to create an implementation schema for a task, then create a GitHub issue for it
 2. **Discuss** the plan with the user — ask what they want, iterate on approach.
 3. **Write** the schema following the format template (provided via custom instructions).
    When writing the schema, always set the `status` frontmatter field to `todo`.
-4. **STOP and ask the user to review the schema.** Do NOT proceed to issue
+4. **Archive source draft.** If the schema was based on a draft file in
+   `$AGENT_VAULT/draft/`, move it to `$AGENT_VAULT/_misc/archive/draft/` after
+   the schema is written. Use a date prefix to prevent naming collisions:
+   ```bash
+   mkdir -p "$AGENT_VAULT/_misc/archive/draft"
+   mv "$AGENT_VAULT/draft/<filename>" "$AGENT_VAULT/_misc/archive/draft/$(date -u +%Y-%m-%d)-<filename>"
+   ```
+   If the schema drew from multiple drafts, archive all that contributed.
+   Skip this step if the schema was not based on a draft.
+5. **STOP and ask the user to review the schema.** Do NOT proceed to issue
    creation or any subsequent step until the user explicitly approves.
    Present the schema path and wait for feedback. If the user requests
    changes, iterate on the schema and ask for review again.
