@@ -204,7 +204,7 @@ def main() -> None:
 
     # --- Deploy AoE config ---
     aoe_src = src_dir / "aoe-config.toml"
-    aoe_dest = Path.home() / ".config" / "aoe" / "config.toml"
+    aoe_dest = Path.home() / ".config" / "agent-of-empires" / "config.toml"
     if aoe_src.is_file():
         if agent_vault:
             aoe_dest.parent.mkdir(parents=True, exist_ok=True)

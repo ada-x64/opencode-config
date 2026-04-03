@@ -51,6 +51,7 @@ ENV PATH="/root/.local/bin:${PATH}"
 
 # opencode (latest from GitHub releases)
 RUN curl -fsSL https://opencode.ai/install | bash
+ENV PATH="/root/.opencode/bin:${PATH}"
 
 # Pre-create vault and workspace mount points
 RUN mkdir -p /root/obsidian/agent.obs /workspace
