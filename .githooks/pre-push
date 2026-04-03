@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# pre-push hook -- run the full lint suite before allowing a push.
+# Activate with: git config core.hooksPath .githooks
+
+set -euo pipefail
+exec "$(git rev-parse --show-toplevel)/scripts/lint.sh"

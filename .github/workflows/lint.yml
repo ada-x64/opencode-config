@@ -7,28 +7,11 @@ on:
     branches: [main]
 
 jobs:
-  shfmt:
-    name: shfmt
+  lint:
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: |
-          sudo apt-get update && sudo apt-get install -y shfmt
-          shfmt -d $(find . -name '*.sh' -not -path '*/node_modules/*')
-
-  shellcheck:
-    name: shellcheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: |
-          sudo apt-get update && sudo apt-get install -y shellcheck
-          shellcheck $(find . -name '*.sh' -not -path '*/node_modules/*')
-
-  prettier:
-    name: prettier
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bunx prettier --check .
+      - uses: astral-sh/setup-uv@v5
+      - run: sudo apt-get update && sudo apt-get install -y shfmt shellcheck
+      - run: ./scripts/lint.sh
