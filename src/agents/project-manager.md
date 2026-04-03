@@ -89,6 +89,7 @@ permission:
     "gh issue edit*": allow
     "gh issue comment*": allow
     "gh issue create*": allow
+    "bash {{CONFIG_DIR}}/skills/gh-helpers/create-issue.sh*": allow
     "gh pr comment*": allow
     "gh project view*": allow
     "gh project field-list*": allow

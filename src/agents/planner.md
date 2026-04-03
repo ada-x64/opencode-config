@@ -87,6 +87,7 @@ permission:
     "gh api *": allow
     "gh project list*": allow
     "gh issue create*": ask
+    "bash {{CONFIG_DIR}}/skills/gh-helpers/create-issue.sh*": ask
     "gh issue edit*": ask
     "gh project item-add*": ask
     "gh pr comment*": ask
@@ -136,9 +137,15 @@ to create an implementation schema for a task, then create a GitHub issue for it
    creation or any subsequent step until the user explicitly approves.
    Present the schema path and wait for feedback. If the user requests
    changes, iterate on the schema and ask for review again.
-5. **Create** a GitHub issue following the template at
-   `$AGENT_VAULT/_misc/templates/schema-issue.md`. Read that template, then
-   read your schema file and apply the template exactly.
+5. **Create** a GitHub issue by running the `gh-helpers` skill's issue creation
+   script. Pass the schema file path and the `repo` from frontmatter:
+   ```bash
+   bash {{CONFIG_DIR}}/skills/gh-helpers/create-issue.sh "$schema_file" "<owner>/<repo>"
+   ```
+   The script reads the file from disk, extracts the H1 as the title, extracts
+   the `## Problem` section as a visible summary, and wraps the full content in
+   a `<details>` block. You do NOT need to read the schema file into context
+   for this step.
 6. **Add** the issue to the project board and set milestone.
 7. **Link** the issue back into the schema header.
 8. **Cross-reference PRs** — if the issue you just created relates to an open
