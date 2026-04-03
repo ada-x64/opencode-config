@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""install.py — deploy built config from out/ to the target config directory
+"""install.py — deploy built config from out/host/ and out/sandbox/ to target directories
 
 Usage:
   python3 scripts/install.py [--profile <name>] [--config-dir <path>] [--help]
@@ -14,17 +14,20 @@ Prerequisites:
     python3 scripts/build.py [--config-dir <path>]
 
 What it does:
-  1. Loads the selected profile to set CONFIG_DIR and OPENCODE_CONFIG_SRC.
-  2. Verifies out/ exists (must run build.py first).
-  3. Refuses to run if out/ == CONFIG_DIR (would be a no-op or destructive).
-  4. rsyncs out/ contents to CONFIG_DIR.
-  5. Deploys AoE config (resolving {{AGENT_VAULT}} and {{OPENCODE_CONFIG_SRC}})
-     from src/aoe-config.toml.
-  6. Prints a deployment summary.
+  1. Loads the selected profile to set CONFIG_DIR, OPENCODE_CONFIG_SRC, and
+     SANDBOX_CONFIG_DIR.
+  2. Verifies out/host/ exists (must run build.py first).
+  3. Refuses to run if out/host/ == CONFIG_DIR (would be a no-op or destructive).
+  4. rsyncs out/host/ contents to CONFIG_DIR.
+  5. rsyncs out/sandbox/ contents to SANDBOX_CONFIG_DIR (if it exists).
+  6. Deploys AoE config (resolving {{AGENT_VAULT}}, {{OPENCODE_CONFIG_SRC}},
+     and {{SANDBOX_CONFIG_DIR}}) from src/aoe-config.toml.
+  7. Prints a deployment summary.
 
 Separation of concerns:
-  - build.py:   src/ → out/ copy + all stamping (model, external_directory, {{CONFIG_DIR}})
-  - install.py: out/ → CONFIG_DIR rsync + AoE config deployment
+  - build.py:   src/ → out/host/ and out/sandbox/ + all stamping
+  - install.py: out/host/ → CONFIG_DIR rsync + out/sandbox/ → SANDBOX_CONFIG_DIR
+                + AoE config deployment
   - Source files in src/ are NEVER modified.
 """
 
@@ -121,6 +124,8 @@ def main() -> None:
     repo_root = script_dir.parent
     src_dir = repo_root / "src"
     out_dir = repo_root / "out"
+    out_host_dir = out_dir / "host"
+    out_sandbox_dir = out_dir / "sandbox"
 
     profile: str = str(args.profile)
     config_dir_override: str = str(args.config_dir_override)
@@ -140,6 +145,10 @@ def main() -> None:
     config_dir_str: str = env_vars.get("CONFIG_DIR", "")
     opencode_config_src: str = env_vars.get("OPENCODE_CONFIG_SRC", "")
     agent_vault: str = env_vars.get("AGENT_VAULT", os.environ.get("AGENT_VAULT", ""))
+    sandbox_config_dir_str: str = env_vars.get(
+        "SANDBOX_CONFIG_DIR",
+        os.path.expanduser("~/.config/opencode-sandbox"),
+    )
 
     if not config_dir_str:
         print("Error: CONFIG_DIR not set in profile.", file=sys.stderr)
@@ -156,38 +165,39 @@ def main() -> None:
     # --- Expand ~ ---
     config_dir = Path(os.path.expanduser(config_dir_str)).resolve()
     opencode_config_src = os.path.expanduser(opencode_config_src)
+    sandbox_config_dir = Path(os.path.expanduser(sandbox_config_dir_str)).resolve()
 
-    # --- Check out/ exists ---
-    if not out_dir.is_dir():
-        print("Error: out/ directory not found.", file=sys.stderr)
+    # --- Check out/host/ exists ---
+    if not out_host_dir.is_dir():
+        print("Error: out/host/ directory not found.", file=sys.stderr)
         print("Run build.py first to produce the build output:", file=sys.stderr)
         print(f"  python3 {script_dir / 'build.py'}", file=sys.stderr)
         sys.exit(1)
 
-    # --- Safety: refuse if out/ == CONFIG_DIR ---
+    # --- Safety: refuse if out/host/ == CONFIG_DIR ---
     try:
-        resolved_out = out_dir.resolve()
+        resolved_out_host = out_host_dir.resolve()
         resolved_config = config_dir.resolve()
     except Exception:
-        resolved_out = out_dir
+        resolved_out_host = out_host_dir
         resolved_config = config_dir
 
-    if resolved_out == resolved_config:
-        print("Error: out/ directory equals target CONFIG_DIR.", file=sys.stderr)
+    if resolved_out_host == resolved_config:
+        print("Error: out/host/ directory equals target CONFIG_DIR.", file=sys.stderr)
         print("", file=sys.stderr)
-        print(f"  out/:       {resolved_out}", file=sys.stderr)
+        print(f"  out/host/:  {resolved_out_host}", file=sys.stderr)
         print(f"  CONFIG_DIR: {resolved_config}", file=sys.stderr)
         print("", file=sys.stderr)
         print(
-            "Rsyncing out/ onto itself would be destructive. Check your profile.",
+            "Rsyncing out/host/ onto itself would be destructive. Check your profile.",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    # --- Rsync out/ to CONFIG_DIR ---
-    print(f"Deploying to: {config_dir}")
+    # --- Rsync out/host/ to CONFIG_DIR ---
+    print(f"Deploying host config to: {config_dir}")
     print(f"Profile:      {profile} ({profile_file})")
-    print(f"Source:       {out_dir}")
+    print(f"Source:       {out_host_dir}")
     print()
 
     config_dir.mkdir(parents=True, exist_ok=True)
@@ -196,11 +206,32 @@ def main() -> None:
         "rsync",
         "-a",
         "--delete",
-        f"{out_dir}/",
+        f"{out_host_dir}/",
         f"{config_dir}/",
     ]
     _ = subprocess.run(rsync_cmd, check=True)
-    print("Rsync complete.")
+    print("Rsync (host) complete.")
+
+    # --- Rsync out/sandbox/ to SANDBOX_CONFIG_DIR ---
+    if out_sandbox_dir.is_dir():
+        print()
+        print(f"Deploying sandbox config to: {sandbox_config_dir}")
+        sandbox_config_dir.mkdir(parents=True, exist_ok=True)
+
+        rsync_sandbox_cmd = [
+            "rsync",
+            "-a",
+            "--delete",
+            f"{out_sandbox_dir}/",
+            f"{sandbox_config_dir}/",
+        ]
+        _ = subprocess.run(rsync_sandbox_cmd, check=True)
+        print("Rsync (sandbox) complete.")
+    else:
+        print(
+            "Warning: out/sandbox/ not found — skipping sandbox config deployment.",
+            file=sys.stderr,
+        )
 
     # --- Deploy AoE config ---
     aoe_src = src_dir / "aoe-config.toml"
@@ -211,6 +242,7 @@ def main() -> None:
             content = aoe_src.read_text()
             content = content.replace("{{AGENT_VAULT}}", agent_vault)
             content = content.replace("{{OPENCODE_CONFIG_SRC}}", opencode_config_src)
+            content = content.replace("{{SANDBOX_CONFIG_DIR}}", str(sandbox_config_dir))
             _ = aoe_dest.write_text(content)
             print(f"AoE config deployed to: {aoe_dest}")
         else:
@@ -224,8 +256,10 @@ def main() -> None:
     print("Done.")
     print()
     print(f"  Profile:             {profile}")
-    print(f"  Source:              {out_dir}")
-    print(f"  Target directory:    {config_dir}")
+    print(f"  Host source:         {out_host_dir}")
+    print(f"  Host target:         {config_dir}")
+    print(f"  Sandbox source:      {out_sandbox_dir}")
+    print(f"  Sandbox target:      {sandbox_config_dir}")
     print(f"  OPENCODE_CONFIG_SRC: {opencode_config_src}")
     print()
     print("To use this config, ensure OPENCODE_CONFIG_SRC is set in your environment:")

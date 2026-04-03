@@ -26,6 +26,16 @@ opencode-config/
 │   │   ├── reviewer.md
 │   │   ├── designer.md
 │   │   └── auto-auditor.md
+│   ├── permissions/           #   Per-agent bash permission blocks
+│   │   ├── host/              #     Per-agent YAML files for host variant
+│   │   │   ├── auto-auditor.yaml
+│   │   │   ├── auto-implementor.yaml
+│   │   │   ├── designer.yaml
+│   │   │   ├── implementor.yaml
+│   │   │   ├── planner.yaml
+│   │   │   ├── project-manager.yaml
+│   │   │   └── reviewer.yaml
+│   │   └── sandbox.yaml       #   Universal sandbox permissions (all agents)
 │   ├── prompts/               #   Mode system prompts
 │   │   ├── build.md
 │   │   ├── plan.md
@@ -45,18 +55,19 @@ opencode-config/
 │   │   ├── vault-lint/
 │   │   └── vault-triage/
 │   ├── profiles/              #   Deployment profiles (excluded from out/)
-│   │   ├── host.env           #     Standard Linux/WSL workstation
-│   │   └── docker.env         #     Docker/AoE sandbox containers
+│   │   └── host.env           #     Standard Linux/WSL workstation
 │   └── images/                #   Notification icons (64x64 PNG)
 ├── scripts/                   # Build and install tooling (Python)
-│   ├── build.py               #   src/ → out/ copy + stamping
-│   ├── install.py             #   out/ → CONFIG_DIR rsync + AoE deploy
+│   ├── build.py               #   src/ → out/host/ + out/sandbox/ copy + stamping
+│   ├── install.py             #   out/host/ → CONFIG_DIR + out/sandbox/ → SANDBOX_CONFIG_DIR rsync + AoE deploy
 │   ├── setup.py               #   Standalone bootstrapper (curl|python3)
 │   └── lint.sh                #   Runs all CI lint checks locally
 ├── pyproject.toml             # Python project metadata (PyPI packaging)
 ├── .githooks/                 # Git hooks (activate: git config core.hooksPath .githooks)
 │   └── pre-push               #   Runs scripts/lint.sh before every push
 ├── out/                       # Build output (gitignored, never edit)
+│   ├── host/                  #   Host variant — deployed to $OPENCODE_CONFIG_SRC
+│   └── sandbox/               #   Sandbox variant — deployed to $SANDBOX_CONFIG_DIR
 ├── build.json                 # Model tier definitions (gitignored, per-machine)
 ├── docker/                    # Docker sandbox image
 │   ├── Dockerfile             #   Ubuntu 24.04 + opencode + agent toolchain
@@ -79,10 +90,14 @@ in `src/` are never modified. All stamping happens on the copies in `out/`.
 ### Pipeline overview
 
 ```
-src/ ──build.py──► out/ ──install.py──► ~/.config/opencode
-                     ▲                          (or custom CONFIG_DIR)
-              build.json
-           (model tiers, external_directory)
+src/ ──build.py──► out/host/    ──install.py──► ~/.config/opencode
+                                                  (or custom CONFIG_DIR)
+               ├─► out/sandbox/ ──install.py──► ~/.config/opencode-sandbox
+                     ▲                            (or SANDBOX_CONFIG_DIR)
+               build.json
+            (model tiers, external_directory)
+            src/permissions/
+            (bash permission blocks, per-variant)
 ```
 
 ### `build.json` (gitignored, per-machine)
@@ -112,35 +127,47 @@ for model configuration and writes the file. Use `--reconfigure` to re-prompt.
 
 ### `scripts/build.py`
 
-Copies `src/` to `out/` (excluding `profiles/`), then applies all stamps:
+Copies `src/` to `out/host/` and `out/sandbox/` (excluding `profiles/` and
+`permissions/`), then applies all stamps to each variant:
 
-1. Sets the `model` field in `out/opencode.json` to `global.model`.
+1. Sets the `model` field in `out/<variant>/opencode.json` to `global.model`.
 2. For each agent file, reads `tier` from frontmatter, looks up the tier in
    `build.json`, and sets or removes the `model` field accordingly.
-3. Stamps the `external_directory` block in all agent frontmatter.
-4. Resolves `{{CONFIG_DIR}}` placeholders in agent files.
+3. Stamps `{{BASH_PERMISSIONS}}` in agent frontmatter from `src/permissions/`:
+   - **Host variant:** reads `src/permissions/host/<agent>.yaml` for each agent.
+     The `bash:` key is injected at 2-space indent; all entries at 4-space indent.
+   - **Sandbox variant:** reads `src/permissions/sandbox.yaml` and stamps ALL
+     agents with the same universal block (`"*": allow` + `gh api *` / `git push*`
+     denies). Any remaining `ask` rules are converted to `allow`.
+4. Stamps the `external_directory` block in all agent frontmatter:
+   - **Host variant:** existing behavior (stamped from `build.json`).
+   - **Sandbox variant:** removes the `external_directory:` block entirely
+     (no path restrictions in containers).
+5. Resolves `{{CONFIG_DIR}}` placeholders in agent files:
+   - **Host variant:** resolves to `OPENCODE_CONFIG_SRC` value.
+   - **Sandbox variant:** resolves to `/root/.config/opencode` (container path).
 
 The script is idempotent — running it multiple times produces the same result.
 
 ```bash
 python3 scripts/build.py                # build using existing build.json
 python3 scripts/build.py --reconfigure  # re-prompt for model config
-python3 scripts/build.py --config-dir /path/to/config  # override CONFIG_DIR
+python3 scripts/build.py --config-dir /path/to/config  # override host CONFIG_DIR
 ```
 
 ### `scripts/install.py`
 
-Deploys built output to the target config directory:
+Deploys built output to the target config directories:
 
 1. Loads the selected profile (`src/profiles/<name>.env`) to determine
-   `CONFIG_DIR` and `OPENCODE_CONFIG_SRC`.
-2. Rsyncs `out/` contents to `CONFIG_DIR`.
-3. Deploys the AoE config (resolving `{{AGENT_VAULT}}` and
-   `{{OPENCODE_CONFIG_SRC}}` in `src/aoe-config.toml`).
+   `CONFIG_DIR`, `OPENCODE_CONFIG_SRC`, and `SANDBOX_CONFIG_DIR`.
+2. Rsyncs `out/host/` contents to `CONFIG_DIR`.
+3. Rsyncs `out/sandbox/` contents to `SANDBOX_CONFIG_DIR`.
+4. Deploys the AoE config (resolving `{{AGENT_VAULT}}`, `{{OPENCODE_CONFIG_SRC}}`,
+   and `{{SANDBOX_CONFIG_DIR}}` in `src/aoe-config.toml`).
 
 ```bash
 python3 scripts/install.py                        # host profile (default)
-python3 scripts/install.py --profile docker       # docker profile
 python3 scripts/install.py --config-dir /custom   # override CONFIG_DIR
 ```
 
@@ -154,13 +181,17 @@ writes environment variables to the user's shell profile. See
 ### Profiles
 
 Profiles live in `src/profiles/` and are excluded from the build output.
-Each is a shell-style `.env` file defining `CONFIG_DIR` and
-`OPENCODE_CONFIG_SRC`.
+Each is a shell-style `.env` file defining `CONFIG_DIR`, `OPENCODE_CONFIG_SRC`,
+and `SANDBOX_CONFIG_DIR`.
 
-| Profile  | File                      | CONFIG_DIR               |
-| -------- | ------------------------- | ------------------------ |
-| `host`   | `src/profiles/host.env`   | `$HOME/.config/opencode` |
-| `docker` | `src/profiles/docker.env` | `/root/.config/opencode` |
+| Profile | File                    | CONFIG_DIR               | SANDBOX_CONFIG_DIR                    |
+| ------- | ----------------------- | ------------------------ | ------------------------------------- |
+| `host`  | `src/profiles/host.env` | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox`      |
+
+The sandbox build variant (`out/sandbox/`) replaces the former `docker` profile.
+The sandbox config is built with universal `allow` permissions (minus `gh api *`
+and `git push*` denies) and no `external_directory` restrictions, then deployed
+to `SANDBOX_CONFIG_DIR` and mounted into AoE containers.
 
 ### Changing models
 
@@ -515,8 +546,10 @@ the Docker workflow on pushes to `main` that touch `docker/`.
 ### AoE config
 
 `src/aoe-config.toml` is a versioned template. The `install.py` script
-deploys it to `~/.config/agent-of-empires/config.toml`, resolving `{{AGENT_VAULT}}` and
-`{{OPENCODE_CONFIG_SRC}}` placeholders. The config sets up: sandbox-by-default,
+deploys it to `~/.config/agent-of-empires/config.toml`, resolving `{{AGENT_VAULT}}`,
+`{{OPENCODE_CONFIG_SRC}}`, and `{{SANDBOX_CONFIG_DIR}}` placeholders. The
+config mounts `$SANDBOX_CONFIG_DIR` (the pre-built sandbox config tree) into
+the container at `/root/.config/opencode`, sets up: sandbox-by-default,
 custom image, vault bind-mount (RW), credential passthrough (`GH_TOKEN`,
 `GIT_CONFIG_COUNT`), and resource limits (4 CPU / 8 GB RAM).
 
@@ -527,24 +560,26 @@ custom image, vault bind-mount (RW), credential passthrough (`GH_TOKEN`,
 ### Adding a new agent
 
 1. Create `src/agents/<name>.md`.
-2. Open the YAML frontmatter with `"*": deny` as the first bash rule.
-3. Copy the full read-only baseline from `src/agents/designer.md` (or any agent).
-4. Add only the write permissions the new agent actually needs.
-5. Write the system prompt in the Markdown body after the closing `---`.
-6. Run `python3 scripts/build.py` to propagate `external_directory` and model
-   stamps to the new agent.
-7. Add the agent to the permission table in
+2. Open the YAML frontmatter with `{{BASH_PERMISSIONS}}` as the placeholder in
+   the `permission:` block (the build system stamps it per-variant).
+3. Create `src/permissions/host/<name>.yaml` with the agent's bash permission
+   block starting with `"*": deny` then the allowed commands.
+4. Write the system prompt in the Markdown body after the closing `---`.
+5. Run `python3 scripts/build.py` to propagate `external_directory`, model,
+   and bash permission stamps to the new agent.
+6. Add the agent to the permission table in
    `repo-notes/ada-x64/opencode-config/agent-permissions.md` in the vault.
-8. Update this file and `README.md`.
+7. Update this file and `README.md`.
 
 ### Updating the global read-only baseline
 
 The global read-only command list lives in `src/opencode.json` under
-`permission.bash`. Every agent file duplicates this list in its own
-frontmatter. When you add a command to the global list:
+`permission.bash`. The per-agent host permission files in
+`src/permissions/host/` duplicate this list for each agent. When you add a
+command to the global read-only list:
 
 1. Add it to `src/opencode.json`.
-2. Add it to the baseline block in **every** `src/agents/*.md` file.
+2. Add it to the baseline block in **every** `src/permissions/host/*.yaml` file.
 3. Run `python3 scripts/build.py` to rebuild `out/`.
 4. Update the baseline table in the vault permission note.
 
@@ -639,6 +674,7 @@ git config core.hooksPath .githooks
 | Variable              | Required            | Description                                   | Fallback                                  |
 | --------------------- | ------------------- | --------------------------------------------- | ----------------------------------------- |
 | `OPENCODE_CONFIG_SRC` | No                  | Absolute path to the deployed opencode config | `$HOME/.config/opencode`                  |
+| `SANDBOX_CONFIG_DIR`  | No                  | Path where sandbox config is deployed         | `$HOME/.config/opencode-sandbox`          |
 | `AGENT_VAULT`         | Yes (for vault ops) | Absolute path to the Obsidian vault           | None — must be set                        |
 | `AGENT_REPOS`         | Yes (for repo ops)  | Absolute path to local repo checkouts         | None — must be set                        |
 | `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications          | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-build.py — build stamped config from src/ templates into out/.
+build.py — build stamped config from src/ templates into out/host/ and out/sandbox/.
 
-Copies src/ → out/ (excluding profiles/), then applies all stamps:
+Copies src/ → out/host/ and out/sandbox/ (excluding profiles/ and permissions/),
+then applies all stamps:
   - model field in opencode.json
   - model + external_directory in agent frontmatter
+  - {{BASH_PERMISSIONS}} placeholder resolved per-variant from src/permissions/
   - {{CONFIG_DIR}} placeholder resolution in agent files
 
 Source files in src/ are NEVER modified.
@@ -41,6 +43,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "{env:OPENCODE_CONFIG_SRC}/**",
             "/tmp/**",
         ],
+        "sandbox_config_dir": "/root/.config/opencode",
     },
     "tiers": {
         "design": {"model": None},
@@ -170,24 +173,24 @@ def rebuild_content(fm_lines: list[str], rest: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Build: copy src/ → out/ then stamp
+# Build: copy src/ → out/<variant>/ then stamp
 # ---------------------------------------------------------------------------
 
 
 def copy_src_to_out(src_dir: Path, out_dir: Path) -> None:
-    """Copy src/ tree to out/, excluding profiles/."""
+    """Copy src/ tree to out/<variant>/, excluding profiles/ and permissions/."""
     if out_dir.exists():
         shutil.rmtree(out_dir)
     _ = shutil.copytree(
         src_dir,
         out_dir,
-        ignore=shutil.ignore_patterns("profiles"),
+        ignore=shutil.ignore_patterns("profiles", "permissions"),
     )
-    print(f"Copied {src_dir}/ → {out_dir}/ (excluding profiles/)")
+    print(f"Copied {src_dir}/ → {out_dir}/ (excluding profiles/, permissions/)")
 
 
 def stamp_opencode_json(out_dir: Path, global_model: str) -> None:
-    """Stamp the model field in out/opencode.json."""
+    """Stamp the model field in out/<variant>/opencode.json."""
     oc_path = out_dir / "opencode.json"
     oc_text = oc_path.read_text(encoding="utf-8")
     current_model = read_model_from_jsonc(oc_text)
@@ -264,11 +267,108 @@ def stamp_agent_models(agents_dir: Path, config: dict[str, Any]) -> dict[Path, s
     return {}
 
 
-def stamp_external_dirs(agents_dir: Path, ext_dirs: list[str]) -> None:
-    """Stamp the external_directory block in all agent frontmatter."""
-    canonical: list[str] = ["  external_directory:"]
-    for d in ext_dirs:
-        canonical.append(f'    "{d}": allow')
+def stamp_bash_permissions(
+    agents_dir: Path,
+    permissions_dir: Path,
+    variant: str,
+) -> None:
+    """Stamp {{BASH_PERMISSIONS}} in agent files.
+
+    For variant="host": reads src/permissions/host/<agent_stem>.yaml and injects
+    the bash: block content (indented 2 spaces for the key, 4 for entries).
+
+    For variant="sandbox": reads src/permissions/sandbox.yaml and stamps ALL
+    agents with the same content.
+    """
+    if variant == "sandbox":
+        sandbox_perm_file = permissions_dir / "sandbox.yaml"
+        if not sandbox_perm_file.is_file():
+            print(
+                f"Warning: sandbox.yaml not found at {sandbox_perm_file}, "
+                "skipping bash permission stamp",
+                file=sys.stderr,
+            )
+            return
+        sandbox_block = _build_bash_block(sandbox_perm_file)
+
+    for agent_file in sorted(agents_dir.glob("*.md")):
+        agent_name = agent_file.stem
+        content = agent_file.read_text(encoding="utf-8")
+
+        if "{{BASH_PERMISSIONS}}" not in content:
+            print(f"{agent_name}: no {{{{BASH_PERMISSIONS}}}} placeholder, skipping")
+            continue
+
+        if variant == "host":
+            host_perm_file = permissions_dir / "host" / f"{agent_name}.yaml"
+            if not host_perm_file.is_file():
+                print(
+                    f"Warning: {host_perm_file} not found, "
+                    f"skipping bash permissions for {agent_name}",
+                    file=sys.stderr,
+                )
+                continue
+            bash_block = _build_bash_block(host_perm_file)
+        else:
+            bash_block = sandbox_block  # type: ignore[possibly-undefined]
+
+        # Find the placeholder line to detect its leading whitespace
+        lines = content.splitlines(keepends=True)
+        new_lines: list[str] = []
+        for line in lines:
+            stripped = line.rstrip("\n")
+            if "{{BASH_PERMISSIONS}}" in stripped:
+                # Inject the bash block in place of the placeholder
+                new_lines.append(bash_block + "\n")
+            else:
+                new_lines.append(line)
+
+        new_content = "".join(new_lines)
+        _ = agent_file.write_text(new_content, encoding="utf-8")
+        print(f"{agent_name}: stamped bash permissions ({variant})")
+
+
+def _build_bash_block(perm_file: Path) -> str:
+    """Read a permissions YAML file and return the indented block for frontmatter.
+
+    The permissions file has `bash:` at root level (no indent). When injected
+    into agent frontmatter (under `permission:`), the `bash:` key is indented
+    2 spaces and all entries are indented 4 spaces.
+    """
+    raw = perm_file.read_text(encoding="utf-8")
+    lines = raw.splitlines()
+
+    result_lines: list[str] = []
+    in_bash = False
+
+    for line in lines:
+        if line.startswith("bash:"):
+            in_bash = True
+            result_lines.append("  bash:")
+            continue
+        if in_bash:
+            if line == "" or line.startswith(" ") or line.startswith("\t"):
+                # Entry line — add 2 more spaces of indent (4 total)
+                result_lines.append("  " + line)
+            else:
+                # New top-level key — stop
+                break
+
+    return "\n".join(result_lines)
+
+
+def stamp_external_dirs(agents_dir: Path, ext_dirs: list[str], variant: str) -> None:
+    """Stamp the external_directory block in all agent frontmatter.
+
+    For variant="host": existing behavior (stamp from build.json).
+    For variant="sandbox": remove the external_directory block entirely.
+    """
+    if variant == "host":
+        canonical: list[str] = ["  external_directory:"]
+        for d in ext_dirs:
+            canonical.append(f'    "{d}": allow')
+    else:
+        canonical = []  # sandbox: no external_directory restrictions
 
     for agent_file in sorted(agents_dir.glob("*.md")):
         agent_name = agent_file.stem
@@ -299,7 +399,7 @@ def stamp_external_dirs(agents_dir: Path, ext_dirs: list[str]) -> None:
                     skip = False
             new_lines.append(line)
 
-        if not found:
+        if not found and variant == "host":
             insert_idx = len(new_lines)
             for i, line in enumerate(new_lines):
                 if re.match(r"^  task:", line):
@@ -318,6 +418,33 @@ def stamp_external_dirs(agents_dir: Path, ext_dirs: list[str]) -> None:
         print(f"{agent_name}: external_directory {result}")
 
 
+def convert_ask_to_allow(agents_dir: Path) -> None:
+    """Convert ': ask' to ': allow' in sandbox agent frontmatter.
+
+    This removes any interactive prompts that might appear in frontmatter
+    (e.g., from planner's 'ask' rules being copied into sandbox build).
+    """
+    count = 0
+    for agent_file in sorted(agents_dir.glob("*.md")):
+        content = agent_file.read_text(encoding="utf-8")
+        parsed = extract_frontmatter(content)
+        if parsed is None:
+            continue
+        fm_str, rest = parsed
+        if ": ask" not in fm_str:
+            continue
+        # Only replace within frontmatter
+        new_fm_str = fm_str.replace(": ask", ": allow")
+        new_content = rebuild_content(new_fm_str.splitlines(), rest)
+        _ = agent_file.write_text(new_content, encoding="utf-8")
+        print(f"  {agent_file.name}: converted 'ask' → 'allow'")
+        count += 1
+    if count:
+        print(f"  {count} agent file(s) converted ask→allow.")
+    else:
+        print("  No 'ask' rules found in sandbox agents.")
+
+
 def resolve_config_dir(agents_dir: Path, config_dir_value: str) -> None:
     """Resolve {{CONFIG_DIR}} placeholders in all agent files."""
     count = 0
@@ -332,47 +459,100 @@ def resolve_config_dir(agents_dir: Path, config_dir_value: str) -> None:
     print(f"  {count} agent file(s) updated.")
 
 
-def build(config: dict[str, Any], config_dir_value: str = "") -> Path:
-    """Full build: copy src/ → out/, apply all stamps. Returns out_dir path.
+def build(
+    config: dict[str, Any],
+    config_dir_value: str = "",
+    sandbox_config_dir_value: str = "/root/.config/opencode",
+) -> Path:
+    """Full build: copy src/ → out/host/ and out/sandbox/, apply all stamps.
+
+    Returns the out/ root directory path.
 
     Args:
         config: Loaded build.json dict.
-        config_dir_value: Value to substitute for {{CONFIG_DIR}} in agent files.
-                          If empty, uses OPENCODE_CONFIG_SRC env var, falling
-                          back to the default ~/.config/opencode.
+        config_dir_value: Value to substitute for {{CONFIG_DIR}} in host agent
+                          files. If empty, uses OPENCODE_CONFIG_SRC env var,
+                          falling back to the default ~/.config/opencode.
+        sandbox_config_dir_value: Value to substitute for {{CONFIG_DIR}} in
+                                  sandbox agent files. Defaults to
+                                  /root/.config/opencode (container path).
     """
-    if not config_dir_value:
-        import os
+    import os
 
+    if not config_dir_value:
         config_dir_value = os.environ.get(
             "OPENCODE_CONFIG_SRC", str(Path.home() / ".config" / "opencode")
         )
 
+    # Allow override from build.json global.sandbox_config_dir
     global_section = dict(config["global"])
     global_model: str = str(global_section["model"])
     ext_dirs: list[str] = list(global_section["external_directory"])
+    sandbox_config_dir_from_config: str = str(
+        global_section.get("sandbox_config_dir", sandbox_config_dir_value)
+    )
+    if sandbox_config_dir_value == "/root/.config/opencode":
+        sandbox_config_dir_value = sandbox_config_dir_from_config
 
-    # Step 1: Copy
-    copy_src_to_out(SRC_DIR, OUT_DIR)
+    permissions_dir = SRC_DIR / "permissions"
 
-    agents_dir = OUT_DIR / "agents"
+    # Remove old out/ root if it exists (flat/legacy layout)
+    old_out = REPO_ROOT / "out"
+    # We'll build into out/host/ and out/sandbox/
+    out_host = old_out / "host"
+    out_sandbox = old_out / "sandbox"
 
-    # Step 2: Stamp opencode.json model
-    stamp_opencode_json(OUT_DIR, global_model)
+    # --- Build host variant ---
+    print("=" * 60)
+    print("Building host variant → out/host/")
+    print("=" * 60)
 
-    # Step 3: Stamp agent models
-    _ = stamp_agent_models(agents_dir, config)
+    copy_src_to_out(SRC_DIR, out_host)
+    agents_dir_host = out_host / "agents"
 
-    # Step 4: Stamp agent external_directory
-    stamp_external_dirs(agents_dir, ext_dirs)
+    stamp_opencode_json(out_host, global_model)
+    _ = stamp_agent_models(agents_dir_host, config)
 
-    # Step 5: Resolve {{CONFIG_DIR}} placeholders
-    print(f"Resolving {{{{CONFIG_DIR}}}} → {config_dir_value} in agent files...")
-    resolve_config_dir(agents_dir, config_dir_value)
+    print("Stamping {{BASH_PERMISSIONS}} (host)...")
+    stamp_bash_permissions(agents_dir_host, permissions_dir, "host")
+
+    print("Stamping external_directory (host)...")
+    stamp_external_dirs(agents_dir_host, ext_dirs, "host")
+
+    print(f"Resolving {{{{CONFIG_DIR}}}} → {config_dir_value} in host agent files...")
+    resolve_config_dir(agents_dir_host, config_dir_value)
 
     print()
-    print(f"Done. Build output in {OUT_DIR}/")
-    return OUT_DIR
+    print("=" * 60)
+    print("Building sandbox variant → out/sandbox/")
+    print("=" * 60)
+
+    copy_src_to_out(SRC_DIR, out_sandbox)
+    agents_dir_sandbox = out_sandbox / "agents"
+
+    stamp_opencode_json(out_sandbox, global_model)
+    _ = stamp_agent_models(agents_dir_sandbox, config)
+
+    print("Stamping {{BASH_PERMISSIONS}} (sandbox)...")
+    stamp_bash_permissions(agents_dir_sandbox, permissions_dir, "sandbox")
+
+    print("Removing external_directory restrictions (sandbox)...")
+    stamp_external_dirs(agents_dir_sandbox, ext_dirs, "sandbox")
+
+    print("Converting 'ask' → 'allow' in sandbox agents...")
+    convert_ask_to_allow(agents_dir_sandbox)
+
+    print(
+        f"Resolving {{{{CONFIG_DIR}}}} → {sandbox_config_dir_value}"
+        " in sandbox agent files..."
+    )
+    resolve_config_dir(agents_dir_sandbox, sandbox_config_dir_value)
+
+    print()
+    print(f"Done. Build output in {old_out}/")
+    print(f"  Host:    {out_host}/")
+    print(f"  Sandbox: {out_sandbox}/")
+    return old_out
 
 
 # ---------------------------------------------------------------------------
@@ -382,7 +562,7 @@ def build(config: dict[str, Any], config_dir_value: str = "") -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Build stamped config from src/ templates into out/."
+        description="Build stamped config from src/ templates into out/host/ and out/sandbox/."
     )
     _ = parser.add_argument(
         "--reconfigure",
@@ -395,14 +575,28 @@ def main() -> None:
         metavar="<path>",
         dest="config_dir_value",
         help=(
-            "Value to substitute for {{CONFIG_DIR}} in agent files."
+            "Value to substitute for {{CONFIG_DIR}} in host agent files."
             " Defaults to $OPENCODE_CONFIG_SRC or ~/.config/opencode."
+        ),
+    )
+    _ = parser.add_argument(
+        "--sandbox-config-dir",
+        default="/root/.config/opencode",
+        metavar="<path>",
+        dest="sandbox_config_dir_value",
+        help=(
+            "Value to substitute for {{CONFIG_DIR}} in sandbox agent files."
+            " Defaults to /root/.config/opencode."
         ),
     )
     args = parser.parse_args()
 
     config = ensure_config(reconfigure=bool(args.reconfigure))
-    _ = build(config, config_dir_value=str(args.config_dir_value))
+    _ = build(
+        config,
+        config_dir_value=str(args.config_dir_value),
+        sandbox_config_dir_value=str(args.sandbox_config_dir_value),
+    )
 
 
 if __name__ == "__main__":

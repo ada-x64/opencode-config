@@ -1,0 +1,7 @@
+bash:
+  # Sandbox: running in isolated container — allow everything by default
+  "*": allow
+  # Deny gh api (raw REST client — cannot distinguish reads from writes at command-pattern level)
+  "gh api *": deny
+  # Deny git push (defense-in-depth — sandbox agents should never push to remote)
+  "git push*": deny
