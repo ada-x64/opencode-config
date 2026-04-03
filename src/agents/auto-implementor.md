@@ -48,26 +48,18 @@ schema_file="$task_dir/schema.md"
 review_file="$task_dir/review.md"
 ```
 
-Load the notification and library helpers (fail silently if not configured):
-
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh" 2>/dev/null || true
-source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh" 2>/dev/null || true
-source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh" 2>/dev/null || true
-```
-
 ## Bare Repo / Worktree Awareness
 
 Repositories may use a **bare repo + worktree** layout where each branch lives
-in its own directory. Always detect the repo type at startup and use the
-`worktree.sh` library for branch operations:
+in its own directory. Always detect the repo type at startup using the
+`wt_detect` tool:
 
-```bash
-repo_type="$(wt_detect "$repo_path")"
+```
+repo_type = wt_detect({ path: repo_path })
 ```
 
 When the repo type is `worktree`, **never use `git switch`** — use
-`wt_switch_branch` instead. It creates a new worktree for the target branch
+the `wt_switch_branch` tool instead. It creates a new worktree for the target branch
 and prints the updated working path (see Behavior / Startup §3 below).
 
 ## Behavior
@@ -78,46 +70,40 @@ and prints the updated working path (see Behavior / Startup §3 below).
 2.  Read the full schema at `$schema_file`.
 3.  Read the `branch` field from the schema's YAML frontmatter and switch to that
     branch using the worktree-aware helper:
-    ```bash
-    branch="$(fm_read "$schema_file" "branch" "")"
-    if [[ -z "$branch" || "$branch" == "null" ]]; then
-      echo "Warning: schema has no branch field — staying on current branch." >&2
-      branch="$(git -C "$repo_path" branch --show-current)"
-    else
-      repo_path="$(wt_switch_branch "$repo_path" "$branch")"
-    fi
+    ```
+    branch = fm_read({ file: schema_file, key: "branch" })
+    ```
+    If `branch` is empty or `null`, stay on the current branch. Otherwise:
+    ```
+    repo_path = wt_switch_branch({ repo_path: repo_path, branch: branch })
     ```
     In a bare repo / worktree setup this creates a new worktree directory and
     updates `repo_path` to point to it. In a traditional clone it runs
     `git switch` as before. All subsequent `git -C "$repo_path"` commands and
     file operations use the (possibly updated) path.
 4.  Update the schema status to `in progress`:
-    ```bash
-    fm_write "$schema_file" "status" "in progress"
+    ```
+    fm_write({ file: schema_file, key: "status", value: "in progress" })
     ```
 5.  Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
+    ```
+    issue_field = fm_read({ file: schema_file, key: "issue" })
+    repo_slug = fm_read({ file: schema_file, key: "repo" })
+    ```
+    If `issue_field` is non-empty and does not start with `local-`:
     ```bash
-    _issue_field="$(fm_read "$schema_file" "issue" "")"
-    if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
-      _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-      _repo_slug="$(fm_read "$schema_file" "repo" "")"
-      gh issue edit "$_issue_num" -R "$_repo_slug" --add-label "in-progress" 2>/dev/null || true
-    fi
-    unset _issue_field _issue_num _repo_slug
+    _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
+    gh issue edit "$_issue_num" -R "$repo_slug" --add-label "in-progress" 2>/dev/null || true
     ```
         This is best-effort — it never fails the startup sequence.
-6.  Post a start comment on the linked GitHub issue (skip if vault-only or blank):
+6.  Post a start comment on the linked GitHub issue (skip if vault-only or blank).
+    Reuse the `issue_field` and `repo_slug` from above:
     ```bash
-    _issue_field="$(fm_read "$schema_file" "issue" "")"
-    if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
-      _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-      _repo_slug="$(fm_read "$schema_file" "repo" "")"
-      _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
-      gh issue comment "$_issue_num" -R "$_repo_slug" \
-        --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
-        2>/dev/null || true
-    fi
-    unset _issue_field _issue_num _repo_slug _group_count
+    _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
+    _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
+    gh issue comment "$_issue_num" -R "$repo_slug" \
+      --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
+      2>/dev/null || true
     ```
     This is best-effort — it never fails the startup sequence.
 
@@ -197,8 +183,8 @@ Read the review. Evaluate:
   problem. Do NOT stop. Instead:
   1.  Load the `vault-triage` skill.
   2.  Write an `escalation` triage entry directly to `$task_dir/`.
-  3.  Send notification: `notify_triage escalation "<owner>/<repo>/<task>" "<one-line summary>"`
-  4.  Regenerate inbox: `bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh`
+  3.  Send notification: `notify_triage({ type: "escalation", task: "<owner>/<repo>/<task>", headline: "<one-line summary>", icon: "auto-implementor", emoji: "escalation" })`
+  4.  Regenerate inbox: `triage_dashboard({})`
   5.  **Continue to the next commit group.** Do not stop the run.
   6.  If the escalation results in an issue being created and there is a
       related open PR (and the issue is not the PR's own tracking issue),
@@ -211,8 +197,8 @@ the next group:
 
 1. Load the `vault-triage` skill.
 2. Write a `design-question` triage entry directly to `$task_dir/`.
-3. Send notification: `notify_triage design-question "<owner>/<repo>/<task>" "<one-line summary>"`
-4. Regenerate inbox: `bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh`
+3. Send notification: `notify_triage({ type: "design-question", task: "<owner>/<repo>/<task>", headline: "<one-line summary>", icon: "auto-implementor", emoji: "design-question" })`
+4. Regenerate inbox: `triage_dashboard({})`
 
 **f. Activity entry** — after the review loop completes for this group, load
 the `vault-triage` skill and write an `activity` triage entry to `$task_dir/`.
@@ -227,8 +213,8 @@ follow its **Write Mode** instructions. The three post-work steps are
 **mandatory** after every triage write:
 
 1. Write a triage entry to the task directory
-2. Send a push notification via `notify_triage`
-3. Regenerate the triage inbox via `triage-dashboard.sh`
+2. Send a push notification via the `notify_triage` tool
+3. Regenerate the triage inbox via the `triage_dashboard` tool
 
 **Events requiring triage entries:**
 
@@ -248,31 +234,27 @@ findings, and recommendations.
 After all commit groups are done and validated:
 
 1. Update the schema status to `complete`:
-   ```bash
-   fm_write "$schema_file" "status" "complete"
+   ```
+   fm_write({ file: schema_file, key: "status", value: "complete" })
    ```
 2. Remove the `in-progress` label from the linked GitHub issue (skip if vault-only or blank):
+   ```
+   issue_field = fm_read({ file: schema_file, key: "issue" })
+   repo_slug = fm_read({ file: schema_file, key: "repo" })
+   ```
+   If `issue_field` is non-empty and does not start with `local-`:
    ```bash
-   _issue_field="$(fm_read "$schema_file" "issue" "")"
-   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
-     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-     _repo_slug="$(fm_read "$schema_file" "repo" "")"
-     gh issue edit "$_issue_num" -R "$_repo_slug" --remove-label "in-progress" 2>/dev/null || true
-   fi
-   unset _issue_field _issue_num _repo_slug
+   _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
+   gh issue edit "$_issue_num" -R "$repo_slug" --remove-label "in-progress" 2>/dev/null || true
    ```
    This is best-effort — it never fails the completion sequence.
-3. Post a completion comment on the linked GitHub issue (skip if vault-only or blank):
+3. Post a completion comment on the linked GitHub issue (skip if vault-only or blank).
+   Reuse the `issue_field` and `repo_slug` from above:
    ```bash
-   _issue_field="$(fm_read "$schema_file" "issue" "")"
-   if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
-     _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-     _repo_slug="$(fm_read "$schema_file" "repo" "")"
-     gh issue comment "$_issue_num" -R "$_repo_slug" \
-       --body "Implementation complete on branch \`${branch}\`. ${_groups_completed} commit groups implemented and validated." \
-       2>/dev/null || true
-   fi
-   unset _issue_field _issue_num _repo_slug
+   _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
+   gh issue comment "$_issue_num" -R "$repo_slug" \
+     --body "Implementation complete on branch \`${branch}\`. ${_groups_completed} commit groups implemented and validated." \
+     2>/dev/null || true
    ```
    This is best-effort — it never fails the completion sequence.
 4. Load the `vault-triage` skill. Write a `run-summary` triage entry directly
@@ -285,7 +267,7 @@ After all commit groups are done and validated:
    - Escalations filed (filenames)
    - Whether the run-summary triage entry was written successfully
    - If a new worktree was created during startup, remind the user they can
-     clean it up after merging: `wt_cleanup "$repo_path"` or
+     clean it up after merging: `wt_cleanup({ worktree_path: repo_path })` or
      `git worktree remove <worktree_path>`
 
 **Icon selection:** When calling `notify_triage`, pass `auto-implementor` as the icon (the `auto-` prefix triggers ⚙️ prepending automatically) and use the base semantic key:
@@ -295,11 +277,11 @@ After all commit groups are done and validated:
 - Design ambiguity → semantic key `design-question` (resolves to ⚙️❓)
 - Run summary → semantic key `activity` (resolves to ⚙️📋)
 
-```bash
-# Examples:
-notify_triage activity "<owner>/<repo>/<task>" "Commit Group 1 Finished" $'• Updated 6 scripts\n• Tests passing ✓' "" "auto-implementor" "activity"
-notify_triage escalation "<owner>/<repo>/<task>" "Review Loop Exhausted" $'• High findings persist in module X\n• 3 rounds attempted' "" "auto-implementor" "escalation"
-notify_triage run-summary "<owner>/<repo>/<task>" "Run Complete" $'• 5/5 commit groups done\n• 2 escalations logged' "" "auto-implementor" "activity"
+```
+// Examples:
+notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Commit Group 1 Finished", body: "• Updated 6 scripts\n• Tests passing ✓", icon: "auto-implementor", emoji: "activity" })
+notify_triage({ type: "escalation", task: "<owner>/<repo>/<task>", headline: "Review Loop Exhausted", body: "• High findings persist in module X\n• 3 rounds attempted", icon: "auto-implementor", emoji: "escalation" })
+notify_triage({ type: "run-summary", task: "<owner>/<repo>/<task>", headline: "Run Complete", body: "• 5/5 commit groups done\n• 2 escalations logged", icon: "auto-implementor", emoji: "activity" })
 ```
 
 ## What you MUST NOT do

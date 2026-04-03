@@ -22,14 +22,6 @@ bash:
   "tr *": allow
   "awk *": allow
   "jq *": allow
-  "source */lib/frontmatter.sh*": allow
-  "source */lib/worktree.sh*": allow
-  "fm_read *": allow
-  "fm_write *": allow
-  "wt_detect *": allow
-  "wt_owner_repo *": allow
-  "wt_switch_branch *": allow
-  "wt_cleanup *": allow
   "diff *": allow
   "comm *": allow
   "column *": allow
@@ -92,8 +84,6 @@ bash:
   "mv *": allow
   "rm *": allow
   "mkdir *": allow
-  # Notifications
-  "ntfy publish*": allow
   # Git (write — staging, branch switching, and worktree management)
   "git add*": allow
   "git switch*": allow
@@ -175,11 +165,3 @@ bash:
   "jest*": allow
   "vitest*": allow
   "tsc*": allow
-  # Shell sourcing (notify helper — trailing * allows && chaining)
-  "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
-  # notify_triage function (called standalone after sourcing)
-  "notify_triage *": allow
-  # curl (used by notify.sh send path)
-  "curl *": allow
-  # Triage skill (inbox regeneration)
-  "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow

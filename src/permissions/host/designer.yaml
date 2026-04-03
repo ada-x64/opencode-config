@@ -22,12 +22,6 @@ bash:
   "tr *": allow
   "awk *": allow
   "jq *": allow
-  "source */lib/frontmatter.sh*": allow
-  "source */lib/worktree.sh*": allow
-  "fm_read *": allow
-  "fm_write *": allow
-  "wt_detect *": allow
-  "wt_owner_repo *": allow
   "diff *": allow
   "comm *": allow
   "column *": allow
@@ -87,10 +81,3 @@ bash:
   "mv *": allow
   "rm *": allow
   "mkdir *": allow
-  # Notifications
-  "ntfy publish*": allow
-  # Triage skill (write + notify + inbox)
-  "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
-  "notify_triage *": allow
-  "curl *": allow
-  "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow

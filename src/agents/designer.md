@@ -29,11 +29,10 @@ Repositories may use a **bare repo + worktree** layout where each branch lives
 in its own directory. When exploring repositories, the path you receive may be
 a worktree directory. All git read commands work normally inside worktrees.
 
-When deriving `<owner>/<repo>` from a repo path, use the worktree library:
+When deriving `<owner>/<repo>` from a repo path, use the `wt_owner_repo` tool:
 
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
-owner_repo="$(wt_owner_repo "$repo_path")"
+```
+owner_repo = wt_owner_repo({ path: repo_path })
 ```
 
 To list all worktrees (and thus all active branches) for a repo:
@@ -107,8 +106,8 @@ and follow its **Write Mode** instructions. The three post-work steps are
 **mandatory**:
 
 1. Write a triage entry to the task directory
-2. Send a push notification via `notify_triage`
-3. Regenerate the triage inbox via `triage-dashboard.sh`
+2. Send a push notification via the `notify_triage` tool
+3. Regenerate the triage inbox via the `triage_dashboard` tool
 
 **Events requiring triage entries:**
 
@@ -122,8 +121,8 @@ as the task name.
 
 **Icon selection:** When calling `notify_triage`, pass `designer` as the icon:
 
-```bash
-notify_triage activity "<owner>/<repo>/<task>" "Notes Updated" $'• Added repo-notes for <repo>' "" "designer"
+```
+notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Notes Updated", body: "• Added repo-notes for <repo>", icon: "designer" })
 ```
 
 ## What you MUST NOT do

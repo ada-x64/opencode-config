@@ -27,19 +27,13 @@ This skill applies in **Write Mode** (after completing work) and **Report Mode**
 
 Follow these steps in order after completing significant work:
 
-### Step 1 — Source the notification helper
-
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh" 2>/dev/null || true
-```
-
-### Step 2 — Confirm AGENT_VAULT is set
+### Step 1 — Confirm AGENT_VAULT is set
 
 ```bash
 echo "${AGENT_VAULT:?AGENT_VAULT must be set}"
 ```
 
-### Step 3 — Determine the task directory
+### Step 2 — Determine the task directory
 
 ```bash
 task_dir="$AGENT_VAULT/tasks/<owner>/<repo>/<task>/"
@@ -61,7 +55,7 @@ Create the directory if it does not exist:
 mkdir -p "$task_dir"
 ```
 
-### Step 4 — Find the next available filename
+### Step 3 — Find the next available filename
 
 ```bash
 find "$task_dir" -name "triage*.md" | sort
@@ -71,39 +65,45 @@ find "$task_dir" -name "triage*.md" | sort
 - If `triage.md` exists but not `triage-2.md` → use `triage-2.md`
 - Continue incrementing: `triage-3.md`, `triage-4.md`, etc.
 
-### Step 5 — Read the format template
+### Step 4 — Read the format template
 
 ```bash
 cat "$AGENT_VAULT/_misc/templates/triage.md"
 ```
 
-### Step 6 — Write the triage entry
+### Step 5 — Write the triage entry
 
 Use the Write tool. Follow the frontmatter format and body structure for the
 entry type (see **Entry Types** below). Set `status: pending`.
 
-### Step 7 — MANDATORY: Send notification
+### Step 6 — MANDATORY: Send notification
 
-```bash
-notify_triage "<type>" "<owner>/<repo>/<task>" "<headline>" "<body>" "" "<icon>" "<semantic-key>"
+```
+notify_triage({
+  type: "<type>",
+  task: "<owner>/<repo>/<task>",
+  headline: "<headline>",
+  body: "<body>",
+  icon: "<icon>",
+  emoji: "<semantic-key>"
+})
 ```
 
 This is not optional. Failing to notify means the human has no real-time
-awareness of completed work. The function fails silently if ntfy is not
+awareness of completed work. The tool fails silently if ntfy is not
 configured — it will never block your work.
 
-The 3rd arg (`headline`) is a short action phrase for the title. The 4th arg
-(`body`) is optional bullet-point detail text. The 5th arg (`file`) can be
-left empty `""` to use the default triage path. The 6th arg (`icon`) selects
-the notification icon (see reference table below). The 7th arg (`semantic-key`)
-controls the emoji prefix — pass a key from the table below; `notify.sh`
+The `headline` is a short action phrase for the title. The `body` is optional
+bullet-point detail text. The `file` can be omitted to use the default triage
+path. The `icon` selects the notification icon (see reference table below). The
+`emoji` controls the emoji prefix — pass a key from the table below; the tool
 resolves it to the correct emoji. If omitted, a default emoji is derived from
 the triage type.
 
-### Step 8 — MANDATORY: Regenerate inbox
+### Step 7 — MANDATORY: Regenerate inbox
 
-```bash
-bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh"
+```
+triage_dashboard({})
 ```
 
 This is not optional. The triage inbox must always reflect the current
@@ -115,7 +115,7 @@ state of the vault after every write.
 
 ### Icon names (per agent / mode)
 
-Pass as the 6th argument to `notify_triage`. The icon name maps to a PNG served
+Pass as the `icon` parameter to `notify_triage`. The icon name maps to a PNG served
 from the opencode-config repo.
 
 | Agent / Mode        | Icon argument      |
@@ -132,13 +132,13 @@ from the opencode-config repo.
 | Plan mode           | `plan`             |
 | Fallback            | `default`          |
 
-### Semantic keys (7th argument — emoji resolution)
+### Semantic keys (`emoji` parameter — emoji resolution)
 
-Pass a semantic key as the 7th argument. `notify.sh` resolves it to the
+Pass a semantic key as the `emoji` parameter. The tool resolves it to the
 correct emoji. **Always use semantic keys** — they are readable and their
 mappings are centrally managed. Unknown keys are ignored and fall back to the
 type-based default emoji.
-If the 7th argument is omitted, a default emoji is derived from the triage type.
+If the `emoji` parameter is omitted, a default emoji is derived from the triage type.
 
 #### Type-based defaults (when 7th arg is omitted)
 
@@ -168,18 +168,18 @@ semantic keys — the ⚙️ prefix is derived automatically from the agent name
 
 **Example calls with icon and semantic key:**
 
-```bash
-# Reviewer — clean result
-notify_triage activity "ada-x64/qproj/fix-tests" "Review Complete" "• 0 high findings" "" "reviewer" "clean"
+```
+// Reviewer — clean result
+notify_triage({ type: "activity", task: "ada-x64/qproj/fix-tests", headline: "Review Complete", body: "• 0 high findings", icon: "reviewer", emoji: "clean" })
 
-# Auto-implementor — commit group complete (⚙️ prefix added automatically)
-notify_triage activity "ada-x64/qproj/fix-tests" "Commit Group 1 Finished" "• All tests passing" "" "auto-implementor" "activity"
+// Auto-implementor — commit group complete (⚙️ prefix added automatically)
+notify_triage({ type: "activity", task: "ada-x64/qproj/fix-tests", headline: "Commit Group 1 Finished", body: "• All tests passing", icon: "auto-implementor", emoji: "activity" })
 
-# Auto-auditor — warnings (⚙️ prefix added automatically)
-notify_triage activity "ada-x64/qproj/audit" "Audit Complete" "• 2 medium warnings" "" "auto-auditor" "warn"
+// Auto-auditor — warnings (⚙️ prefix added automatically)
+notify_triage({ type: "activity", task: "ada-x64/qproj/audit", headline: "Audit Complete", body: "• 2 medium warnings", icon: "auto-auditor", emoji: "warn" })
 
-# Auto-implementor escalation (⚙️ prefix added automatically)
-notify_triage escalation "ada-x64/qproj/fix-tests" "Review Loop Exhausted" "• High findings persist" "" "auto-implementor" "escalation"
+// Auto-implementor escalation (⚙️ prefix added automatically)
+notify_triage({ type: "escalation", task: "ada-x64/qproj/fix-tests", headline: "Review Loop Exhausted", body: "• High findings persist", icon: "auto-implementor", emoji: "escalation" })
 ```
 
 ---
@@ -373,14 +373,13 @@ To read triage files and generate a summary of pending items:
    find "$AGENT_VAULT/tasks/" -name "triage*.md" | sort
    ```
 
-2. Read each file and extract frontmatter fields:
+2. Read each file and extract frontmatter fields using the `fm_read` tool:
 
-   ```bash
-   source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh"
-   fm_read "$file" "type" "unknown"
-   fm_read "$file" "status" "unknown"
-   fm_read "$file" "date" "unknown"
-   fm_read "$file" "agent" "unknown"
+   ```
+   fm_read({ file: "<path>", key: "type", default_value: "unknown" })
+   fm_read({ file: "<path>", key: "status", default_value: "unknown" })
+   fm_read({ file: "<path>", key: "date", default_value: "unknown" })
+   fm_read({ file: "<path>", key: "agent", default_value: "unknown" })
    ```
 
 3. Group by type. Filter to `status: pending` by default (unless the human
@@ -399,20 +398,19 @@ To read triage files and generate a summary of pending items:
 
 ### Generate the dashboard
 
-```bash
-# Regenerate triage-inbox.md
-bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh"
+```
+// Regenerate triage-inbox.md
+triage_dashboard({})
 
-# Send a summary notification instead of regenerating
-bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh" --notify-summary
+// Send a summary notification instead of regenerating
+triage_dashboard({ notify_summary: true })
 ```
 
 ### Send a notification manually
 
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh"
-notify_triage escalation "ada-x64/qproj/fix-tests" "Review loop exhausted on commit group 2" "" "" "auto-implementor" "escalation"
-notify_triage activity "ada-x64/qproj/fix-tests" "Commit group 1 complete" "• All tests passing" "" "auto-implementor" "activity"
+```
+notify_triage({ type: "escalation", task: "ada-x64/qproj/fix-tests", headline: "Review loop exhausted on commit group 2", icon: "auto-implementor", emoji: "escalation" })
+notify_triage({ type: "activity", task: "ada-x64/qproj/fix-tests", headline: "Commit group 1 complete", body: "• All tests passing", icon: "auto-implementor", emoji: "activity" })
 ```
 
 ### First-time setup

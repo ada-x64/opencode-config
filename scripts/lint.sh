@@ -30,29 +30,33 @@ else
 	echo "(no .sh files found)"
 fi
 
-# -- prettier -----------------------------------------------------------------
-# Detect a way to run prettier: direct binary, then package-runner CLIs
-prettier_cmd=()
-if command -v prettier &>/dev/null; then
-	prettier_cmd=(prettier)
-elif command -v bunx &>/dev/null; then
-	prettier_cmd=(bunx prettier)
-elif command -v pnpx &>/dev/null; then
-	prettier_cmd=(pnpx prettier)
-elif command -v npx &>/dev/null; then
-	prettier_cmd=(npx prettier)
-elif command -v deno &>/dev/null; then
-	prettier_cmd=(deno run npm:prettier --)
-else
-	prettier_cmd=()
+# -- bun (required) -----------------------------------------------------------
+if ! command -v bunx &>/dev/null; then
+	echo "ERROR: bun is required but not found. Install from https://bun.sh"
+	exit 1
 fi
 
+# -- prettier -----------------------------------------------------------------
 header "prettier"
-if [[ ${#prettier_cmd[@]} -eq 0 ]]; then
-	echo "SKIP: no prettier, bunx, pnpx, npx, or deno found"
+if ! bunx prettier --check .; then
 	failed+=(prettier)
-elif ! "${prettier_cmd[@]}" --check .; then
-	failed+=(prettier)
+fi
+
+# -- oxlint -------------------------------------------------------------------
+header "oxlint"
+mapfile -t ts_files < <(find . -name '*.ts' -not -path '*/node_modules/*' -not -path '*/out/*')
+if [[ ${#ts_files[@]} -gt 0 ]]; then
+	if ! bunx oxlint "${ts_files[@]}"; then
+		failed+=(oxlint)
+	fi
+else
+	echo "(no .ts files found)"
+fi
+
+# -- bun test -----------------------------------------------------------------
+header "bun test"
+if ! OPENCODE_CONFIG_SRC="$(pwd)/src" bun test; then
+	failed+=(bun-test)
 fi
 
 # -- ruff format --------------------------------------------------------------

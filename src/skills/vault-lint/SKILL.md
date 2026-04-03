@@ -17,19 +17,14 @@ fields, valid status values, and per-issue annotations.
 
 ## How to Invoke
 
-```bash
-# Lint everything (vault docs + bash scripts)
-bash "$OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh"
+Use the `vault_lint` tool:
 
-# Schemas only
-bash "$OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh" --schemas-only
-
-# Reviews only
-bash "$OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh" --reviews-only
-
-# Filter to a specific owner/repo
-bash "$OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh" ada-x64/agent-config
-bash "$OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh" --schemas-only ada-x64/agent-config
+```
+vault_lint({})                                               // lint everything (vault docs + bash scripts)
+vault_lint({ schemas_only: true })                           // schemas only
+vault_lint({ reviews_only: true })                           // reviews only
+vault_lint({ filter: "ada-x64/agent-config" })               // filter to a specific owner/repo
+vault_lint({ schemas_only: true, filter: "ada-x64/agent-config" })  // combine flags
 ```
 
 ## What Gets Checked

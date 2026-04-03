@@ -28,13 +28,12 @@ to create an implementation schema for a task, then create a GitHub issue for it
 ## Bare Repo / Worktree Awareness
 
 Repositories may use a **bare repo + worktree** layout where each branch lives
-in its own directory under the repo root. Source the worktree library and use
-it for repo-type detection and path derivation:
+in its own directory under the repo root. Use the worktree tools for repo-type
+detection and path derivation:
 
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
-repo_type="$(wt_detect "$repo_path")"
-owner_repo="$(wt_owner_repo "$repo_path")"
+```
+repo_type = wt_detect({ path: repo_path })
+owner_repo = wt_owner_repo({ path: repo_path })
 ```
 
 When writing a schema, always set the `branch` field. The implementor agents
@@ -66,18 +65,18 @@ automatically if the repo uses the bare/worktree layout.
    creation or any subsequent step until the user explicitly approves.
    Present the schema path and wait for feedback. If the user requests
    changes, iterate on the schema and ask for review again.
-5. **Create** a GitHub issue by running the `gh-helpers` skill's issue creation
-   script. Pass the schema file path and the `repo` from frontmatter:
-   ```bash
-   bash {{CONFIG_DIR}}/skills/gh-helpers/create-issue.sh "$schema_file" "<owner>/<repo>"
+6. **Create** a GitHub issue using the `create_issue` tool. Pass the schema file
+   path and the `repo` from frontmatter:
    ```
-   The script reads the file from disk, extracts the H1 as the title, extracts
+   create_issue({ schema_file: "$schema_file", repo: "<owner>/<repo>" })
+   ```
+   The tool reads the file from disk, extracts the H1 as the title, extracts
    the `## Problem` section as a visible summary, and wraps the full content in
    a `<details>` block. You do NOT need to read the schema file into context
    for this step.
-6. **Add** the issue to the project board and set milestone.
-7. **Link** the issue back into the schema header.
-8. **Cross-reference PRs** — if the issue you just created relates to an open
+7. **Add** the issue to the project board and set milestone.
+8. **Link** the issue back into the schema header.
+9. **Cross-reference PRs** — if the issue you just created relates to an open
    PR (e.g., a bug found during CI, a design question from review, a follow-up
    task), post a comment on the PR:
    ```bash
@@ -126,8 +125,8 @@ After completing significant work, load the `vault-triage` skill and follow
 its **Write Mode** instructions. The three post-work steps are **mandatory**:
 
 1. Write a triage entry to the task directory
-2. Send a push notification via `notify_triage`
-3. Regenerate the triage inbox via `triage-dashboard.sh`
+2. Send a push notification via the `notify_triage` tool
+3. Regenerate the triage inbox via the `triage_dashboard` tool
 
 **Events requiring triage entries:**
 
@@ -136,8 +135,8 @@ its **Write Mode** instructions. The three post-work steps are **mandatory**:
 
 **Icon selection:** When calling `notify_triage`, pass `planner` as the icon:
 
-```bash
-notify_triage activity "<owner>/<repo>/<task>" "Schema Written" $'• Created schema with N commit groups\n• Issue #N linked' "" "planner"
+```
+notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Schema Written", body: "• Created schema with N commit groups\n• Issue #N linked", icon: "planner" })
 ```
 
 ## What you MUST NOT do

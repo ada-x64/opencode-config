@@ -10,8 +10,8 @@ subagent that has the appropriate permissions.
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
 Repositories may use a **bare repo + worktree** layout. When deriving
-`<owner>/<repo>` from a path, use `wt_owner_repo` from
-`skills/lib/worktree.sh` — it handles both traditional clones and worktrees.
+`<owner>/<repo>` from a path, use the `wt_owner_repo` tool — it handles both
+traditional clones and worktrees.
 
 If `$AGENT_VAULT` is not set or the vault directory doesn't exist, use the
 `vault-init` skill to initialize it before dispatching any vault-dependent
@@ -131,10 +131,12 @@ exceeded 3 minutes:
 
 ```bash
 _elapsed=$(( $(date +%s) - _start ))
-if (( _elapsed > 180 )); then
-  source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh" 2>/dev/null || true
-  notify_triage activity "<context>" "<headline>" "<bullet-point body>" "" "plan"
-fi
+```
+
+If `_elapsed > 180`, use the `notify_triage` tool:
+
+```
+notify_triage({ type: "activity", task: "<context>", headline: "<headline>", body: "<bullet-point body>", icon: "plan" })
 ```
 
 **Skip this** if a subagent was dispatched during the task — subagents handle
