@@ -68,9 +68,9 @@ if ! uvx ruff check scripts/; then
 fi
 
 # -- basedpyright -------------------------------------------------------------
-# Run from scripts/ so basedpyright finds pyproject.toml config
+# pyproject.toml lives at the repo root; include = ["scripts"]
 header "basedpyright"
-if ! (cd scripts && uvx basedpyright .); then
+if ! uvx basedpyright; then
 	failed+=(basedpyright)
 fi
 
