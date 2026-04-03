@@ -368,6 +368,7 @@ detailed instructions and references to bundled scripts.
 | --------------- | --------------------------- | ------------------------------------------------------------------- |
 | `archive`       | `src/skills/archive/`       | Find and read archived schemas and reviews from the vault           |
 | `fleet-schemas` | `src/skills/fleet-schemas/` | Find and read cross-repo (fleet) schemas                            |
+| `gh-helpers`    | `src/skills/gh-helpers/`    | Create GitHub issues and PRs from schema files and commit history   |
 | `local-ci`      | `src/skills/local-ci/`      | Run and debug GitHub Actions workflows locally via `gh act`         |
 | `repo-notes`    | `src/skills/repo-notes/`    | Find and read repository reference notes from the vault             |
 | `reviews`       | `src/skills/reviews/`       | Find and read code review files from the vault                      |
@@ -384,6 +385,8 @@ detailed instructions and references to bundled scripts.
 Some skills include executable scripts:
 
 - `src/skills/lib/frontmatter.sh` — `fm_read`/`fm_write` helpers for YAML frontmatter
+- `src/skills/gh-helpers/create-issue.sh` — creates a GitHub issue from a schema file (title from H1, body in `<details>` block)
+- `src/skills/gh-helpers/create-pr.sh` — creates a PR with body generated from commit log and diff stats
 - `src/skills/local-ci/act.sh` — wrapper around `gh act` for local CI runs
 - `src/skills/vault-cache/refresh.sh` — refresh the GitHub metadata cache
 - `src/skills/vault-gc/gc.sh` — archive completed schemas and reviews
