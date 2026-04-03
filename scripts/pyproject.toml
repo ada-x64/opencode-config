@@ -36,11 +36,8 @@ typeCheckingMode = "standard"
 include = ["scripts"]
 ignore = ["**/__pycache__"]
 
-# yaml stubs aren't available in stdlib — suppress the missing source warning
-reportMissingModuleSource = "none"
-
-# yaml.safe_load returns Any by nature; these flow from it and can't be avoided
-# without adding a full type stub or wrapper — not worth it for a build script
+# json.loads returns Any; these flow from it and can't be avoided without
+# wrapping every call in a TypedDict — not worth it for a build script
 reportAny = "none"
 reportUnknownVariableType = "none"
 reportUnknownParameterType = "none"

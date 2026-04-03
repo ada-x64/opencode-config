@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """setup.py — standalone installer for opencode-config
 
+Bootstrapper entry point. Prompts for environment paths, downloads the
+release tarball to a staging directory, runs build.py to produce stamped
+output, then rsyncs out/ to ~/.config/opencode and writes shell env vars.
+
 Usage:
   # Recommended — via uv (no install required):
   uvx opencode-config
@@ -19,6 +23,7 @@ Usage:
 """
 
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -135,42 +140,56 @@ def main() -> None:
 
     print()
 
-    # --- Download tarball ---
+    # --- Download tarball to staging directory ---
     info("Downloading opencode-config...")
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tarball_path = Path(tmpdir) / "opencode-config.tar.gz"
+    staging = Path(tempfile.mkdtemp(prefix="opencode-config-"))
+    try:
+        tarball_path = staging / "opencode-config.tar.gz"
         _, _ = urllib.request.urlretrieve(TARBALL_URL, tarball_path)
 
-        # --- Extract to CONFIG_DIR ---
-        info(f"Installing to {CONFIG_DIR}...")
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        info("Extracting...")
         with tarfile.open(tarball_path, "r:gz") as tf:
-            tf.extractall(CONFIG_DIR)
+            tf.extractall(staging)
 
-    # --- Resolve {{CONFIG_DIR}} in agent files ---
-    info("Resolving agent permission paths...")
-    agents_dir = CONFIG_DIR / "src" / "agents"
-    for f in sorted(agents_dir.glob("*.md")):
-        text = f.read_text()
-        if "{{CONFIG_DIR}}" in text:
-            _ = f.write_text(text.replace("{{CONFIG_DIR}}", str(CONFIG_DIR)))
+        # The tarball may contain a top-level directory — find the repo root
+        # (look for scripts/build.py to identify it)
+        repo_root = staging
+        for candidate in staging.iterdir():
+            if candidate.is_dir() and (candidate / "scripts" / "build.py").is_file():
+                repo_root = candidate
+                break
 
-    # --- Deploy aoe-config.toml with placeholder resolution ---
-    aoe_src = CONFIG_DIR / "src" / "aoe-config.toml"
-    aoe_dest = Path.home() / ".config" / "aoe" / "config.toml"
-    if aoe_src.is_file():
-        aoe_dest.parent.mkdir(parents=True, exist_ok=True)
-        content = aoe_src.read_text()
-        content = content.replace("{{AGENT_VAULT}}", agent_vault)
-        content = content.replace("{{OPENCODE_CONFIG_SRC}}", str(CONFIG_DIR))
-        _ = aoe_dest.write_text(content)
+        # --- Set up environment for child processes ---
+        env = os.environ.copy()
+        env["OPENCODE_CONFIG_SRC"] = str(CONFIG_DIR)
+        env["AGENT_VAULT"] = agent_vault
+        env["AGENT_REPOS"] = agent_repos
+        if ntfy_topic:
+            env["NTFY_TOPIC"] = ntfy_topic
 
-    # --- Run build.py ---
-    info("Running build.py...")
-    build_py = CONFIG_DIR / "scripts" / "build.py"
-    env = os.environ.copy()
-    env["OPENCODE_CONFIG_SRC"] = str(CONFIG_DIR)
-    _ = subprocess.run([sys.executable, str(build_py)], check=True, env=env)
+        # --- Run build.py (generates build.json, copies src/ → out/, stamps everything) ---
+        info("Running build.py...")
+        build_py = repo_root / "scripts" / "build.py"
+        _ = subprocess.run(
+            [sys.executable, str(build_py), "--config-dir", str(CONFIG_DIR)],
+            check=True,
+            env=env,
+            cwd=str(repo_root),
+        )
+
+        # --- Run install.py (rsyncs out/ → CONFIG_DIR, deploys AoE config) ---
+        info("Running install.py...")
+        install_py = repo_root / "scripts" / "install.py"
+        _ = subprocess.run(
+            [sys.executable, str(install_py), "--config-dir", str(CONFIG_DIR)],
+            check=True,
+            env=env,
+            cwd=str(repo_root),
+        )
+
+    finally:
+        # Clean up staging directory
+        shutil.rmtree(staging, ignore_errors=True)
 
     # --- Write environment variables to shell profile ---
     profile = find_shell_profile()
@@ -181,8 +200,8 @@ def main() -> None:
 
     if "OPENCODE_CONFIG_SRC" in existing:
         warn(
-            f"Shell profile already contains OPENCODE_CONFIG_SRC — skipping env block."
-            f" Update {profile} manually if needed."
+            "Shell profile already contains OPENCODE_CONFIG_SRC — skipping env block."
+            + f" Update {profile} manually if needed."
         )
     else:
         with profile.open("a") as fh:

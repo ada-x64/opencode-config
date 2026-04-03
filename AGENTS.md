@@ -7,7 +7,7 @@ policies that govern every agent session.
 
 Everything here is loaded automatically by opencode at startup. Changing a
 file in this repo immediately changes the behaviour of the next session.
-Model configuration is managed via `build.yaml` + `build.sh` (see
+Model configuration is managed via `build.json` + `build.py` (see
 [Build System](#build-system)).
 
 ---
@@ -17,8 +17,8 @@ Model configuration is managed via `build.yaml` + `build.sh` (see
 ```
 $OPENCODE_CONFIG_SRC/
 ├── opencode.json          # Core config: model, mode prompts, global bash permissions
-├── build.yaml             # Model tier definitions (source of truth for model assignment)
-├── build.sh               # Applies build.yaml → opencode.json + agent frontmatter
+├── build.json             # Model tier definitions (source of truth for model assignment)
+├── build.py               # Applies build.json → opencode.json + agent frontmatter
 ├── package.json           # Node dependency (@opencode-ai/plugin)
 ├── agents/                # Subagent definitions (dispatched via Task tool)
 │   ├── planner.md
@@ -56,7 +56,7 @@ $OPENCODE_CONFIG_SRC/
 
 `opencode.json` is the root configuration file. It does three things:
 
-1. **Sets the default model** — currently `github-copilot/claude-opus-4.6` (managed by `build.sh`; do not edit by hand).
+1. **Sets the default model** — currently `github-copilot/claude-opus-4.6` (managed by `build.py`; do not edit by hand).
 2. **Registers mode prompts** — each mode name (`build`, `plan`, `audit`) maps
    to a system prompt file via `{file:./prompts/<name>.md}`.
 3. **Defines the global bash permission list** — a broad set of read-only
@@ -70,11 +70,11 @@ interface; `bun.lock` pins the exact version.
 
 ## Build System
 
-Model assignment is managed declaratively via `build.yaml` and applied by
-`build.sh`. Do not edit model fields in `opencode.json` or agent frontmatter
+Model assignment is managed declaratively via `build.json` and applied by
+`build.py`. Do not edit model fields in `opencode.json` or agent frontmatter
 by hand — the build script will overwrite manual changes.
 
-### `build.yaml`
+### `build.json`
 
 Defines two model tiers:
 
@@ -96,21 +96,24 @@ Each agent declares its tier via a `tier:` field in its YAML frontmatter.
 | `@auto-implementor` | `execute` |
 | `@reviewer`         | `execute` |
 
-### `build.sh`
+### `build.py`
 
-Reads `build.yaml` and:
+Reads `build.json` and:
 
 1. Sets the `model` field in `opencode.json` to `global.model`.
 2. For each agent file, reads its `tier` from frontmatter, looks up the tier
-   in `build.yaml`, and sets or removes the `model` field accordingly.
+   in `build.json`, and sets or removes the `model` field accordingly.
 3. Prints a summary of changes.
 
 The script is idempotent — running it multiple times produces the same result.
 
+On first run, if `build.json` does not exist, `build.py` prompts interactively
+for model configuration and writes the file. Use `--reconfigure` to re-prompt.
+
 ### Changing models
 
-1. Edit `build.yaml` (change a tier's model, or move an agent between tiers by editing its `tier:` frontmatter field).
-2. Run `./build.sh`.
+1. Edit `build.json` (change a tier's model, or move an agent between tiers by editing its `tier:` frontmatter field).
+2. Run `python3 scripts/build.py`.
 3. Commit the resulting changes.
 
 ---

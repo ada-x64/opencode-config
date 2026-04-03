@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""install.py — deploy opencode-config to the target config directory
+"""install.py — deploy built config from out/ to the target config directory
 
 Usage:
   python3 scripts/install.py [--profile <name>] [--config-dir <path>] [--help]
@@ -9,18 +9,23 @@ Options:
   --config-dir <path>  Override CONFIG_DIR from the profile.
   --help               Show this help message and exit.
 
+Prerequisites:
+  Run build.py first to produce the out/ directory:
+    python3 scripts/build.py [--config-dir <path>]
+
 What it does:
   1. Loads the selected profile to set CONFIG_DIR and OPENCODE_CONFIG_SRC.
-  2. Refuses to run if source == CONFIG_DIR (move the repo first).
-  3. rsyncs src/ contents to CONFIG_DIR (excluding profiles/).
-  4. Resolves {{CONFIG_DIR}} placeholders in target agent files.
-  5. Runs scripts/build.py in the target directory for model + external_directory stamping.
+  2. Verifies out/ exists (must run build.py first).
+  3. Refuses to run if out/ == CONFIG_DIR (would be a no-op or destructive).
+  4. rsyncs out/ contents to CONFIG_DIR.
+  5. Deploys AoE config (resolving {{AGENT_VAULT}} and {{OPENCODE_CONFIG_SRC}})
+     from src/aoe-config.toml.
   6. Prints a deployment summary.
 
 Separation of concerns:
-  - install.py: {{CONFIG_DIR}} resolution (destructive, target copies only)
-  - build.py:   model + external_directory stamping (idempotent, structured YAML)
-  - Source files in the repo are NEVER modified by this script.
+  - build.py:   src/ → out/ copy + all stamping (model, external_directory, {{CONFIG_DIR}})
+  - install.py: out/ → CONFIG_DIR rsync + AoE config deployment
+  - Source files in src/ are NEVER modified.
 """
 
 import argparse
@@ -115,6 +120,7 @@ def main() -> None:
     script_dir = Path(__file__).resolve().parent
     repo_root = script_dir.parent
     src_dir = repo_root / "src"
+    out_dir = repo_root / "out"
 
     profile: str = str(args.profile)
     config_dir_override: str = str(args.config_dir_override)
@@ -151,44 +157,37 @@ def main() -> None:
     config_dir = Path(os.path.expanduser(config_dir_str)).resolve()
     opencode_config_src = os.path.expanduser(opencode_config_src)
 
-    # --- In-place detection ---
-    resolved_script_dir = script_dir
-    try:
-        resolved_config_dir = Path(config_dir_str).expanduser().resolve()
-    except Exception:
-        resolved_config_dir = Path(config_dir_str).expanduser()
+    # --- Check out/ exists ---
+    if not out_dir.is_dir():
+        print("Error: out/ directory not found.", file=sys.stderr)
+        print("Run build.py first to produce the build output:", file=sys.stderr)
+        print(f"  python3 {script_dir / 'build.py'}", file=sys.stderr)
+        sys.exit(1)
 
-    if resolved_script_dir == resolved_config_dir:
-        print("Error: source directory equals target CONFIG_DIR.", file=sys.stderr)
+    # --- Safety: refuse if out/ == CONFIG_DIR ---
+    try:
+        resolved_out = out_dir.resolve()
+        resolved_config = config_dir.resolve()
+    except Exception:
+        resolved_out = out_dir
+        resolved_config = config_dir
+
+    if resolved_out == resolved_config:
+        print("Error: out/ directory equals target CONFIG_DIR.", file=sys.stderr)
         print("", file=sys.stderr)
-        print(f"  Source: {resolved_script_dir}", file=sys.stderr)
-        print(f"  Target: {resolved_config_dir}", file=sys.stderr)
+        print(f"  out/:       {resolved_out}", file=sys.stderr)
+        print(f"  CONFIG_DIR: {resolved_config}", file=sys.stderr)
         print("", file=sys.stderr)
         print(
-            "Running install.py in-place would resolve {{CONFIG_DIR}} placeholders",
-            file=sys.stderr,
-        )
-        print(
-            "in the source agent files, destroying them permanently.", file=sys.stderr
-        )
-        print("", file=sys.stderr)
-        print(
-            "Move the repo first, then run install.py from the new location:",
-            file=sys.stderr,
-        )
-        print(
-            "  mv ~/.config/opencode $AGENT_REPOS/ada-x64/opencode-config",
-            file=sys.stderr,
-        )
-        print(
-            "  python3 $AGENT_REPOS/ada-x64/opencode-config/scripts/install.py",
+            "Rsyncing out/ onto itself would be destructive. Check your profile.",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    # --- Rsync src/ to CONFIG_DIR ---
+    # --- Rsync out/ to CONFIG_DIR ---
     print(f"Deploying to: {config_dir}")
     print(f"Profile:      {profile} ({profile_file})")
+    print(f"Source:       {out_dir}")
     print()
 
     config_dir.mkdir(parents=True, exist_ok=True)
@@ -197,8 +196,7 @@ def main() -> None:
         "rsync",
         "-a",
         "--delete",
-        "--exclude=profiles/",
-        f"{src_dir}/",
+        f"{out_dir}/",
         f"{config_dir}/",
     ]
     _ = subprocess.run(rsync_cmd, check=True)
@@ -213,7 +211,7 @@ def main() -> None:
             content = aoe_src.read_text()
             content = content.replace("{{AGENT_VAULT}}", agent_vault)
             content = content.replace("{{OPENCODE_CONFIG_SRC}}", opencode_config_src)
-            aoe_dest.write_text(content)
+            _ = aoe_dest.write_text(content)
             print(f"AoE config deployed to: {aoe_dest}")
         else:
             print(
@@ -221,45 +219,12 @@ def main() -> None:
                 file=sys.stderr,
             )
 
-    # --- Step 4: Resolve {{CONFIG_DIR}} in target agent files ---
-    print(
-        f"Resolving {{{{CONFIG_DIR}}}} \u2192 {opencode_config_src} in agent files..."
-    )
-    resolved_count = 0
-    agents_dir = config_dir / "agents"
-    for f in sorted(agents_dir.glob("*.md")):
-        if not f.is_file():
-            continue
-        text = f.read_text()
-        if "{{CONFIG_DIR}}" in text:
-            _ = f.write_text(text.replace("{{CONFIG_DIR}}", opencode_config_src))
-            print(f"  resolved: {f.name}")
-            resolved_count += 1
-    print(f"  {resolved_count} agent file(s) updated.")
+    # --- Summary ---
     print()
-
-    # --- Step 5: Run build.py ---
-    build_py = script_dir / "build.py"
-    if build_py.is_file():
-        print("Running build.py for model + external_directory stamping...")
-        build_env = os.environ.copy()
-        build_env["OPENCODE_CONFIG_SRC"] = opencode_config_src
-        _ = subprocess.run(
-            [sys.executable, str(build_py)],
-            check=True,
-            env=build_env,
-        )
-        print()
-    else:
-        print(
-            f"Warning: build.py not found at {build_py} — skipping model stamping.",
-            file=sys.stderr,
-        )
-
-    # --- Step 6: Summary ---
     print("Done.")
     print()
     print(f"  Profile:             {profile}")
+    print(f"  Source:              {out_dir}")
     print(f"  Target directory:    {config_dir}")
     print(f"  OPENCODE_CONFIG_SRC: {opencode_config_src}")
     print()
