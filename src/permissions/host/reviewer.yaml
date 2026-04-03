@@ -22,12 +22,6 @@ bash:
   "tr *": allow
   "awk *": allow
   "jq *": allow
-  "source */lib/frontmatter.sh*": allow
-  "source */lib/worktree.sh*": allow
-  "fm_read *": allow
-  "fm_write *": allow
-  "wt_detect *": allow
-  "wt_owner_repo *": allow
   "diff *": allow
   "comm *": allow
   "column *": allow
@@ -83,13 +77,6 @@ bash:
   "gh auth status*": allow
   "gh api *": allow
   "gh project list*": allow
-  # Notifications
-  "ntfy publish*": allow
-  # Triage skill (write + notify + inbox)
-  "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
-  "notify_triage *": allow
-  "curl *": allow
-  "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow
   # Test/validation suite (read-only observation, no build mutations)
   "cargo test*": allow
   "cargo clippy*": allow

@@ -22,12 +22,6 @@ bash:
   "tr *": allow
   "awk *": allow
   "jq *": allow
-  "source */lib/frontmatter.sh*": allow
-  "source */lib/worktree.sh*": allow
-  "fm_read *": allow
-  "fm_write *": allow
-  "wt_detect *": allow
-  "wt_owner_repo *": allow
   "diff *": allow
   "comm *": allow
   "column *": allow
@@ -101,18 +95,8 @@ bash:
   "gh label create*": allow
   "gh label edit*": allow
   "gh label delete*": allow
-  # Vault tools
-  "bash {{CONFIG_DIR}}/skills/vault-gc/gc.sh*": allow
-  "bash {{CONFIG_DIR}}/skills/vault-lint/lint.sh*": allow
   # Vault directory creation
   "mkdir *": allow
-  # Notifications
-  "ntfy publish*": allow
-  # Triage skill (write + notify + inbox)
-  "source {{CONFIG_DIR}}/skills/vault-triage/notify.sh*": allow
-  "notify_triage *": allow
-  "curl *": allow
-  "bash {{CONFIG_DIR}}/skills/vault-triage/triage-dashboard.sh*": allow
   # Hard denies — PM never touches code or git history
   "git add*": deny
   "git commit*": deny
