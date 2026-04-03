@@ -623,7 +623,7 @@ Three GitHub Actions workflows:
 | ----------- | --------------------------------- | ----------------------------------------------------------- |
 | **Lint**    | Push/PR to `main`                 | shfmt, shellcheck, prettier, ruff format/lint, basedpyright |
 | **Release** | Tag push (`v*`) or manual         | Build tarball + wheel, publish to PyPI + GitHub Releases    |
-| **Docker**  | Push to `main` touching `docker/` | Build & push `cubething-occonf-sandbox` to ghcr.io                  |
+| **Docker**  | Push to `main` touching `docker/` | Build & push `cubething-occonf-sandbox` to ghcr.io          |
 
 Both CI and the local pre-push hook run `scripts/lint.sh`. To activate the
 hook after cloning:
