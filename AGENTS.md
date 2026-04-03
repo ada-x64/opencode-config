@@ -40,6 +40,19 @@ opencode-config/
 │   │   ├── build.md
 │   │   ├── plan.md
 │   │   └── audit.md
+│   ├── tools/                 #   Custom tools (TypeScript, wrapping skill scripts)
+│   │   ├── fm_read.ts
+│   │   ├── fm_write.ts
+│   │   ├── wt_detect.ts
+│   │   ├── wt_owner_repo.ts
+│   │   ├── wt_switch_branch.ts
+│   │   ├── wt_cleanup.ts
+│   │   ├── notify_triage.ts
+│   │   ├── triage_dashboard.ts
+│   │   ├── vault_gc.ts
+│   │   ├── vault_lint.ts
+│   │   ├── create_issue.ts
+│   │   └── create_pr.ts
 │   ├── skills/                #   Loadable skill instruction sets
 │   │   ├── lib/               #     Shared libraries (frontmatter.sh, worktree.sh)
 │   │   ├── archive/
@@ -304,8 +317,9 @@ Plan ──────► Implement ──────► Review
   and posts a start comment on the linked GitHub issue. On completion: removes
   `in-progress` label and posts a completion comment.
 - **Write access:** Full repository edits, `git add`, `git switch`,
-  `git checkout`, build/test tools, `fm_read`/`fm_write`, `gh issue edit`/`comment`,
-  `curl`, `source`/`notify_triage`/`triage-dashboard.sh`.
+  `git checkout`, build/test tools, `gh issue edit`/`comment`. Uses custom tools
+  for frontmatter (`fm_read`/`fm_write`), worktree ops (`wt_detect`/`wt_switch_branch`),
+  notifications (`notify_triage`/`triage_dashboard`), and issue creation (`create_issue`).
 - **Does not:** `git commit` (the user does that); push; skip approval gates.
 
 #### `@auto-implementor` — autonomous schema execution
@@ -413,19 +427,27 @@ detailed instructions and references to bundled scripts.
 
 ### Skills with bundled scripts
 
-Some skills include executable scripts:
+Some skills include executable scripts. Most agent-facing scripts are now
+wrapped by **custom tools** in `src/tools/` — agents call the tool directly
+instead of constructing bash commands. The underlying scripts remain unchanged
+and are still used internally (tools shell out to them via `Bun.$`).
 
-- `src/skills/lib/frontmatter.sh` — `fm_read`/`fm_write` helpers for YAML frontmatter
-- `src/skills/lib/worktree.sh` — `wt_detect`/`wt_owner_repo`/`wt_switch_branch`/`wt_cleanup` for bare-repo worktree layouts
-- `src/skills/gh-helpers/create-issue.sh` — creates a GitHub issue from a schema file (title from H1, body in `<details>` block)
-- `src/skills/gh-helpers/create-pr.sh` — creates a PR with body generated from commit log and diff stats
+| Script                                        | Custom tool                                                    | Purpose                                |
+| --------------------------------------------- | -------------------------------------------------------------- | -------------------------------------- |
+| `src/skills/lib/frontmatter.sh`               | `fm_read`, `fm_write`                                          | YAML frontmatter read/write            |
+| `src/skills/lib/worktree.sh`                  | `wt_detect`, `wt_owner_repo`, `wt_switch_branch`, `wt_cleanup` | Bare-repo worktree operations          |
+| `src/skills/gh-helpers/create-issue.sh`       | `create_issue`                                                 | Create GitHub issue from schema        |
+| `src/skills/gh-helpers/create-pr.sh`          | `create_pr`                                                    | Create PR from commit log              |
+| `src/skills/vault-gc/gc.sh`                   | `vault_gc`                                                     | Archive completed schemas/reviews      |
+| `src/skills/vault-lint/lint.sh`               | `vault_lint`                                                   | Validate vault files against templates |
+| `src/skills/vault-triage/notify.sh`           | `notify_triage`                                                | Push notifications via ntfy            |
+| `src/skills/vault-triage/triage-dashboard.sh` | `triage_dashboard`                                             | Regenerate `triage-inbox.md`           |
+
+Scripts **not** wrapped by tools (invoked directly via bash):
+
 - `src/skills/local-ci/act.sh` — wrapper around `gh act` for local CI runs
 - `src/skills/vault-cache/refresh.sh` — refresh the GitHub metadata cache
-- `src/skills/vault-gc/gc.sh` — archive completed schemas and reviews
 - `src/skills/vault-init/init.sh` — idempotent vault directory initializer
-- `src/skills/vault-lint/lint.sh` — validate vault files against format templates
-- `src/skills/vault-triage/notify.sh` — `notify_triage` bash function for push alerts
-- `src/skills/vault-triage/triage-dashboard.sh` — generates `$AGENT_VAULT/triage-inbox.md`
 - `src/skills/vault-triage/setup.sh` — one-time notification platform setup
 - `src/skills/vault-triage/toast-handler.sh` — desktop toast notification handler
 
@@ -471,8 +493,9 @@ access it directly via standard filesystem tools — no app needs to be running.
 
 - **Read:** Read tool, `cat`, `find`, `rg`
 - **Create/modify:** Write and Edit tools
-- **Frontmatter:** `source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh"` then
-  `fm_read file.md "key"` / `fm_write file.md "key" "value"`
+- **Frontmatter:** `fm_read({ file: "path.md", key: "key" })` /
+  `fm_write({ file: "path.md", key: "key", value: "value" })` custom tools
+  (thin wrappers around `skills/lib/frontmatter.sh`)
 - **Move/rename:** `mv`
 - **Delete:** `rm`
 - **List:** `find "$AGENT_VAULT" -name "*.md"`
@@ -592,16 +615,25 @@ Agents detect repo type by checking `.git`:
 
 ### Worktree library: `skills/lib/worktree.sh`
 
-A shell library (parallel to `frontmatter.sh`) that provides four functions:
+A shell library (parallel to `frontmatter.sh`) that provides four functions.
+Each function is also available as a **custom tool** — agents call the tool
+instead of sourcing the script and running bash commands.
 
-| Function           | Signature                               | Behaviour                                                                                       |
-| ------------------ | --------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `wt_detect`        | `wt_detect <path>`                      | Prints `clone`, `worktree`, `bare`, or `unknown`                                                |
-| `wt_owner_repo`    | `wt_owner_repo <path>`                  | Prints `<owner>/<repo>` — always 2 path components after `$AGENT_REPOS`, regardless of depth    |
-| `wt_switch_branch` | `wt_switch_branch <repo_path> <branch>` | Creates a new worktree (bare setup) or `git switch` (clone). Prints the working directory path. |
-| `wt_cleanup`       | `wt_cleanup <worktree_path>`            | Removes a worktree. Best-effort, never fails the caller.                                        |
+| Function           | Custom tool        | Behaviour                                                                                        |
+| ------------------ | ------------------ | ------------------------------------------------------------------------------------------------ |
+| `wt_detect`        | `wt_detect`        | Prints `clone`, `worktree`, `bare`, or `unknown`                                                 |
+| `wt_owner_repo`    | `wt_owner_repo`    | Prints `<owner>/<repo>` — always 2 path components after `$AGENT_REPOS`, regardless of depth     |
+| `wt_switch_branch` | `wt_switch_branch` | Creates a new worktree (bare setup) or `git switch` (clone). Returns the working directory path. |
+| `wt_cleanup`       | `wt_cleanup`       | Removes a worktree. Best-effort, never fails the caller.                                         |
 
-Source it the same way as `frontmatter.sh`:
+**Tool invocation** (preferred):
+
+```
+wt_detect({ path: "/home/user/repos/owner/repo/main" })
+wt_switch_branch({ repo_path: "/home/user/repos/owner/repo/main", branch: "feat/my-feature" })
+```
+
+**Direct bash** (still works, used internally by tools):
 
 ```bash
 source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
@@ -625,8 +657,15 @@ source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
 
 ### Permissions
 
-- All agents: `"git worktree list*": allow` (read-only), `"source */lib/worktree.sh*": allow`, `"wt_detect *"` / `"wt_owner_repo *"` allow
-- `@implementor` and `@auto-implementor`: additionally `"git worktree add*": allow` and `"git worktree remove*": allow`, plus `"wt_switch_branch *"` / `"wt_cleanup *"` allow
+With the custom tool conversion, worktree bash permissions (`source
+*/lib/worktree.sh*`, `wt_detect *`, `wt_owner_repo *`, `wt_switch_branch *`,
+`wt_cleanup *`) have been removed from agent permission files. Custom tools
+execute via Bun and bypass bash permissions entirely.
+
+Remaining bash permissions for worktree operations:
+
+- All agents: `"git worktree list*": allow` (read-only)
+- `@implementor` and `@auto-implementor`: additionally `"git worktree add*": allow` and `"git worktree remove*": allow`
 
 ---
 
@@ -700,24 +739,39 @@ gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 
 ### Notifications
 
-Push notifications to phone/desktop are sent via ntfy.sh. The
-`vault-triage/notify.sh` helper provides a `notify_triage` bash function.
-The 6th argument is the icon name (e.g. `"implementor"`, `"reviewer"`,
-`"auto-implementor"`) and the optional 7th argument is a semantic key that
-`notify.sh` resolves to an emoji prefix (e.g. `"clean"` → 🟢, `"escalation"`
-→ ❗). When the icon starts with `auto-` (e.g. `"auto-implementor"`), the
-script strips the prefix for the PNG URL and prepends ⚙️ to the emoji
-automatically. Full key table in `skills/vault-triage/SKILL.md`.
+Push notifications to phone/desktop are sent via ntfy.sh. The `notify_triage`
+custom tool wraps `vault-triage/notify.sh`. The `icon` parameter is the agent
+name (e.g. `"implementor"`, `"reviewer"`, `"auto-implementor"`) and the
+optional `semantic_key` parameter resolves to an emoji prefix (e.g. `"clean"`
+→ 🟢, `"escalation"` → ❗). When the icon starts with `auto-` (e.g.
+`"auto-implementor"`), the script strips the prefix for the PNG URL and
+prepends ⚙️ to the emoji automatically. Full key table in
+`skills/vault-triage/SKILL.md`.
 
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh"
-notify_triage activity "owner/repo/task" "Commit Group 2 Complete" "• All tests passing" "" "auto-implementor" "activity"
-notify_triage escalation "owner/repo/task" "Review Loop Exhausted on Group 3" "• High findings persist" "" "auto-implementor" "escalation"
+```
+notify_triage({
+  entry_type: "activity",
+  context: "owner/repo/task",
+  headline: "Commit Group 2 Complete",
+  body: "• All tests passing",
+  icon: "auto-implementor",
+  semantic_key: "activity"
+})
+
+notify_triage({
+  entry_type: "escalation",
+  context: "owner/repo/task",
+  headline: "Review Loop Exhausted on Group 3",
+  body: "• High findings persist",
+  icon: "auto-implementor",
+  semantic_key: "escalation"
+})
 ```
 
 All 7 agents load the `vault-triage` skill after completing significant work,
-write a triage entry, send a notification, and regenerate the inbox. These
-three post-work steps are mandatory — see the skill's Write Mode instructions.
+write a triage entry, send a notification (via `notify_triage` tool), and
+regenerate the inbox (via `triage_dashboard` tool). These three post-work steps
+are mandatory — see the skill's Write Mode instructions.
 
 Notification priorities: escalation/design-question → high (audible);
 activity/handoff → default (non-audible); run-summary → low (silent). All

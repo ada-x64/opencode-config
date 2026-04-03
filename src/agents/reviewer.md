@@ -30,11 +30,10 @@ receive may be a worktree directory (`.git` is a file, not a directory). All
 standard git read commands (`git diff`, `git show`, `git log`, etc.) work
 normally inside worktrees — no special handling is needed for review operations.
 
-When deriving `<owner>/<repo>` from a repo path, use the worktree library:
+When deriving `<owner>/<repo>` from a repo path, use the `wt_owner_repo` tool:
 
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
-owner_repo="$(wt_owner_repo "$repo_path")"
+```
+owner_repo = wt_owner_repo({ path: repo_path })
 ```
 
 ## Permissions
@@ -61,8 +60,8 @@ After writing the review file, load the `vault-triage` skill and follow its
 **Write Mode** instructions. The three post-work steps are **mandatory**:
 
 1. Write a triage entry to the task directory
-2. Send a push notification via `notify_triage`
-3. Regenerate the triage inbox via `triage-dashboard.sh`
+2. Send a push notification via the `notify_triage` tool
+3. Regenerate the triage inbox via the `triage_dashboard` tool
 
 **Events requiring triage entries:**
 
@@ -74,8 +73,8 @@ After writing the review file, load the `vault-triage` skill and follow its
 - Only nit/low findings → semantic key `warn` (resolves to 🟡)
 - Any high/critical findings → semantic key `reject` (resolves to 🔴)
 
-```bash
-notify_triage activity "<owner>/<repo>/<task>" "Review Complete" $'• 0 high findings\n• 3 nits' "" "reviewer" "clean"
+```
+notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Review Complete", body: "• 0 high findings\n• 3 nits", icon: "reviewer", emoji: "clean" })
 ```
 
 ## What you MUST NOT do

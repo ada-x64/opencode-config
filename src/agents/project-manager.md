@@ -35,9 +35,8 @@ Repositories may use a **bare repo + worktree** layout. When deriving
 `<owner>/<repo>` from a repo path, use the worktree library to handle both
 traditional clones and worktree directories:
 
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
-owner_repo="$(wt_owner_repo "$repo_path")"
+```
+owner_repo = wt_owner_repo({ path: repo_path })
 ```
 
 When listing branches for a repo, use `git worktree list` to see all active
@@ -68,12 +67,12 @@ Human-invoked sessions where PM performs GitHub and vault operations on request.
 
 1. Parse the target scope (owner/repo, or "all vault repos").
 2. Apply vault scope guard.
-3. Optionally run `bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh` and surface any violations.
+3. Optionally run `vault_lint({})` and surface any violations.
 4. For bulk operations affecting more than one item: enumerate all affected items, present a numbered summary table ("Will close N issues: #12, #14, #17 …"), and wait for explicit user "yes" before executing.
 5. Execute GitHub mutations (`gh issue close`, `gh project item-edit`, etc.) for each item.
 6. If you created an issue during this session that relates to an open PR (and the issue is not the PR's own tracking issue), post a cross-reference comment on the PR: `gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."` Skip if no issue was created or no related PR exists.
 7. Update `$vault/projects/<owner>/<repo>.md` (create if absent, update `last_synced` and tables).
-8. After GitHub mutations, optionally run `bash $OPENCODE_CONFIG_SRC/skills/vault-gc/gc.sh`.
+8. After GitHub mutations, optionally run `vault_gc({})`.
 
 **Common invocation phrasings PM recognises:**
 
@@ -86,12 +85,12 @@ Human-invoked sessions where PM performs GitHub and vault operations on request.
 
 **Bulk-close sequence (most common operation):**
 
-1. `bash $OPENCODE_CONFIG_SRC/skills/vault-lint/lint.sh` — surface format violations
-2. `bash $OPENCODE_CONFIG_SRC/skills/vault-gc/gc.sh --dry-run` — preview archivable tasks
+1. `vault_lint({})` — surface format violations
+2. `vault_gc({ dry_run: true })` — preview archivable tasks
 3. Present summary, wait for user "yes"
 4. Close linked GitHub issues and update project board columns
 5. Update `$vault/projects/<owner>/<repo>.md` status documents
-6. `bash $OPENCODE_CONFIG_SRC/skills/vault-gc/gc.sh` — execute vault archival
+6. `vault_gc({})` — execute vault archival
 7. Report results
 
 **PR status queries** ("What PRs are open?" etc.) are read-only. No triage entry is required for a pure PR status read — only for operations that mutate GitHub or vault state.
@@ -128,7 +127,7 @@ gh pr list -R <owner>/<repo> --state open --json number,title,headRefName,baseRe
 ```
 
 Write the Open Issues, Closed Issues, Milestones, Project Board Columns, and
-PRs in Review tables. Set `last_synced` via `fm_write`.
+PRs in Review tables. Set `last_synced` via `fm_write({ file: "<path>", key: "last_synced", value: "<timestamp>" })`.
 
 **PR–schema cross-reference:** For each open PR, check if its `headRefName`
 matches the `branch:` frontmatter of any active schema in
@@ -180,8 +179,8 @@ follow its **Write Mode** instructions. The three post-work steps are
 
 1. Write a triage entry to the relevant task directory (or to
    `$AGENT_VAULT/tasks/_activity/project-manager/` for cross-repo operations)
-2. Send a push notification via `notify_triage`
-3. Regenerate the triage inbox via `triage-dashboard.sh`
+2. Send a push notification via the `notify_triage` tool
+3. Regenerate the triage inbox via the `triage_dashboard` tool
 
 **Events requiring triage entries:**
 
@@ -191,8 +190,8 @@ follow its **Write Mode** instructions. The three post-work steps are
 
 **Icon selection:** When calling `notify_triage`, pass `project-manager` as the icon:
 
-```bash
-notify_triage activity "<owner>/<repo>/<task>" "Project Sync Done" $'• Closed 3 issues\n• Updated milestone' "" "project-manager"
+```
+notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Project Sync Done", body: "• Closed 3 issues\n• Updated milestone", icon: "project-manager" })
 ```
 
 ## What you MUST NOT do

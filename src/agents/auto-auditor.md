@@ -26,12 +26,11 @@ audit report to the vault. You operate read-only with respect to the repository
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
-Confirm both are set before proceeding. Source the worktree library and derive
-`<owner>/<repo>` using it (handles both traditional clones and worktree paths):
+Confirm both are set before proceeding. Derive `<owner>/<repo>` using the
+`wt_owner_repo` tool (handles both traditional clones and worktree paths):
 
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
-owner_repo="$(wt_owner_repo "$repo_path")"
+```
+owner_repo = wt_owner_repo({ path: repo_path })
 ```
 
 ## Bare Repo / Worktree Awareness
@@ -162,11 +161,10 @@ Read the codebase within scope and synthesise findings:
 
 ### Phase 4: Write Report
 
-Construct the output path:
+Construct the output path using the `wt_owner_repo` tool result from startup:
 
 ```bash
 date_str=$(date +%Y-%m-%d)
-owner_repo="$(wt_owner_repo "$repo_path")"
 out_dir="$AGENT_VAULT/audits/$owner_repo"
 out_file="$out_dir/${date_str}-${label}.md"
 ```
@@ -185,8 +183,8 @@ After writing the audit report, load the `vault-triage` skill and follow its
 
 1. Write a triage entry to the relevant task directory (if one exists for the
    repo being audited) or to `$AGENT_VAULT/tasks/_activity/auto-auditor/`
-2. Send a push notification via `notify_triage`
-3. Regenerate the triage inbox via `triage-dashboard.sh`
+2. Send a push notification via the `notify_triage` tool
+3. Regenerate the triage inbox via the `triage_dashboard` tool
 
 **Events requiring triage entries:**
 
@@ -211,8 +209,8 @@ Severity uses **roadmap-priority semantics** — a critical audit finding means
 - Medium findings only → semantic key `warn` (resolves to ⚙️🟡)
 - Any high/critical findings → semantic key `reject` (resolves to ⚙️🔴)
 
-```bash
-notify_triage activity "<owner>/<repo>/<task>" "Audit Complete" $'• 0 high findings\n• 2 medium warnings' "" "auto-auditor" "clean"
+```
+notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Audit Complete", body: "• 0 high findings\n• 2 medium warnings", icon: "auto-auditor", emoji: "clean" })
 ```
 
 ## What you MUST NOT do

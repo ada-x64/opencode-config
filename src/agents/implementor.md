@@ -41,16 +41,15 @@ review_file="$task_dir/review.md"
 ## Bare Repo / Worktree Awareness
 
 Repositories may use a **bare repo + worktree** layout where each branch lives
-in its own directory. Always detect the repo type at startup and use the
-`worktree.sh` library for branch operations:
+in its own directory. Always detect the repo type at startup using the
+`wt_detect` tool:
 
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
-repo_type="$(wt_detect "$repo_path")"
+```
+repo_type = wt_detect({ path: repo_path })
 ```
 
 When the repo type is `worktree`, **never use `git switch`** — use
-`wt_switch_branch` instead. It creates a new worktree for the target branch
+the `wt_switch_branch` tool instead. It creates a new worktree for the target branch
 and prints the updated working path (see Behavior §3 below).
 
 ## Permissions
@@ -69,11 +68,9 @@ and prints the updated working path (see Behavior §3 below).
 2. Read the schema provided as context.
 3. Read the branch from the schema's frontmatter and switch to it using the
    worktree-aware helper:
-   ```bash
-   source "$OPENCODE_CONFIG_SRC/skills/lib/frontmatter.sh"
-   source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
-   branch="$(fm_read "$schema_file" "branch")"
-   repo_path="$(wt_switch_branch "$repo_path" "$branch")"
+   ```
+   branch = fm_read({ file: schema_file, key: "branch" })
+   repo_path = wt_switch_branch({ repo_path: repo_path, branch: branch })
    ```
    In a bare repo / worktree setup this creates a new worktree directory and
    updates `repo_path` to point to it. In a traditional clone it runs
@@ -90,66 +87,58 @@ and prints the updated working path (see Behavior §3 below).
 
 - **On startup:** After reading the schema and switching to the branch, update
   the schema status to `in progress`:
-  ```bash
-  fm_write "$schema_file" "status" "in progress"
+  ```
+  fm_write({ file: schema_file, key: "status", value: "in progress" })
   ```
 - **After switching to the branch and setting status `in progress`:** Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
+  ```
+  issue_field = fm_read({ file: schema_file, key: "issue" })
+  repo_slug = fm_read({ file: schema_file, key: "repo" })
+  ```
+  If `issue_field` is non-empty and does not start with `local-`:
   ```bash
-  _issue_field="$(fm_read "$schema_file" "issue" "")"
-  if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
-    _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-    _repo_slug="$(fm_read "$schema_file" "repo" "")"
-    gh issue edit "$_issue_num" -R "$_repo_slug" --add-label "in-progress" 2>/dev/null || true
-  fi
-  unset _issue_field _issue_num _repo_slug
+  _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
+  gh issue edit "$_issue_num" -R "$repo_slug" --add-label "in-progress" 2>/dev/null || true
   ```
   This is best-effort and never blocks the startup sequence.
-- **Also on startup:** Post a start comment on the linked GitHub issue (skip if vault-only or blank):
+- **Also on startup:** Post a start comment on the linked GitHub issue (skip if vault-only or blank).
+  Reuse the `issue_field` and `repo_slug` from above:
   ```bash
-  _issue_field="$(fm_read "$schema_file" "issue" "")"
-  if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
-    _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-    _repo_slug="$(fm_read "$schema_file" "repo" "")"
-    _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
-    gh issue comment "$_issue_num" -R "$_repo_slug" \
-      --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
-      2>/dev/null || true
-  fi
-  unset _issue_field _issue_num _repo_slug _group_count
+  _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
+  _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
+  gh issue comment "$_issue_num" -R "$repo_slug" \
+    --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
+    2>/dev/null || true
   ```
   This is best-effort and never blocks the startup sequence.
 - **After final commit group:** When all commit groups are complete and validated,
   update the schema status to `complete`:
-  ```bash
-  fm_write "$schema_file" "status" "complete"
+  ```
+  fm_write({ file: schema_file, key: "status", value: "complete" })
   ```
 - **After setting status `complete`:** Remove the `in-progress` label from the linked GitHub issue (skip if vault-only or blank):
+  ```
+  issue_field = fm_read({ file: schema_file, key: "issue" })
+  repo_slug = fm_read({ file: schema_file, key: "repo" })
+  ```
+  If `issue_field` is non-empty and does not start with `local-`:
   ```bash
-  _issue_field="$(fm_read "$schema_file" "issue" "")"
-  if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
-    _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-    _repo_slug="$(fm_read "$schema_file" "repo" "")"
-    gh issue edit "$_issue_num" -R "$_repo_slug" --remove-label "in-progress" 2>/dev/null || true
-  fi
-  unset _issue_field _issue_num _repo_slug
+  _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
+  gh issue edit "$_issue_num" -R "$repo_slug" --remove-label "in-progress" 2>/dev/null || true
   ```
   This is best-effort and never blocks the completion sequence.
-- **Also on completion:** Post a completion comment on the linked GitHub issue (skip if vault-only or blank):
+- **Also on completion:** Post a completion comment on the linked GitHub issue (skip if vault-only or blank).
+  Reuse the `issue_field` and `repo_slug` from above:
   ```bash
-  _issue_field="$(fm_read "$schema_file" "issue" "")"
-  if [[ -n "$_issue_field" && "$_issue_field" != "local-"* && "$_issue_field" != "(empty)" && "$_issue_field" != "null" ]]; then
-    _issue_num="$(echo "$_issue_field" | grep -oP '#\K[0-9]+')"
-    _repo_slug="$(fm_read "$schema_file" "repo" "")"
-    gh issue comment "$_issue_num" -R "$_repo_slug" \
-      --body "Implementation complete on branch \`${branch}\`. All commit groups implemented and validated." \
-      2>/dev/null || true
-  fi
-  unset _issue_field _issue_num _repo_slug
+  _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
+  gh issue comment "$_issue_num" -R "$repo_slug" \
+    --body "Implementation complete on branch \`${branch}\`. All commit groups implemented and validated." \
+    2>/dev/null || true
   ```
   This is best-effort and never blocks the completion sequence.
 - **Worktree cleanup suggestion:** If a new worktree was created during startup
   (i.e. `repo_path` changed), mention to the user that they can clean it up
-  after merging with `wt_cleanup "$repo_path"` or
+  after merging with `wt_cleanup({ worktree_path: repo_path })` or
   `git worktree remove <worktree_path>`. Do not run it automatically.
 
 ### Review status tracking
@@ -158,12 +147,12 @@ When addressing review feedback, update the review file's `status` property to
 reflect progress. Do not modify any other part of the review file.
 
 - **When starting to address review issues:** Set review status to `in progress`:
-  ```bash
-  fm_write "$review_file" "status" "in progress"
+  ```
+  fm_write({ file: review_file, key: "status", value: "in progress" })
   ```
 - **After all addressable issues are fixed:** Set review status to `complete`:
-  ```bash
-  fm_write "$review_file" "status" "complete"
+  ```
+  fm_write({ file: review_file, key: "status", value: "complete" })
   ```
 
 ## What you MUST NOT do
@@ -183,8 +172,8 @@ After completing each commit group and after final completion, load the
 post-work steps are **mandatory**:
 
 1. Write a triage entry to the task directory
-2. Send a push notification via `notify_triage`
-3. Regenerate the triage inbox via `triage-dashboard.sh`
+2. Send a push notification via the `notify_triage` tool
+3. Regenerate the triage inbox via the `triage_dashboard` tool
 
 **Events requiring triage entries:**
 
@@ -193,6 +182,6 @@ post-work steps are **mandatory**:
 
 **Icon selection:** When calling `notify_triage`, pass `implementor` as the icon:
 
-```bash
-notify_triage activity "<owner>/<repo>/<task>" "Commit Group 1 Ready" $'• Updated 6 scripts\n• Tests passing ✓' "" "implementor"
+```
+notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Commit Group 1 Ready", body: "• Updated 6 scripts\n• Tests passing ✓", icon: "implementor" })
 ```

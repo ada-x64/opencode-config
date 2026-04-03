@@ -94,10 +94,12 @@ exceeded 3 minutes:
 
 ```bash
 _elapsed=$(( $(date +%s) - _start ))
-if (( _elapsed > 180 )); then
-  source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh" 2>/dev/null || true
-  notify_triage activity "<context>" "<headline>" "<bullet-point body>" "" "auditor"
-fi
+```
+
+If `_elapsed > 180`, use the `notify_triage` tool:
+
+```
+notify_triage({ type: "activity", task: "<context>", headline: "<headline>", body: "<bullet-point body>", icon: "auditor" })
 ```
 
 **Skip this** if a subagent was dispatched during the task — subagents handle

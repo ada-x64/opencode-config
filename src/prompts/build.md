@@ -83,8 +83,7 @@ Any agent can load the skill and follow its Write Mode instructions. See the
 skill for entry types, notification events, and the mandatory post-write steps.
 
 To check pending triage items, load the `vault-triage` skill in Report Mode,
-or run `bash $OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh` to
-regenerate `$AGENT_VAULT/triage-inbox.md`.
+or use the `triage_dashboard` tool to regenerate `$AGENT_VAULT/triage-inbox.md`.
 
 ### `@planner` — schema authoring
 
@@ -183,19 +182,18 @@ the reality.
   `git switch`, `git checkout` — pre-approved
 - `git commit`, `git push`, `gh pr create`, `gh issue create` — always prompt
   the user before running
-- For PR creation, prefer the `gh-helpers` skill script which generates a body
-  from commit history: `bash {{CONFIG_DIR}}/skills/gh-helpers/create-pr.sh <owner/repo> [base] [head] [title]`
+- For PR creation, prefer the `create_pr` tool which generates a body from commit
+  history: `create_pr({ repo: "<owner/repo>" })`
 
 ### Bare Repo / Worktree Support
 
 Repositories may use a **bare repo + worktree** layout (`$AGENT_REPOS/<owner>/<repo>/.bare/`
-with branch worktrees as sibling directories). Always source the worktree library
-and use it for repo detection, path derivation, and branch operations:
+with branch worktrees as sibling directories). Always use the worktree tools
+for repo detection, path derivation, and branch operations:
 
-```bash
-source "$OPENCODE_CONFIG_SRC/skills/lib/worktree.sh"
-repo_type="$(wt_detect "$repo_path")"      # clone | worktree | bare | unknown
-owner_repo="$(wt_owner_repo "$repo_path")" # always <owner>/<repo>
+```
+repo_type = wt_detect({ path: repo_path })        // clone | worktree | bare | unknown
+owner_repo = wt_owner_repo({ path: repo_path })   // always <owner>/<repo>
 ```
 
 When dispatching subagents that operate on a repo, pass the **worktree path**
@@ -227,10 +225,12 @@ exceeded 3 minutes:
 
 ```bash
 _elapsed=$(( $(date +%s) - _start ))
-if (( _elapsed > 180 )); then
-  source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh" 2>/dev/null || true
-  notify_triage activity "<context>" "<headline>" "<bullet-point body>" "" "build"
-fi
+```
+
+If `_elapsed > 180`, use the `notify_triage` tool:
+
+```
+notify_triage({ type: "activity", task: "<context>", headline: "<headline>", body: "<bullet-point body>", icon: "build" })
 ```
 
 **Skip this** if a subagent was dispatched during the task — subagents handle
