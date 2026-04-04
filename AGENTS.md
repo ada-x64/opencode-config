@@ -511,6 +511,8 @@ Remaining bash permissions for worktree operations:
 
 ---
 
+---
+
 ## PR-Issue cross-reference
 
 When an agent creates a GitHub issue that relates to an open PR, it must
@@ -528,6 +530,8 @@ therefore exempt.
 gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."
 ```
 
+---
+
 ## Reading remote source code
 
 When a repository is not cloned locally (not under `$AGENT_REPOS`), use the
@@ -540,6 +544,8 @@ gh api repos/<owner>/<repo>/git/trees/<branch>?recursive=1 -q '.tree[].path'
 # Fetch a specific file
 gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 ```
+
+---
 
 ## Notifications
 

@@ -152,6 +152,9 @@ python3 scripts/install.py    # out/ -> ~/.config/opencode
 On first run, `build.py` prompts for model configuration and writes
 `build.json` (gitignored, per-machine). Use `--reconfigure` to re-prompt.
 
+For build system internals, CI, Docker, and contributor conventions, see
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### Environment variables
 
 The installer writes these to your shell profile. If installing from source,
