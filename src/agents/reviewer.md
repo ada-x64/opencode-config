@@ -59,23 +59,15 @@ owner_repo = wt_owner_repo({ path: repo_path })
 After writing the review file, load the `vault-triage` skill and follow its
 **Write Mode** instructions. The three post-work steps are **mandatory**:
 
-1. Write a triage entry to the task directory
-2. Send a push notification via the `notify_triage` tool
-3. Regenerate the triage inbox via the `triage_dashboard` tool
-
-**Events requiring triage entries:**
-
+<!-- triage_icon: reviewer -->
+<!-- triage_events:
 - Review completed (type: `activity` — include total finding count and max severity)
-
-**Icon selection:** When calling `notify_triage`, pass `reviewer` as the icon and an outcome semantic key:
+-->
+{{include:agents/_shared/triage.md}}
 
 - 0 high+ findings → semantic key `clean` (resolves to 🟢)
 - Only nit/low findings → semantic key `warn` (resolves to 🟡)
 - Any high/critical findings → semantic key `reject` (resolves to 🔴)
-
-```
-notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Review Complete", body: "• 0 high findings\n• 3 nits", icon: "reviewer", emoji: "clean" })
-```
 
 ## What you MUST NOT do
 

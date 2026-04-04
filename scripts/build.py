@@ -246,6 +246,39 @@ def resolve_includes(out_dir: Path, src_dir: Path) -> None:
             print(f"{md_file.name}: resolved includes")
 
 
+def resolve_agent_vars(out_dir: Path) -> None:
+    """Resolve {{TRIAGE_ICON}} and {{TRIAGE_EVENTS}} from HTML comment blocks.
+
+    Looks for <!-- triage_icon: <value> --> and <!-- triage_events:\\n...\\n-->
+    comment blocks in each .md file, extracts the values, substitutes them into
+    {{TRIAGE_ICON}} and {{TRIAGE_EVENTS}} placeholders, then removes the comment
+    blocks from the output.
+    """
+    icon_pat = re.compile(r"<!--\s*triage_icon:\s*(.+?)\s*-->")
+    events_pat = re.compile(r"<!--\s*triage_events:\s*\n(.*?)-->", re.DOTALL)
+
+    for md_file in sorted(out_dir.rglob("*.md")):
+        content = md_file.read_text(encoding="utf-8")
+        if "{{TRIAGE_ICON}}" not in content and "{{TRIAGE_EVENTS}}" not in content:
+            continue
+
+        icon_match = icon_pat.search(content)
+        events_match = events_pat.search(content)
+
+        if icon_match:
+            icon_val = icon_match.group(1).strip()
+            content = content.replace("{{TRIAGE_ICON}}", icon_val)
+            content = content.replace(icon_match.group(0) + "\n", "")
+
+        if events_match:
+            events_val = events_match.group(1).rstrip()
+            content = content.replace("{{TRIAGE_EVENTS}}", events_val)
+            content = content.replace(events_match.group(0) + "\n", "")
+
+        _ = md_file.write_text(content, encoding="utf-8")
+        print(f"{md_file.name}: resolved triage variables")
+
+
 def stamp_opencode_json(out_dir: Path, global_model: str) -> None:
     """Stamp the model field in out/<variant>/opencode.json."""
     oc_path = out_dir / "opencode.json"
@@ -584,6 +617,7 @@ def build(
 
     copy_src_to_out(SRC_DIR, out_host)
     resolve_includes(out_host, SRC_DIR)
+    resolve_agent_vars(out_host)
     agents_dir_host = out_host / "agents"
 
     stamp_opencode_json(out_host, global_model)
@@ -605,6 +639,7 @@ def build(
 
     copy_src_to_out(SRC_DIR, out_sandbox)
     resolve_includes(out_sandbox, SRC_DIR)
+    resolve_agent_vars(out_sandbox)
     agents_dir_sandbox = out_sandbox / "agents"
 
     stamp_opencode_json(out_sandbox, global_model)
