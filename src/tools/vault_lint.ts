@@ -1,11 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
+import { scriptTool } from "./_lib";
 
-const configDir =
-  process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
-
-export default tool({
+export default scriptTool({
   description:
     "Validate vault schemas and reviews against format templates. " +
     "Checks YAML frontmatter, required sections, and structure. " +
@@ -26,16 +22,18 @@ export default tool({
     filter: tool.schema
       .string()
       .optional()
-      .describe("Filter by owner/repo (e.g. 'ada-x64/opencode-config')"),
+      .describe(
+        "Filter by owner/repo (e.g. 'ada-x64/opencode-config'). " +
+          "Ignored when --agents is set.",
+      ),
   },
-  async execute(args) {
-    const script = path.join(configDir, "skills/vault-lint/lint.sh");
+  script: "skills/vault-lint/lint.sh",
+  buildArgs: (args) => {
     const flags: string[] = [];
     if (args.schemas_only) flags.push("--schemas-only");
     if (args.reviews_only) flags.push("--reviews-only");
     if (args.agents) flags.push("--agents");
     if (args.filter) flags.push(args.filter);
-    const result = await Bun.$`bash ${script} ${flags}`.text();
-    return result.trim();
+    return flags;
   },
 });

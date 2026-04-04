@@ -44,6 +44,7 @@ opencode-config/
 │   │   ├── plan.md
 │   │   └── audit.md
 │   ├── tools/                 #   Custom tools (TypeScript, wrapping skill scripts)
+│   │   ├── _lib.ts
 │   │   ├── fm_read.ts
 │   │   ├── fm_write.ts
 │   │   ├── wt_detect.ts
@@ -54,6 +55,10 @@ opencode-config/
 │   │   ├── triage_dashboard.ts
 │   │   ├── vault_gc.ts
 │   │   ├── vault_lint.ts
+│   │   ├── vault_cache.ts
+│   │   ├── vault_init.ts
+│   │   ├── local_ci.ts
+│   │   ├── session_notify.ts
 │   │   ├── create_issue.ts
 │   │   └── create_pr.ts
 │   ├── skills/                #   Loadable skill instruction sets
@@ -280,21 +285,21 @@ detailed instructions and references to bundled scripts.
 
 ### Available skills
 
-| Skill           | Directory                   | Purpose                                                             |
-| --------------- | --------------------------- | ------------------------------------------------------------------- |
-| `archive`       | `src/skills/archive/`       | Find and read archived schemas and reviews from the vault           |
-| `fleet-schemas` | `src/skills/fleet-schemas/` | Find and read cross-repo (fleet) schemas                            |
-| `gh-helpers`    | `src/skills/gh-helpers/`    | Create GitHub issues and PRs from schema files and commit history   |
-| `local-ci`      | `src/skills/local-ci/`      | Run and debug GitHub Actions workflows locally via `gh act`         |
-| `repo-notes`    | `src/skills/repo-notes/`    | Find and read repository reference notes from the vault             |
-| `reviews`       | `src/skills/reviews/`       | Find and read code review files from the vault                      |
-| `schemas`       | `src/skills/schemas/`       | Find and read implementation schemas; understand schema frontmatter |
-| `vault`         | `src/skills/vault/`         | Cross-section vault search and repository lookup                    |
-| `vault-cache`   | `src/skills/vault-cache/`   | Refresh the GitHub metadata cache (projects, milestones, labels)    |
-| `vault-gc`      | `src/skills/vault-gc/`      | Archive completed schemas and reviews; supports `--dry-run`         |
-| `vault-init`    | `src/skills/vault-init/`    | Initialize or verify the vault directory structure                  |
-| `vault-lint`    | `src/skills/vault-lint/`    | Validate schemas and reviews against format templates               |
-| `vault-triage`  | `src/skills/vault-triage/`  | Write triage entries, send push notifications, regenerate the inbox |
+| Skill           | Directory                   | Purpose                                                                                      |
+| --------------- | --------------------------- | -------------------------------------------------------------------------------------------- |
+| `archive`       | `src/skills/archive/`       | Find and read archived schemas and reviews from the vault                                    |
+| `fleet-schemas` | `src/skills/fleet-schemas/` | Find and read cross-repo (fleet) schemas                                                     |
+| `gh-helpers`    | `src/skills/gh-helpers/`    | Create GitHub issues and PRs from schema files and commit history                            |
+| `local-ci`      | `src/skills/local-ci/`      | Run and debug GitHub Actions workflows locally via `gh act`; use the `local_ci` tool         |
+| `repo-notes`    | `src/skills/repo-notes/`    | Find and read repository reference notes from the vault                                      |
+| `reviews`       | `src/skills/reviews/`       | Find and read code review files from the vault                                               |
+| `schemas`       | `src/skills/schemas/`       | Find and read implementation schemas; understand schema frontmatter                          |
+| `vault`         | `src/skills/vault/`         | Cross-section vault search and repository lookup                                             |
+| `vault-cache`   | `src/skills/vault-cache/`   | Refresh the GitHub metadata cache (projects, milestones, labels); use the `vault_cache` tool |
+| `vault-gc`      | `src/skills/vault-gc/`      | Archive completed schemas and reviews; supports `--dry-run`                                  |
+| `vault-init`    | `src/skills/vault-init/`    | Initialize or verify the vault directory structure; use the `vault_init` tool                |
+| `vault-lint`    | `src/skills/vault-lint/`    | Validate schemas and reviews against format templates                                        |
+| `vault-triage`  | `src/skills/vault-triage/`  | Write triage entries, send push notifications, regenerate the inbox                          |
 
 ### Skills with bundled scripts
 
@@ -313,12 +318,13 @@ and are still used internally (tools shell out to them via `Bun.$`).
 | `src/skills/vault-lint/lint.sh`               | `vault_lint`                                                   | Validate vault files against templates |
 | `src/skills/vault-triage/notify.sh`           | `notify_triage`                                                | Push notifications via ntfy            |
 | `src/skills/vault-triage/triage-dashboard.sh` | `triage_dashboard`                                             | Regenerate `triage-inbox.md`           |
+| `src/skills/vault-cache/refresh.sh`           | `vault_cache`                                                  | Refresh GitHub metadata cache          |
+| `src/skills/vault-init/init.sh`               | `vault_init`                                                   | Initialize vault directory structure   |
+| `src/skills/local-ci/act.sh`                  | `local_ci`                                                     | Run GitHub Actions workflows locally   |
+| _(no script — standalone tool)_               | `session_notify`                                               | Send session-completion notification   |
 
 Scripts **not** wrapped by tools (invoked directly via bash):
 
-- `src/skills/local-ci/act.sh` — wrapper around `gh act` for local CI runs
-- `src/skills/vault-cache/refresh.sh` — refresh the GitHub metadata cache
-- `src/skills/vault-init/init.sh` — idempotent vault directory initializer
 - `src/skills/vault-triage/setup.sh` — one-time notification platform setup
 - `src/skills/vault-triage/toast-handler.sh` — desktop toast notification handler
 
@@ -376,11 +382,11 @@ access it directly via standard filesystem tools — no app needs to be running.
 If `$AGENT_VAULT` is unset or the vault directory is missing, load the
 `vault-init` skill and run:
 
-```bash
-bash "$OPENCODE_CONFIG_SRC/skills/vault-init/init.sh"
+```
+vault_init({})
 ```
 
-The script is idempotent and safe to run multiple times.
+The tool (and the underlying script) is idempotent and safe to run multiple times.
 
 ---
 

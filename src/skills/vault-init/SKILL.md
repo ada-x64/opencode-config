@@ -24,16 +24,13 @@ these are true:
 [[ -d "$AGENT_VAULT/tasks" && -f "$AGENT_VAULT/AGENTS.md" ]] && echo "vault ok" || echo "vault needs init"
 ```
 
-## How to invoke
+## Usage
 
-```bash
-# Initialize using $AGENT_VAULT (default)
-bash "$OPENCODE_CONFIG_SRC/skills/vault-init/init.sh"
+Use the `vault_init` tool:
 
-# Initialize at a specific path
-bash "$OPENCODE_CONFIG_SRC/skills/vault-init/init.sh" /path/to/vault
-
-# The script is idempotent — safe to run multiple times
+```
+vault_init()                                   # uses $AGENT_VAULT
+vault_init({ vault_path: "/path/to/vault" })   # explicit path
 ```
 
 ## What it creates

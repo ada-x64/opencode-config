@@ -1,11 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
+import { scriptTool } from "./_lib";
 
-const configDir =
-  process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
-
-export default tool({
+export default scriptTool({
   description:
     "Create a GitHub pull request with body generated from commit " +
     "history, diff stats, and an optional summary. Returns the PR URL.",
@@ -32,10 +28,12 @@ export default tool({
         "Agent-generated summary placed in a ## Summary section at the top",
       ),
   },
-  async execute(args) {
-    const script = path.join(configDir, "skills/gh-helpers/create-pr.sh");
-    const result =
-      await Bun.$`bash ${script} ${args.repo} ${args.base ?? "main"} ${args.head ?? ""} ${args.title ?? ""} ${args.summary ?? ""}`.text();
-    return result.trim();
-  },
+  script: "skills/gh-helpers/create-pr.sh",
+  buildArgs: (args) => [
+    args.repo,
+    args.base ?? "main",
+    args.head ?? "",
+    args.title ?? "",
+    args.summary ?? "",
+  ],
 });

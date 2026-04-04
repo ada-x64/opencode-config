@@ -1,11 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
+import { libTool } from "./_lib";
 
-const configDir =
-  process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
-
-export default tool({
+export default libTool({
   description:
     "Derive the owner/repo slug from a repository path under $AGENT_REPOS. " +
     "Always returns exactly 2 path components (owner/repo), regardless of " +
@@ -17,10 +13,6 @@ export default tool({
         "Absolute path to the repository (e.g. $AGENT_REPOS/ada-x64/myrepo/main)",
       ),
   },
-  async execute(args) {
-    const lib = path.join(configDir, "skills/lib/worktree.sh");
-    const result =
-      await Bun.$`bash -c ${'source "$1" && wt_owner_repo "$2"'} _ ${lib} ${args.path}`.text();
-    return result.trim();
-  },
+  lib: "skills/lib/worktree.sh",
+  fn: "wt_owner_repo",
 });

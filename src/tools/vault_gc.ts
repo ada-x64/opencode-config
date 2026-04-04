@@ -1,11 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
+import { scriptTool } from "./_lib";
 
-const configDir =
-  process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
-
-export default tool({
+export default scriptTool({
   description:
     "Archive completed vault tasks. A task is complete if its schema " +
     "status is 'complete' or its linked GitHub issue is closed. " +
@@ -17,10 +13,6 @@ export default tool({
       .optional()
       .describe("Preview what would be archived without moving files"),
   },
-  async execute(args) {
-    const script = path.join(configDir, "skills/vault-gc/gc.sh");
-    const cmd = args.dry_run ? ["bash", script, "--dry-run"] : ["bash", script];
-    const result = await Bun.$`${cmd}`.text();
-    return result.trim();
-  },
+  script: "skills/vault-gc/gc.sh",
+  buildArgs: (args) => (args.dry_run ? ["--dry-run"] : []),
 });

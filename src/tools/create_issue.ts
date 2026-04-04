@@ -1,11 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
+import { scriptTool } from "./_lib";
 
-const configDir =
-  process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
-
-export default tool({
+export default scriptTool({
   description:
     "Create a GitHub issue from a schema Markdown file. " +
     "Extracts the H1 heading as the issue title. The body contains " +
@@ -19,10 +15,6 @@ export default tool({
       .string()
       .describe("GitHub owner/repo slug (e.g. 'ada-x64/opencode-config')"),
   },
-  async execute(args) {
-    const script = path.join(configDir, "skills/gh-helpers/create-issue.sh");
-    const result =
-      await Bun.$`bash ${script} ${args.schema_file} ${args.repo}`.text();
-    return result.trim();
-  },
+  script: "skills/gh-helpers/create-issue.sh",
+  buildArgs: (args) => [args.schema_file, args.repo],
 });
