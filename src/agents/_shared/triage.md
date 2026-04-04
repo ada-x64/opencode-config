@@ -7,4 +7,3 @@
 {{TRIAGE_EVENTS}}
 
 **Icon selection:** When calling `notify_triage`, pass `{{TRIAGE_ICON}}` as the icon.
-

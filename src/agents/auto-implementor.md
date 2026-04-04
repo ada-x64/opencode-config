@@ -221,6 +221,7 @@ follow its **Write Mode** instructions. The three post-work steps are
 | Design ambiguity resolved                        | `design-question` | Step e                           |
 | Run complete                                     | `run-summary`     | Completion                       |
 -->
+
 {{include:agents/_shared/triage.md}}
 
 For `escalation` and `design-question` entries, follow the detailed format

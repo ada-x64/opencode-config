@@ -176,4 +176,5 @@ post-work steps are **mandatory**:
 - Commit group completed (type: `activity` — include group number and validation result; `activity` fires at default/non-audible priority since the user is watching)
 - Full implementation complete (type: `activity` — include total groups and branch name)
 -->
+
 {{include:agents/_shared/triage.md}}

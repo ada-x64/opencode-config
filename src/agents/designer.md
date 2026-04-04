@@ -110,6 +110,7 @@ and follow its **Write Mode** instructions. The three post-work steps are
 - Repo notes written (type: `activity`)
 - Design document written (type: `activity`)
 -->
+
 {{include:agents/_shared/triage.md}}
 
 **Note:** The designer does not always operate within a task context. If there

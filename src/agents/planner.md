@@ -129,6 +129,7 @@ its **Write Mode** instructions. The three post-work steps are **mandatory**:
 - Schema written to the vault (type: `activity`)
 - GitHub issue created for the schema (type: `activity`)
 -->
+
 {{include:agents/_shared/triage.md}}
 
 ## What you MUST NOT do

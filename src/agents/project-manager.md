@@ -183,6 +183,7 @@ follow its **Write Mode** instructions. The three post-work steps are
 - Project status synced (type: `activity`)
 - Vault cleanup completed (type: `activity` — include archive count)
 -->
+
 {{include:agents/_shared/triage.md}}
 
 > **For cross-repo operations:** If no per-task directory exists, write to
