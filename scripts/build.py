@@ -215,11 +215,12 @@ def _resolve_mode_str(content: str, mode: str) -> str:
 def duplicate_implementor(agents_dir: Path) -> None:
     """Copy implementor.md → auto-implementor.md in out/ agents dir for mode stamping.
 
-    Only copies if implementor.md exists and auto-implementor.md does not yet exist.
+    Called after copy_src_to_out(), which always wipes and re-populates out/, so
+    auto-implementor.md will never pre-exist at call time in the normal build pipeline.
     """
     impl = agents_dir / "implementor.md"
     auto = agents_dir / "auto-implementor.md"
-    if impl.is_file() and not auto.is_file():
+    if impl.is_file():
         shutil.copy2(impl, auto)
         print(f"Duplicated {impl.name} → {auto.name} for mode stamping")
 

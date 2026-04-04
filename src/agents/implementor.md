@@ -90,7 +90,12 @@ repo_type = wt_detect({ path: repo_path })
 
 When the repo type is `worktree`, **never use `git switch`** — use
 the `wt_switch_branch` tool instead. It creates a new worktree for the target branch
+{{#if MODE=manual}}
 and prints the updated working path (see Behavior §3 below).
+{{/if}}
+{{#if MODE=autonomous}}
+and prints the updated working path (see Behavior / Startup §3 below).
+{{/if}}
 
 {{#if MODE=manual}}
 ## Permissions
@@ -119,18 +124,23 @@ and prints the updated working path (see Behavior §3 below).
    updates `repo_path` to point to it. In a traditional clone it runs
    `git switch` as before. All subsequent `git -C "$repo_path"` commands and
    file operations use the (possibly updated) path.
-4. Call the `impl_startup` tool:
+4. Read the repo slug from the schema:
+   ```
+   repo_slug = fm_read({ file: schema_file, key: "repo" })
+   ```
+5. Call the `impl_startup` tool:
    ```
    startup = impl_startup({ schema_file: schema_file, repo: repo_slug })
    ```
    Run each command from `startup.commands` directly (bash `ask` permission
    will prompt the user for approval before executing).
-5. For each commit group in the schema's Todos section:
+6. For each commit group in the schema's Todos section:
    a. **Announce** which commit group is starting.
    b. **Execute** each sub-task in order (1a, 1b, …).
    c. **Validate** by running the validation step (1v, 2v, etc.).
    d. **Report** what you did: files changed, validation results, decisions made.
-   e. **Pause** and wait for the user to review and say "continue".
+    e. **Pause** and wait for the user to review and say "continue".
+
 {{/if}}
 {{#if MODE=autonomous}}
 ### Startup
@@ -150,7 +160,11 @@ and prints the updated working path (see Behavior §3 below).
     updates `repo_path` to point to it. In a traditional clone it runs
     `git switch` as before. All subsequent `git -C "$repo_path"` commands and
     file operations use the (possibly updated) path.
-4.  Call the `impl_startup` tool:
+4.  Read the repo slug from the schema:
+    ```
+    repo_slug = fm_read({ file: schema_file, key: "repo" })
+    ```
+5.  Call the `impl_startup` tool:
     ```
     startup = impl_startup({ schema_file: schema_file, repo: repo_slug })
     ```
@@ -256,6 +270,7 @@ Send notification and regenerate inbox as part of the mandatory post-write steps
 
 **g. Continue** — proceed immediately to the next commit group. Do not pause.
 
+{{/if}}
 ### Completion
 
 After all commit groups are done and validated:
@@ -264,8 +279,17 @@ After all commit groups are done and validated:
    ```
    completion = impl_complete({ schema_file: schema_file, repo: repo_slug, branch: branch })
    ```
+{{#if MODE=manual}}
+   Run each command from `completion.commands` directly (bash `ask` permission
+   will prompt the user for approval before executing).
+2. If a new worktree was created during startup, suggest cleanup to the user:
+   `wt_cleanup({ worktree_path: repo_path })` or
+   `git worktree remove <worktree_path>`. Do not run it automatically.
+
+{{/if}}
+{{#if MODE=autonomous}}
    Append `completion.commands` to `deferred_commands`.
-2. Load the `vault-triage` skill. Write a `run-summary` triage entry directly
+2. Load the vault-triage skill. Write a `run-summary` triage entry directly
    to `$task_dir/`. Include: commit groups completed, total review rounds,
    escalations filed, design decisions made, unresolved nit/low findings.
    Send notification and regenerate inbox as part of the mandatory post-write steps.
@@ -287,64 +311,6 @@ Run these to update issue state:
 
 {{/if}}
 {{#if MODE=manual}}
-### Status tracking
-
-- **On startup:** After reading the schema and switching to the branch, update
-  the schema status to `in progress`:
-  ```
-  fm_write({ file: schema_file, key: "status", value: "in progress" })
-  ```
-- **After switching to the branch and setting status `in progress`:** Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
-  ```
-  issue_field = fm_read({ file: schema_file, key: "issue" })
-  repo_slug = fm_read({ file: schema_file, key: "repo" })
-  ```
-  If `issue_field` is non-empty and does not start with `local-`:
-  ```bash
-  _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
-  gh issue edit "$_issue_num" -R "$repo_slug" --add-label "in-progress" 2>/dev/null || true
-  ```
-  This is best-effort and never blocks the startup sequence.
-- **Also on startup:** Post a start comment on the linked GitHub issue (skip if vault-only or blank).
-  Reuse the `issue_field` and `repo_slug` from above:
-  ```bash
-  _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
-  _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
-  gh issue comment "$_issue_num" -R "$repo_slug" \
-    --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
-    2>/dev/null || true
-  ```
-  This is best-effort and never blocks the startup sequence.
-- **After final commit group:** When all commit groups are complete and validated,
-  update the schema status to `complete`:
-  ```
-  fm_write({ file: schema_file, key: "status", value: "complete" })
-  ```
-- **After setting status `complete`:** Remove the `in-progress` label from the linked GitHub issue (skip if vault-only or blank):
-  ```
-  issue_field = fm_read({ file: schema_file, key: "issue" })
-  repo_slug = fm_read({ file: schema_file, key: "repo" })
-  ```
-  If `issue_field` is non-empty and does not start with `local-`:
-  ```bash
-  _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
-  gh issue edit "$_issue_num" -R "$repo_slug" --remove-label "in-progress" 2>/dev/null || true
-  ```
-  This is best-effort and never blocks the completion sequence.
-- **Also on completion:** Post a completion comment on the linked GitHub issue (skip if vault-only or blank).
-  Reuse the `issue_field` and `repo_slug` from above:
-  ```bash
-  _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
-  gh issue comment "$_issue_num" -R "$repo_slug" \
-    --body "Implementation complete on branch \`${branch}\`. All commit groups implemented and validated." \
-    2>/dev/null || true
-  ```
-  This is best-effort and never blocks the completion sequence.
-- **Worktree cleanup suggestion:** If a new worktree was created during startup
-  (i.e. `repo_path` changed), mention to the user that they can clean it up
-  after merging with `wt_cleanup({ worktree_path: repo_path })` or
-  `git worktree remove <worktree_path>`. Do not run it automatically.
-
 ### Review status tracking
 
 When addressing review feedback, update the review file's `status` property to
