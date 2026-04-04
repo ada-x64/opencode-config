@@ -688,16 +688,19 @@ Remaining bash permissions for worktree operations:
 ### Updating the global read-only baseline
 
 The global read-only command list lives in `src/opencode.json` under
-`permission.bash`. The per-agent host permission files in
-`src/permissions/host/` duplicate this list for each agent. When you add a
-command to the global read-only list:
+`permission.bash`. The shared agent bash baseline lives in
+`src/permissions/host/_baseline.yaml`. When you add a command to the
+global read-only list:
 
 1. Add it to `src/opencode.json`.
-2. Add it to the baseline block in **every** `src/permissions/host/*.yaml` file.
+2. Add it to `src/permissions/host/_baseline.yaml` (the shared baseline).
 3. Run `python3 scripts/build.py` to rebuild `out/`.
 4. Update the baseline table in the vault permission note.
 
-There is no inheritance — each file is independently authoritative.
+The baseline is merged into every host agent at build time by
+`_build_bash_block()`. Do **not** add baseline commands to individual
+`src/permissions/host/<agent>.yaml` files — those contain only
+agent-specific additions.
 
 ### Keeping vault and repo in sync
 

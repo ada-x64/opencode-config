@@ -360,8 +360,15 @@ def _build_bash_block(perm_file: Path, baseline_file: Path | None = None) -> str
 
     result_lines: list[str] = ["  bash:"]
 
-    if baseline_file is not None and baseline_file.is_file():
-        result_lines.extend(_extract_bash_entries(baseline_file))
+    if baseline_file is not None:
+        if not baseline_file.is_file():
+            print(
+                f"Warning: baseline permission file not found: {baseline_file}. "
+                "Agents will be missing the read-only baseline (no '\"*\": deny').",
+                file=sys.stderr,
+            )
+        else:
+            result_lines.extend(_extract_bash_entries(baseline_file))
 
     result_lines.extend(_extract_bash_entries(perm_file))
 
