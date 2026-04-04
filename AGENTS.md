@@ -511,11 +511,11 @@ access it directly via standard filesystem tools — no app needs to be running.
 If `$AGENT_VAULT` is unset or the vault directory is missing, load the
 `vault-init` skill and run:
 
-```bash
-bash "$OPENCODE_CONFIG_SRC/skills/vault-init/init.sh"
+```
+vault_init({})
 ```
 
-The script is idempotent and safe to run multiple times.
+The tool (and the underlying script) is idempotent and safe to run multiple times.
 
 ---
 
