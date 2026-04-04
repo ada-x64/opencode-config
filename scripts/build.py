@@ -272,28 +272,37 @@ def resolve_agent_vars(out_dir: Path) -> None:
 
         changed = False
 
-        if icon_match:
-            icon_val = icon_match.group(1).strip()
-            content = content.replace("{{TRIAGE_ICON}}", icon_val)
-            content = re.sub(
-                re.escape(icon_match.group(0)) + r"\n?", "", content, count=1
-            )
-            changed = True
+        if "{{TRIAGE_ICON}}" in content:
+            if icon_match:
+                icon_val = icon_match.group(1).strip()
+                content = content.replace("{{TRIAGE_ICON}}", icon_val)
+                content = re.sub(
+                    re.escape(icon_match.group(0)) + r"\n?", "", content, count=1
+                )
+                changed = True
+            else:
+                print(
+                    f"Warning: {md_file.name} has {{{{TRIAGE_ICON}}}} placeholder "
+                    "but no <!-- triage_icon: … --> comment found",
+                    file=sys.stderr,
+                )
 
-        if events_match:
-            events_val = events_match.group(1).rstrip()
-            content = content.replace("{{TRIAGE_EVENTS}}", events_val)
-            content = re.sub(
-                re.escape(events_match.group(0)) + r"\n?", "", content, count=1
-            )
-            changed = True
+        if "{{TRIAGE_EVENTS}}" in content:
+            if events_match:
+                events_val = events_match.group(1).rstrip()
+                content = content.replace("{{TRIAGE_EVENTS}}", events_val)
+                content = re.sub(
+                    re.escape(events_match.group(0)) + r"\n?", "", content, count=1
+                )
+                changed = True
+            else:
+                print(
+                    f"Warning: {md_file.name} has {{{{TRIAGE_EVENTS}}}} placeholder "
+                    "but no <!-- triage_events: … --> comment found",
+                    file=sys.stderr,
+                )
 
         if not changed:
-            print(
-                f"Warning: {md_file.name} has {{{{TRIAGE_*}}}} placeholders "
-                "but no matching comment blocks found",
-                file=sys.stderr,
-            )
             continue
 
         _ = md_file.write_text(content, encoding="utf-8")
