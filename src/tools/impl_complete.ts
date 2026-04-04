@@ -10,15 +10,9 @@ export default tool({
     "add the review-ready label, and post a completion comment. NEVER " +
     "executes gh commands — returns them as strings for the caller to run.",
   args: {
-    schema_file: tool.schema
-      .string()
-      .describe("Absolute path to schema.md"),
-    repo: tool.schema
-      .string()
-      .describe("GitHub owner/repo slug"),
-    branch: tool.schema
-      .string()
-      .describe("Branch name for completion comment"),
+    schema_file: tool.schema.string().describe("Absolute path to schema.md"),
+    repo: tool.schema.string().describe("GitHub owner/repo slug"),
+    branch: tool.schema.string().describe("Branch name for completion comment"),
   },
   async execute(args) {
     // 1. Read issue from frontmatter

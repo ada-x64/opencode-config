@@ -12,12 +12,8 @@ export default tool({
     "a start comment. NEVER executes gh commands — returns them as strings " +
     "for the caller to run.",
   args: {
-    schema_file: tool.schema
-      .string()
-      .describe("Absolute path to schema.md"),
-    repo: tool.schema
-      .string()
-      .describe("GitHub owner/repo slug"),
+    schema_file: tool.schema.string().describe("Absolute path to schema.md"),
+    repo: tool.schema.string().describe("GitHub owner/repo slug"),
   },
   async execute(args) {
     // 1. Read branch from frontmatter
