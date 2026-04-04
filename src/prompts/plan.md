@@ -119,28 +119,20 @@ Handle directly — without dispatching a subagent — when the user asks you to
 
 ## Completion Notifications
 
-When handling a direct task (no subagent dispatched), capture the start time at
-the beginning of work:
+When handling a direct task (no subagent dispatched), capture the start time:
 
 ```bash
 _start=$(date +%s)
 ```
 
-When the task is complete, check elapsed time and send a notification if it
-exceeded 3 minutes:
-
-```bash
-_elapsed=$(( $(date +%s) - _start ))
-```
-
-If `_elapsed > 180`, use the `notify_triage` tool:
+When complete, call the `session_notify` tool to conditionally notify:
 
 ```
-notify_triage({ type: "activity", task: "<context>", headline: "<headline>", body: "<bullet-point body>", icon: "plan" })
+session_notify({ start_epoch: "<_start value>", icon: "plan", task: "<context>", headline: "<headline>" })
 ```
 
-**Skip this** if a subagent was dispatched during the task — subagents handle
-their own notifications via the vault-triage skill.
+**Skip this** if a subagent was dispatched — subagents handle their own
+notifications via the vault-triage skill.
 
 ## What you MUST NOT do
 
