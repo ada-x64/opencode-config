@@ -124,20 +124,13 @@ a draft review), **verify the output before proceeding**. Specifically:
 After completing significant work, load the `vault-triage` skill and follow
 its **Write Mode** instructions. The three post-work steps are **mandatory**:
 
-1. Write a triage entry to the task directory
-2. Send a push notification via the `notify_triage` tool
-3. Regenerate the triage inbox via the `triage_dashboard` tool
-
-**Events requiring triage entries:**
-
+<!-- triage_icon: planner -->
+<!-- triage_events:
 - Schema written to the vault (type: `activity`)
 - GitHub issue created for the schema (type: `activity`)
+-->
 
-**Icon selection:** When calling `notify_triage`, pass `planner` as the icon:
-
-```
-notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Schema Written", body: "• Created schema with N commit groups\n• Issue #N linked", icon: "planner" })
-```
+{{include:agents/_shared/triage.md}}
 
 ## What you MUST NOT do
 

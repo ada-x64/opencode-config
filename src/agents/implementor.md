@@ -171,17 +171,10 @@ After completing each commit group and after final completion, load the
 `vault-triage` skill and follow its **Write Mode** instructions. The three
 post-work steps are **mandatory**:
 
-1. Write a triage entry to the task directory
-2. Send a push notification via the `notify_triage` tool
-3. Regenerate the triage inbox via the `triage_dashboard` tool
-
-**Events requiring triage entries:**
-
+<!-- triage_icon: implementor -->
+<!-- triage_events:
 - Commit group completed (type: `activity` — include group number and validation result; `activity` fires at default/non-audible priority since the user is watching)
 - Full implementation complete (type: `activity` — include total groups and branch name)
+-->
 
-**Icon selection:** When calling `notify_triage`, pass `implementor` as the icon:
-
-```
-notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Commit Group 1 Ready", body: "• Updated 6 scripts\n• Tests passing ✓", icon: "implementor" })
-```
+{{include:agents/_shared/triage.md}}

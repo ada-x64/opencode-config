@@ -177,22 +177,17 @@ After completing significant operations, load the `vault-triage` skill and
 follow its **Write Mode** instructions. The three post-work steps are
 **mandatory**:
 
-1. Write a triage entry to the relevant task directory (or to
-   `$AGENT_VAULT/tasks/_activity/project-manager/` for cross-repo operations)
-2. Send a push notification via the `notify_triage` tool
-3. Regenerate the triage inbox via the `triage_dashboard` tool
-
-**Events requiring triage entries:**
-
+<!-- triage_icon: project-manager -->
+<!-- triage_events:
 - Bulk issue operations completed (type: `activity` — include count and repo)
 - Project status synced (type: `activity`)
 - Vault cleanup completed (type: `activity` — include archive count)
+-->
 
-**Icon selection:** When calling `notify_triage`, pass `project-manager` as the icon:
+{{include:agents/_shared/triage.md}}
 
-```
-notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Project Sync Done", body: "• Closed 3 issues\n• Updated milestone", icon: "project-manager" })
-```
+> **For cross-repo operations:** If no per-task directory exists, write to
+> `$AGENT_VAULT/tasks/_activity/project-manager/` instead.
 
 ## What you MUST NOT do
 

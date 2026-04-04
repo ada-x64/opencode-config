@@ -24,6 +24,7 @@ import json
 import re
 import shutil
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import IO, Any
 
@@ -189,6 +190,125 @@ def copy_src_to_out(src_dir: Path, out_dir: Path) -> None:
     print(f"Copied {src_dir}/ → {out_dir}/ (excluding profiles/, permissions/)")
 
 
+def resolve_includes(out_dir: Path, src_dir: Path) -> None:
+    """Replace {{include:<path>}} placeholders with file contents.
+
+    Scans all .md files under out_dir. Each {{include:<path>}} is replaced
+    with the contents of src_dir/<path>. The placeholder must be on its own
+    line (optionally with leading whitespace, which is preserved as indent).
+    Path traversal (e.g. ../../etc/passwd) is blocked — includes must resolve
+    within src_dir.
+    """
+    pattern = re.compile(r"^(\s*)\{\{include:(.+?)\}\}\s*$", re.MULTILINE)
+
+    for md_file in sorted(out_dir.rglob("*.md")):
+        content = md_file.read_text(encoding="utf-8")
+        if "{{include:" not in content:
+            continue
+
+        def make_replacer(
+            current_file: Path,
+        ) -> "Callable[[re.Match[str]], str]":
+            def replacer(m: re.Match[str]) -> str:
+                indent = m.group(1)
+                rel_path = m.group(2).strip()
+                include_path = (src_dir / rel_path).resolve()
+                # Guard against path traversal outside src_dir
+                try:
+                    include_path.relative_to(src_dir.resolve())
+                except ValueError:
+                    print(
+                        f"Warning: include path escapes src_dir "
+                        f"(in {current_file.name}): {rel_path}",
+                        file=sys.stderr,
+                    )
+                    return m.group(0)
+                if not include_path.is_file():
+                    print(
+                        f"Warning: include not found "
+                        f"(in {current_file.name}): {include_path}",
+                        file=sys.stderr,
+                    )
+                    return m.group(0)  # Leave placeholder intact
+                included = include_path.read_text(encoding="utf-8").rstrip("\n") + "\n"
+                if indent:
+                    included = "\n".join(
+                        indent + line if line else line
+                        for line in included.splitlines()
+                    )
+                return included
+
+            return replacer
+
+        new_content = pattern.sub(make_replacer(md_file), content)
+        if new_content != content:
+            _ = md_file.write_text(new_content, encoding="utf-8")
+            print(f"{md_file.name}: resolved includes")
+
+
+def resolve_agent_vars(out_dir: Path) -> None:
+    """Resolve {{TRIAGE_ICON}} and {{TRIAGE_EVENTS}} from HTML comment blocks.
+
+    Looks for <!-- triage_icon: <value> --> and <!-- triage_events:\\n...\\n-->
+    comment blocks in each .md file, extracts the values, substitutes them into
+    {{TRIAGE_ICON}} and {{TRIAGE_EVENTS}} placeholders, then removes the comment
+    blocks from the output.
+
+    Skips files inside _shared/ directories — those are include fragments that
+    intentionally contain unresolved placeholders.
+    """
+    icon_pat = re.compile(r"<!--\s*triage_icon:\s*(.+?)\s*-->")
+    events_pat = re.compile(r"<!--\s*triage_events:\s*\n(.*?)-->", re.DOTALL)
+
+    for md_file in sorted(out_dir.rglob("*.md")):
+        if "_shared" in md_file.parts:
+            continue  # Skip include fragments — placeholders are intentional
+        content = md_file.read_text(encoding="utf-8")
+        if "{{TRIAGE_ICON}}" not in content and "{{TRIAGE_EVENTS}}" not in content:
+            continue
+
+        icon_match = icon_pat.search(content)
+        events_match = events_pat.search(content)
+
+        changed = False
+
+        if "{{TRIAGE_ICON}}" in content:
+            if icon_match:
+                icon_val = icon_match.group(1).strip()
+                content = content.replace("{{TRIAGE_ICON}}", icon_val)
+                content = re.sub(
+                    re.escape(icon_match.group(0)) + r"\n?", "", content, count=1
+                )
+                changed = True
+            else:
+                print(
+                    f"Warning: {md_file.name} has {{{{TRIAGE_ICON}}}} placeholder "
+                    "but no <!-- triage_icon: … --> comment found",
+                    file=sys.stderr,
+                )
+
+        if "{{TRIAGE_EVENTS}}" in content:
+            if events_match:
+                events_val = events_match.group(1).rstrip()
+                content = content.replace("{{TRIAGE_EVENTS}}", events_val)
+                content = re.sub(
+                    re.escape(events_match.group(0)) + r"\n?", "", content, count=1
+                )
+                changed = True
+            else:
+                print(
+                    f"Warning: {md_file.name} has {{{{TRIAGE_EVENTS}}}} placeholder "
+                    "but no <!-- triage_events: … --> comment found",
+                    file=sys.stderr,
+                )
+
+        if not changed:
+            continue
+
+        _ = md_file.write_text(content, encoding="utf-8")
+        print(f"{md_file.name}: resolved triage variables")
+
+
 def stamp_opencode_json(out_dir: Path, global_model: str) -> None:
     """Stamp the model field in out/<variant>/opencode.json."""
     oc_path = out_dir / "opencode.json"
@@ -308,7 +428,8 @@ def stamp_bash_permissions(
                     file=sys.stderr,
                 )
                 continue
-            bash_block = _build_bash_block(host_perm_file)
+            baseline_file = permissions_dir / "host" / "_baseline.yaml"
+            bash_block = _build_bash_block(host_perm_file, baseline_file=baseline_file)
         else:
             bash_block = sandbox_block  # type: ignore[possibly-undefined]
 
@@ -328,31 +449,48 @@ def stamp_bash_permissions(
         print(f"{agent_name}: stamped bash permissions ({variant})")
 
 
-def _build_bash_block(perm_file: Path) -> str:
+def _build_bash_block(perm_file: Path, baseline_file: Path | None = None) -> str:
     """Read a permissions YAML file and return the indented block for frontmatter.
 
     The permissions file has `bash:` at root level (no indent). When injected
     into agent frontmatter (under `permission:`), the `bash:` key is indented
     2 spaces and all entries are indented 4 spaces.
+
+    If baseline_file is provided and exists, its bash: entries are prepended
+    before the agent-specific entries from perm_file.
     """
-    raw = perm_file.read_text(encoding="utf-8")
-    lines = raw.splitlines()
 
-    result_lines: list[str] = []
-    in_bash = False
+    def _extract_bash_entries(path: Path) -> list[str]:
+        raw = path.read_text(encoding="utf-8")
+        lines = raw.splitlines()
+        entries: list[str] = []
+        in_bash = False
+        for line in lines:
+            if line.startswith("bash:"):
+                in_bash = True
+                continue
+            if in_bash:
+                if line == "" or line.startswith(" ") or line.startswith("\t"):
+                    # Entry line — add 2 more spaces of indent (4 total)
+                    entries.append("  " + line)
+                else:
+                    # New top-level key — stop
+                    break
+        return entries
 
-    for line in lines:
-        if line.startswith("bash:"):
-            in_bash = True
-            result_lines.append("  bash:")
-            continue
-        if in_bash:
-            if line == "" or line.startswith(" ") or line.startswith("\t"):
-                # Entry line — add 2 more spaces of indent (4 total)
-                result_lines.append("  " + line)
-            else:
-                # New top-level key — stop
-                break
+    result_lines: list[str] = ["  bash:"]
+
+    if baseline_file is not None:
+        if not baseline_file.is_file():
+            print(
+                f"Warning: baseline permission file not found: {baseline_file}. "
+                "Agents will be missing the read-only baseline (no '\"*\": deny').",
+                file=sys.stderr,
+            )
+        else:
+            result_lines.extend(_extract_bash_entries(baseline_file))
+
+    result_lines.extend(_extract_bash_entries(perm_file))
 
     return "\n".join(result_lines)
 
@@ -508,6 +646,8 @@ def build(
     print("=" * 60)
 
     copy_src_to_out(SRC_DIR, out_host)
+    resolve_includes(out_host, SRC_DIR)
+    resolve_agent_vars(out_host)
     agents_dir_host = out_host / "agents"
 
     stamp_opencode_json(out_host, global_model)
@@ -528,6 +668,8 @@ def build(
     print("=" * 60)
 
     copy_src_to_out(SRC_DIR, out_sandbox)
+    resolve_includes(out_sandbox, SRC_DIR)
+    resolve_agent_vars(out_sandbox)
     agents_dir_sandbox = out_sandbox / "agents"
 
     stamp_opencode_json(out_sandbox, global_model)
