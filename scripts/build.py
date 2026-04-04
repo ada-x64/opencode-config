@@ -189,6 +189,45 @@ def copy_src_to_out(src_dir: Path, out_dir: Path) -> None:
     print(f"Copied {src_dir}/ → {out_dir}/ (excluding profiles/, permissions/)")
 
 
+def resolve_includes(out_dir: Path, src_dir: Path) -> None:
+    """Replace {{include:<path>}} placeholders with file contents.
+
+    Scans all .md files under out_dir. Each {{include:<path>}} is replaced
+    with the contents of src_dir/<path>. The placeholder must be on its own
+    line (optionally with leading whitespace, which is preserved as indent).
+    """
+    import re
+
+    pattern = re.compile(r"^(\s*)\{\{include:(.+?)\}\}\s*$", re.MULTILINE)
+
+    for md_file in sorted(out_dir.rglob("*.md")):
+        content = md_file.read_text(encoding="utf-8")
+        if "{{include:" not in content:
+            continue
+
+        def replacer(m: re.Match[str]) -> str:
+            indent = m.group(1)
+            rel_path = m.group(2).strip()
+            include_path = src_dir / rel_path
+            if not include_path.is_file():
+                print(
+                    f"Warning: include not found: {include_path}",
+                    file=sys.stderr,
+                )
+                return m.group(0)  # Leave placeholder intact
+            included = include_path.read_text(encoding="utf-8").rstrip("\n")
+            if indent:
+                included = "\n".join(
+                    indent + line if line else line for line in included.splitlines()
+                )
+            return included
+
+        new_content = pattern.sub(replacer, content)
+        if new_content != content:
+            _ = md_file.write_text(new_content, encoding="utf-8")
+            print(f"{md_file.name}: resolved includes")
+
+
 def stamp_opencode_json(out_dir: Path, global_model: str) -> None:
     """Stamp the model field in out/<variant>/opencode.json."""
     oc_path = out_dir / "opencode.json"
@@ -526,6 +565,7 @@ def build(
     print("=" * 60)
 
     copy_src_to_out(SRC_DIR, out_host)
+    resolve_includes(out_host, SRC_DIR)
     agents_dir_host = out_host / "agents"
 
     stamp_opencode_json(out_host, global_model)
@@ -546,6 +586,7 @@ def build(
     print("=" * 60)
 
     copy_src_to_out(SRC_DIR, out_sandbox)
+    resolve_includes(out_sandbox, SRC_DIR)
     agents_dir_sandbox = out_sandbox / "agents"
 
     stamp_opencode_json(out_sandbox, global_model)
