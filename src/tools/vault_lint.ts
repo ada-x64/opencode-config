@@ -22,7 +22,10 @@ export default scriptTool({
     filter: tool.schema
       .string()
       .optional()
-      .describe("Filter by owner/repo (e.g. 'ada-x64/opencode-config')"),
+      .describe(
+        "Filter by owner/repo (e.g. 'ada-x64/opencode-config'). " +
+          "Ignored when --agents is set.",
+      ),
   },
   script: "skills/vault-lint/lint.sh",
   buildArgs: (args) => {
