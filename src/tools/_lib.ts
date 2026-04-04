@@ -13,7 +13,13 @@ interface LibToolOpts<A extends ToolArgs> {
   args: A;
   lib: string;
   fn: string;
-  /** Map args to positional params for the bash function. Defaults to Object.values(args). */
+  /**
+   * Map args to positional params for the bash function.
+   * Defaults to Object.values(args) — relies on JS insertion-order, which
+   * matches declaration order in all current tools. If the shell function's
+   * parameter order doesn't match the args declaration order, provide an
+   * explicit `params` function to avoid silent argument mismatches.
+   */
   params?: (args: any) => string[];
   /** Use .nothrow() on the shell command */
   nothrow?: boolean;

@@ -13,6 +13,5 @@ export default libTool({
   },
   lib: "skills/lib/worktree.sh",
   fn: "wt_cleanup",
-  catchMessage: "Cleanup completed (or already clean)",
   postProcess: (result) => result || "Worktree cleanup completed",
 });
