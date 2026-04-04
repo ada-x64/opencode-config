@@ -1,9 +1,10 @@
 import { tool } from "@opencode-ai/plugin";
+import os from "os";
 import path from "path";
 
 export const configDir =
   process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
+  path.join(os.homedir(), ".config/opencode");
 
 type ToolArgs = Parameters<typeof tool>[0]["args"];
 
@@ -41,8 +42,9 @@ export function libTool<A extends ToolArgs>(opts: LibToolOpts<A>) {
         : Object.values(args as Record<string, unknown>).map((v) =>
             String(v ?? ""),
           );
-      // Build: bash -c 'source "$1" && fn "$3" "$4" ...' _ "$libPath" ...params
-      const quotedParams = params.map((_, i) => `"$${i + 3}"`).join(" ");
+      // Build: bash -c 'source "$1" && fn "$2" "$3" ...' _ "$libPath" ...params
+      // Under `bash -c SCRIPT _ libPath p1 p2`: $0=_, $1=libPath, $2=p1, $3=p2, ...
+      const quotedParams = params.map((_, i) => `"$${i + 2}"`).join(" ");
       const script = `source "$1" && ${opts.fn} ${quotedParams}`;
       const shellArgs = [libPath, ...params];
 
