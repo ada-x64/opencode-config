@@ -178,6 +178,66 @@ def rebuild_content(fm_lines: list[str], rest: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Mode-conditional resolution
+# ---------------------------------------------------------------------------
+
+
+def _agent_mode(stem: str) -> str | None:
+    """Return the build mode for an agent stem, or None if not mode-aware."""
+    if stem == "implementor":
+        return "manual"
+    if stem == "auto-implementor":
+        return "autonomous"
+    return None
+
+
+def _resolve_mode_str(content: str, mode: str) -> str:
+    """Resolve {{#if MODE=...}}...{{/if}} blocks in a string.
+
+    For blocks matching the given mode: removes the markers but keeps content.
+    For blocks not matching: removes the entire block (markers + content).
+    """
+    pattern = re.compile(
+        r"^{{#if MODE=(\w+)}}\n(.*?)^{{/if}}\n?", re.MULTILINE | re.DOTALL
+    )
+
+    def replacer(m: re.Match[str]) -> str:
+        block_mode = m.group(1)
+        block_content = m.group(2)
+        if block_mode == mode:
+            return block_content  # Keep content, remove markers
+        return ""  # Remove entire block
+
+    return pattern.sub(replacer, content)
+
+
+def duplicate_implementor(agents_dir: Path) -> None:
+    """Copy implementor.md → auto-implementor.md in out/ agents dir for mode stamping.
+
+    Only copies if implementor.md exists and auto-implementor.md does not yet exist.
+    """
+    impl = agents_dir / "implementor.md"
+    auto = agents_dir / "auto-implementor.md"
+    if impl.is_file() and not auto.is_file():
+        shutil.copy2(impl, auto)
+        print(f"Duplicated {impl.name} → {auto.name} for mode stamping")
+
+
+def resolve_mode_conditionals(agents_dir: Path) -> None:
+    """Apply mode-conditional resolution to all mode-aware agent files in the directory."""
+    for agent_file in sorted(agents_dir.glob("*.md")):
+        mode = _agent_mode(agent_file.stem)
+        if mode is None:
+            continue
+        content = agent_file.read_text(encoding="utf-8")
+        if "{{#if MODE=" not in content:
+            continue
+        new_content = _resolve_mode_str(content, mode)
+        agent_file.write_text(new_content, encoding="utf-8")
+        print(f"{agent_file.name}: resolved mode conditionals (mode={mode})")
+
+
 def copy_src_to_out(src_dir: Path, out_dir: Path) -> None:
     """Copy src/ tree to out/<variant>/, excluding profiles/ and permissions/."""
     if out_dir.exists():
@@ -646,9 +706,11 @@ def build(
     print("=" * 60)
 
     copy_src_to_out(SRC_DIR, out_host)
+    agents_dir_host = out_host / "agents"
+    duplicate_implementor(agents_dir_host)
+    resolve_mode_conditionals(agents_dir_host)
     resolve_includes(out_host, SRC_DIR)
     resolve_agent_vars(out_host)
-    agents_dir_host = out_host / "agents"
 
     stamp_opencode_json(out_host, global_model)
     _ = stamp_agent_models(agents_dir_host, config)
@@ -668,9 +730,11 @@ def build(
     print("=" * 60)
 
     copy_src_to_out(SRC_DIR, out_sandbox)
+    agents_dir_sandbox = out_sandbox / "agents"
+    duplicate_implementor(agents_dir_sandbox)
+    resolve_mode_conditionals(agents_dir_sandbox)
     resolve_includes(out_sandbox, SRC_DIR)
     resolve_agent_vars(out_sandbox)
-    agents_dir_sandbox = out_sandbox / "agents"
 
     stamp_opencode_json(out_sandbox, global_model)
     _ = stamp_agent_models(agents_dir_sandbox, config)
