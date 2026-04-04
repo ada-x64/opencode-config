@@ -71,6 +71,17 @@ export function libTool<A extends ToolArgs>(opts: LibToolOpts<A>) {
   });
 }
 
+/**
+ * Extract a GitHub issue number from a schema's `issue:` frontmatter value.
+ * Returns the issue number string, or "" if the field is blank, starts with
+ * "local-", or contains no recognisable number.
+ */
+export function extractIssueNumber(issue: string): string {
+  if (!issue || issue.startsWith("local-")) return "";
+  const m = issue.match(/issues\/(\d+)/) ?? issue.match(/(\d+)\)?$/);
+  return m ? m[1] : "";
+}
+
 export function scriptTool<A extends ToolArgs>(opts: ScriptToolOpts<A>) {
   return tool({
     description: opts.description,

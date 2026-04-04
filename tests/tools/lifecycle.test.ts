@@ -150,6 +150,7 @@ describe("impl_startup", () => {
     });
     const blankResult = JSON.parse(raw);
     expect(blankResult.commands).toEqual([]);
+    expect(blankResult.issue_number).toBe("");
   });
 });
 
@@ -171,6 +172,7 @@ describe("impl_complete", () => {
       branch: "feat/test",
     });
     const result = JSON.parse(raw);
+    expect(result.issue_number).toBe("42");
     expect(Array.isArray(result.commands)).toBe(true);
     const combined = result.commands.join(" ");
     expect(combined).toContain('--remove-label "in-progress"');

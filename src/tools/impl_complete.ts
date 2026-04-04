@@ -1,4 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
+import { extractIssueNumber } from "./_lib";
 import fm_read from "./fm_read";
 import fm_write from "./fm_write";
 
@@ -33,12 +34,8 @@ export default tool({
       value: "complete",
     });
 
-    // 3. Extract issue number (same logic as startup)
-    let issue_number = "";
-    if (issue && !issue.startsWith("local-")) {
-      const m = issue.match(/issues\/(\d+)/) ?? issue.match(/(\d+)\)?$/);
-      if (m) issue_number = m[1];
-    }
+    // 3. Extract issue number
+    const issue_number = extractIssueNumber(issue);
 
     // 4. Build commands array
     const commands: string[] = [];
