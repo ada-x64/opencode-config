@@ -32,7 +32,8 @@ export default tool({
   async execute(args) {
     const now = Math.floor(Date.now() / 1000);
     const start = parseInt(args.start_epoch, 10);
-    if (isNaN(start)) return "Invalid start_epoch — must be a Unix timestamp";
+    if (isNaN(start) || !/^\d+$/.test(args.start_epoch))
+      return "Invalid start_epoch — must be a Unix timestamp";
 
     const elapsed = now - start;
     if (elapsed <= 180) {
@@ -44,7 +45,7 @@ export default tool({
     const headline = args.headline ?? "Session Task Complete";
 
     const notifyScript = path.join(configDir, "skills/vault-triage/notify.sh");
-    await Bun.$`bash -c ${'source "$1" && notify_triage "$2" "$3" "$4" "$5" "" "$6" ""'} _ ${notifyScript} activity ${taskCtx} ${headline} ${"Elapsed: " + minutes + " minutes"} ${args.icon}`;
+    await Bun.$`bash -c ${'source "$1" && notify_triage "$2" "$3" "$4" "$5" "" "$6" ""'} _ ${notifyScript} activity ${taskCtx} ${headline} ${"Elapsed: " + minutes + " minutes"} ${args.icon}`.nothrow();
 
     return `Notification sent — task took ${minutes} minutes`;
   },
