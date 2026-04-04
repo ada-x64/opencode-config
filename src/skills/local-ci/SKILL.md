@@ -85,7 +85,7 @@ Follow this workflow:
    ```
 
 5. **Clean up** when done:
-   ```bash
+   ```
    docker stop artifact-server && docker rm artifact-server
    ```
 

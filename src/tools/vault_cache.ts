@@ -4,7 +4,7 @@ import { scriptTool } from "./_lib";
 export default scriptTool({
   description:
     "Refresh the GitHub metadata cache (projects, milestones, labels) " +
-    "for repositories with vault content. Use this skill when the cache " +
+    "for repositories with vault content. Use this tool when the cache " +
     "is stale, after creating new milestones or labels, or before planning " +
     "sessions that need up-to-date project board or milestone information.",
   args: {

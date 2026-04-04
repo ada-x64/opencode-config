@@ -15,10 +15,13 @@ export default scriptTool({
       .string()
       .optional()
       .describe("Specific job ID to run (e.g. 'lint')"),
-    event: tool.schema
+    event_file: tool.schema
       .string()
       .optional()
-      .describe("Event name to simulate (default: push)"),
+      .describe(
+        "Path to a JSON event payload file to pass to gh act via -e " +
+          "(e.g. 'event.json'). Must be a file path, not an event name.",
+      ),
     extra_args: tool.schema
       .string()
       .optional()
@@ -29,8 +32,9 @@ export default scriptTool({
     const flags: string[] = [];
     if (args.workflow) flags.push("-W", args.workflow);
     if (args.job) flags.push("-j", args.job);
-    if (args.event) flags.push("-e", args.event);
-    if (args.extra_args) flags.push(...args.extra_args.split(" "));
+    if (args.event_file) flags.push("-e", args.event_file);
+    if (args.extra_args)
+      flags.push(...args.extra_args.split(" ").filter(Boolean));
     return flags;
   },
 });
