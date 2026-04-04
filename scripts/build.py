@@ -483,9 +483,9 @@ def stamp_bash_permissions(
         if variant == "host":
             host_perm_file = permissions_dir / "host" / f"{agent_name}.yaml"
             if not host_perm_file.is_file():
-                # Fall back: auto-implementor → implementor (shared source)
-                base_name = agent_name.removeprefix("auto-")
-                host_perm_file = permissions_dir / "host" / f"{base_name}.yaml"
+                # Shared source: auto-implementor uses implementor.yaml with mode conditionals
+                if agent_name == "auto-implementor":
+                    host_perm_file = permissions_dir / "host" / "implementor.yaml"
                 if not host_perm_file.is_file():
                     print(
                         f"Warning: {host_perm_file} not found, "
@@ -548,7 +548,9 @@ def _build_bash_block(
                 in_bash = True
                 continue
             if in_bash:
-                if line == "" or line.startswith(" ") or line.startswith("\t"):
+                if line == "":
+                    continue  # Skip blank lines (may arise from resolved-away conditionals)
+                if line.startswith(" ") or line.startswith("\t"):
                     # Entry line — add 2 more spaces of indent (4 total)
                     entries.append("  " + line)
                 else:

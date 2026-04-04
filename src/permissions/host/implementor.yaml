@@ -5,6 +5,10 @@ bash:
   "gh issue comment*": ask
   "gh pr comment*": ask
 {{/if}}
+{{#if MODE=autonomous}}
+  # GitHub CLI — PR cross-reference comments only (issue mutations are deferred)
+  "gh pr comment*": allow
+{{/if}}
   # Vault write (filesystem)
   "mv *": allow
   "rm *": allow
