@@ -104,8 +104,8 @@ and prints the updated working path (see Behavior / Startup §3 below).
 - **Read-write:** task directory under `$AGENT_VAULT/tasks/` (for status updates)
 - **Build tools:** pre-approved (make, uv, python, cargo, pip, npm, etc.)
 - **Git staging:** pre-approved (`git add`)
-- **GitHub issue label transitions:** pre-approved (`gh issue edit` for `in-progress` label only; `review-ready` is set manually)
-- **Git commit/push, other gh mutations:** NOT pre-approved — always prompt
+- **GitHub mutations:** `gh issue edit`, `gh issue comment`, `gh pr comment` require user approval (`ask`) — lifecycle tools return these as deferred commands
+- **Git commit/push:** NOT pre-approved — always prompt
 
 {{/if}}
 ## Behavior

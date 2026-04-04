@@ -35,8 +35,8 @@ vault. The implementor will:
 - Read the schema and switch to the correct branch
 - Work through each commit group in order
 - Pause after each group for user approval before continuing
-- **After each commit group completes, automatically invoke `@reviewer`** to
-  review the staged changes and append findings to the review file
+- Uses `impl_startup` and `impl_complete` lifecycle tools for schema status
+  management (deferred commands pattern — returns gh commands for the user to run)
 
 Provide the implementor with:
 

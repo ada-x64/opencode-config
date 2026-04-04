@@ -197,8 +197,8 @@ Plan ──────► Implement ──────► Review
   `git checkout`, build/test tools. GitHub mutations (`gh issue edit`/`comment`,
   `gh pr comment`) require user approval (`ask`). Uses custom tools for
   frontmatter (`fm_read`/`fm_write`), worktree ops (`wt_detect`/`wt_switch_branch`),
-  lifecycle (`impl_startup`/`impl_complete`), notifications
-  (`notify_triage`/`triage_dashboard`), and issue creation (`create_issue`).
+  lifecycle (`impl_startup`/`impl_complete`), and notifications
+  (`notify_triage`/`triage_dashboard`).
 - **Does not:** `git commit` (the user does that); push; skip approval gates.
 
 #### `@auto-implementor` — autonomous schema execution
@@ -269,8 +269,10 @@ they have no `task:` permission and cannot spawn further subagents.
 source file (`src/agents/implementor.md`) and a single permission file
 (`src/permissions/host/implementor.yaml`). Build-time `{{#if MODE=...}}`
 conditionals produce mode-specific output for each agent. The permission file
-uses `ask` for manual mode's GitHub mutations and `allow`/omit for autonomous
-mode (where issue mutations are deferred via lifecycle tools instead).
+uses `ask` for manual mode's GitHub mutations; for autonomous mode,
+`gh pr comment*` is explicitly `allow` (for PR cross-references during
+escalation), while `gh issue` mutations are omitted entirely (deferred via
+lifecycle tools, inheriting `deny` from baseline).
 
 For full details — including the complete read-only baseline, the per-agent
 write permission table, file-system scope restrictions, and instructions for
