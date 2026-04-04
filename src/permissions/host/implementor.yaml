@@ -1,7 +1,10 @@
 bash:
-  # GitHub CLI (mutations — label state transitions and issue comments)
-  "gh issue edit*": allow
-  "gh issue comment*": allow
+{{#if MODE=manual}}
+  # GitHub CLI — user-approved; lifecycle tools return commands, agent runs them
+  "gh issue edit*": ask
+  "gh issue comment*": ask
+  "gh pr comment*": ask
+{{/if}}
   # Vault write (filesystem)
   "mv *": allow
   "rm *": allow
@@ -10,6 +13,10 @@ bash:
   "git add*": allow
   "git switch*": allow
   "git checkout*": allow
+{{#if MODE=autonomous}}
+  "git commit*": allow
+  "git stash*": allow
+{{/if}}
   "git worktree add*": allow
   "git worktree remove*": allow
   # Build tools (needed to run validation steps)

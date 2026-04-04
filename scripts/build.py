@@ -483,14 +483,21 @@ def stamp_bash_permissions(
         if variant == "host":
             host_perm_file = permissions_dir / "host" / f"{agent_name}.yaml"
             if not host_perm_file.is_file():
-                print(
-                    f"Warning: {host_perm_file} not found, "
-                    f"skipping bash permissions for {agent_name}",
-                    file=sys.stderr,
-                )
-                continue
+                # Fall back: auto-implementor → implementor (shared source)
+                base_name = agent_name.removeprefix("auto-")
+                host_perm_file = permissions_dir / "host" / f"{base_name}.yaml"
+                if not host_perm_file.is_file():
+                    print(
+                        f"Warning: {host_perm_file} not found, "
+                        f"skipping bash permissions for {agent_name}",
+                        file=sys.stderr,
+                    )
+                    continue
             baseline_file = permissions_dir / "host" / "_baseline.yaml"
-            bash_block = _build_bash_block(host_perm_file, baseline_file=baseline_file)
+            mode = _agent_mode(agent_name)
+            bash_block = _build_bash_block(
+                host_perm_file, baseline_file=baseline_file, mode=mode
+            )
         else:
             bash_block = sandbox_block  # type: ignore[possibly-undefined]
 
@@ -510,7 +517,11 @@ def stamp_bash_permissions(
         print(f"{agent_name}: stamped bash permissions ({variant})")
 
 
-def _build_bash_block(perm_file: Path, baseline_file: Path | None = None) -> str:
+def _build_bash_block(
+    perm_file: Path,
+    baseline_file: Path | None = None,
+    mode: str | None = None,
+) -> str:
     """Read a permissions YAML file and return the indented block for frontmatter.
 
     The permissions file has `bash:` at root level (no indent). When injected
@@ -519,10 +530,16 @@ def _build_bash_block(perm_file: Path, baseline_file: Path | None = None) -> str
 
     If baseline_file is provided and exists, its bash: entries are prepended
     before the agent-specific entries from perm_file.
+
+    If mode is provided, mode conditionals ({{#if MODE=...}}) are resolved
+    in the agent-specific permission file before extraction. The baseline
+    file is never mode-conditional.
     """
 
-    def _extract_bash_entries(path: Path) -> list[str]:
+    def _extract_bash_entries(path: Path, resolve_mode: str | None = None) -> list[str]:
         raw = path.read_text(encoding="utf-8")
+        if resolve_mode is not None:
+            raw = _resolve_mode_str(raw, resolve_mode)
         lines = raw.splitlines()
         entries: list[str] = []
         in_bash = False
@@ -551,7 +568,7 @@ def _build_bash_block(perm_file: Path, baseline_file: Path | None = None) -> str
         else:
             result_lines.extend(_extract_bash_entries(baseline_file))
 
-    result_lines.extend(_extract_bash_entries(perm_file))
+    result_lines.extend(_extract_bash_entries(perm_file, resolve_mode=mode))
 
     return "\n".join(result_lines)
 
