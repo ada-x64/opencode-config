@@ -24,17 +24,15 @@ opencode-config/
 │   ├── agents/                #   Subagent definitions (7 agents)
 │   │   ├── planner.md
 │   │   ├── project-manager.md
-│   │   ├── implementor.md
-│   │   ├── auto-implementor.md
+│   │   ├── implementor.md     #   Shared source — build produces auto-implementor.md via mode conditionals
 │   │   ├── reviewer.md
 │   │   ├── designer.md
 │   │   └── auto-auditor.md
 │   ├── permissions/           #   Per-agent bash permission blocks
 │   │   ├── host/              #     Per-agent YAML files for host variant
 │   │   │   ├── auto-auditor.yaml
-│   │   │   ├── auto-implementor.yaml
 │   │   │   ├── designer.yaml
-│   │   │   ├── implementor.yaml
+│   │   │   ├── implementor.yaml  #  Shared source — mode conditionals for manual/autonomous
 │   │   │   ├── planner.yaml
 │   │   │   ├── project-manager.yaml
 │   │   │   └── reviewer.yaml
@@ -60,7 +58,9 @@ opencode-config/
 │   │   ├── local_ci.ts
 │   │   ├── session_notify.ts
 │   │   ├── create_issue.ts
-│   │   └── create_pr.ts
+│   │   ├── create_pr.ts
+│   │   ├── impl_startup.ts    #   Lifecycle: schema startup (deferred commands pattern)
+│   │   └── impl_complete.ts   #   Lifecycle: schema completion (deferred commands pattern)
 │   ├── skills/                #   Loadable skill instruction sets
 │   │   ├── lib/               #     Shared libraries (frontmatter.sh, worktree.sh)
 │   │   ├── archive/
@@ -186,27 +186,35 @@ Plan ──────► Implement ──────► Review
 
 #### `@implementor` — manual schema execution
 
-- **File:** `src/agents/implementor.md`
+- **File:** `src/agents/implementor.md` (shared source with `@auto-implementor` via `{{#if MODE=...}}` conditionals)
 - **Role:** Executes a schema commit-group by commit-group, **pausing after
   each group** for user review before proceeding. Reads `CONTRIBUTING.md` at
-  startup to learn project conventions. On startup: applies `in-progress` label
-  and posts a start comment on the linked GitHub issue. On completion: removes
-  `in-progress` label and posts a completion comment.
+  startup to learn project conventions. Startup and completion sequences are
+  handled by `impl_startup` and `impl_complete` lifecycle tools (deferred
+  commands pattern — tools return gh commands as strings, agent runs them with
+  bash `ask` permission prompting the user).
 - **Write access:** Full repository edits, `git add`, `git switch`,
-  `git checkout`, build/test tools, `gh issue edit`/`comment`. Uses custom tools
-  for frontmatter (`fm_read`/`fm_write`), worktree ops (`wt_detect`/`wt_switch_branch`),
-  notifications (`notify_triage`/`triage_dashboard`), and issue creation (`create_issue`).
+  `git checkout`, build/test tools. GitHub mutations (`gh issue edit`/`comment`,
+  `gh pr comment`) require user approval (`ask`). Uses custom tools for
+  frontmatter (`fm_read`/`fm_write`), worktree ops (`wt_detect`/`wt_switch_branch`),
+  lifecycle (`impl_startup`/`impl_complete`), notifications
+  (`notify_triage`/`triage_dashboard`), and issue creation (`create_issue`).
 - **Does not:** `git commit` (the user does that); push; skip approval gates.
 
 #### `@auto-implementor` — autonomous schema execution
 
-- **File:** `src/agents/auto-implementor.md`
+- **File:** Built from `src/agents/implementor.md` (shared source with `{{#if MODE=autonomous}}` conditionals)
 - **Role:** Executes a schema **end-to-end without pausing**. After each commit
   group it stages, commits, then runs a bounded review loop (max 3 rounds of
   `@reviewer`). Escalations are recorded via the vault-triage skill. Sends push
-  notifications at key milestones.
+  notifications at key milestones. GitHub issue mutations are **deferred** —
+  lifecycle tools (`impl_startup`/`impl_complete`) return commands as strings,
+  the agent stores them, and includes them in its final output for the
+  orchestrator to run.
 - **Write access:** Everything `@implementor` has, plus `git commit`,
-  `git stash`, `gh pr comment*`.
+  `git stash`. GitHub PR comments (`gh pr comment*`) are direct (`allow`);
+  issue mutations are deferred (no direct `gh issue` entries — inherits `deny`
+  from baseline).
 - **Does not:** Push to remote (hard rule, no exceptions).
 - **Review loop:** After each commit, up to 3 review rounds. If high+ findings
   persist after round 3, escalates and continues.
@@ -256,6 +264,13 @@ independently auditable without cross-referencing the global config.
 `task: allow` and may dispatch subagents. All other agents (`@implementor`,
 `@project-manager`, `@reviewer`, `@designer`, `@auto-auditor`) are **leaf agents** —
 they have no `task:` permission and cannot spawn further subagents.
+
+**Shared source files:** `@implementor` and `@auto-implementor` share a single
+source file (`src/agents/implementor.md`) and a single permission file
+(`src/permissions/host/implementor.yaml`). Build-time `{{#if MODE=...}}`
+conditionals produce mode-specific output for each agent. The permission file
+uses `ask` for manual mode's GitHub mutations and `allow`/omit for autonomous
+mode (where issue mutations are deferred via lifecycle tools instead).
 
 For full details — including the complete read-only baseline, the per-agent
 write permission table, file-system scope restrictions, and instructions for
@@ -322,6 +337,8 @@ and are still used internally (tools shell out to them via `Bun.$`).
 | `src/skills/vault-init/init.sh`               | `vault_init`                                                   | Initialize vault directory structure   |
 | `src/skills/local-ci/act.sh`                  | `local_ci`                                                     | Run GitHub Actions workflows locally   |
 | _(no script — standalone tool)_               | `session_notify`                                               | Send session-completion notification   |
+| _(no script — standalone tool)_               | `impl_startup`                                                 | Schema startup (deferred commands)     |
+| _(no script — standalone tool)_               | `impl_complete`                                                | Schema completion (deferred commands)  |
 
 Scripts **not** wrapped by tools (invoked directly via bash):
 

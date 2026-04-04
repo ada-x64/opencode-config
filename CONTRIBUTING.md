@@ -55,20 +55,32 @@ for model configuration and writes the file. Use `--reconfigure` to re-prompt.
 Copies `src/` to `out/host/` and `out/sandbox/` (excluding `profiles/` and
 `permissions/`), then applies all stamps to each variant:
 
-1. Sets the `model` field in `out/<variant>/opencode.json` to `global.model`.
-2. For each agent file, reads `tier` from frontmatter, looks up the tier in
+1. **Duplicate and resolve mode conditionals:** For agents with shared source
+   files (e.g., `implementor.md` → `auto-implementor.md`),
+   `duplicate_implementor()` copies the source, then
+   `resolve_mode_conditionals()` strips `{{#if MODE=manual}}` /
+   `{{#if MODE=autonomous}}` blocks based on each agent's mode. This runs
+   before all other stamps so that includes and variable resolution operate
+   on mode-specific content.
+2. Resolves `{{include:...}}` directives in agent files.
+3. Resolves `{{AGENT_*}}` variable placeholders in agent files.
+4. Sets the `model` field in `out/<variant>/opencode.json` to `global.model`.
+5. For each agent file, reads `tier` from frontmatter, looks up the tier in
    `build.json`, and sets or removes the `model` field accordingly.
-3. Stamps `{{BASH_PERMISSIONS}}` in agent frontmatter from `src/permissions/`:
+6. Stamps `{{BASH_PERMISSIONS}}` in agent frontmatter from `src/permissions/`:
    - **Host variant:** reads `src/permissions/host/<agent>.yaml` for each agent.
-     The `bash:` key is injected at 2-space indent; all entries at 4-space indent.
+     If no file exists for the agent name, falls back (e.g., `auto-implementor`
+     → `implementor.yaml`). Mode conditionals in permission YAML are resolved
+     before extraction. The `bash:` key is injected at 2-space indent; all
+     entries at 4-space indent.
    - **Sandbox variant:** reads `src/permissions/sandbox.yaml` and stamps ALL
      agents with the same universal block (`"*": allow` + `gh api *` / `git push*`
      denies). Any remaining `ask` rules are converted to `allow`.
-4. Stamps the `external_directory` block in all agent frontmatter:
+7. Stamps the `external_directory` block in all agent frontmatter:
    - **Host variant:** existing behavior (stamped from `build.json`).
    - **Sandbox variant:** removes the `external_directory:` block entirely
      (no path restrictions in containers).
-5. Resolves `{{CONFIG_DIR}}` placeholders in agent files:
+8. Resolves `{{CONFIG_DIR}}` placeholders in agent files:
    - **Host variant:** resolves to `OPENCODE_CONFIG_SRC` value.
    - **Sandbox variant:** resolves to `/root/.config/opencode` (container path).
 
@@ -184,6 +196,14 @@ custom image, vault bind-mount (RW), credential passthrough (`GH_TOKEN`,
 6. Add the agent to the permission table in
    `repo-notes/ada-x64/opencode-config/agent-permissions.md` in the vault.
 7. Update [AGENTS.md](AGENTS.md) and `README.md`.
+
+**Mode conditionals:** If two agents share most of their source (like
+`@implementor` and `@auto-implementor`), use `{{#if MODE=manual}}` /
+`{{#if MODE=autonomous}}` blocks in a single source file instead of maintaining
+two separate files. The build pipeline resolves these after copying to `out/`
+but before resolving includes. Register the agent name → mode mapping in
+`_agent_mode()` in `scripts/build.py`. The same mechanism works in permission
+YAML files — `_build_bash_block()` resolves conditionals before extraction.
 
 ### Updating the global read-only baseline
 
