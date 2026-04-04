@@ -230,7 +230,7 @@ def resolve_includes(out_dir: Path, src_dir: Path) -> None:
                         file=sys.stderr,
                     )
                     return m.group(0)  # Leave placeholder intact
-                included = include_path.read_text(encoding="utf-8").rstrip("\n")
+                included = include_path.read_text(encoding="utf-8").rstrip("\n") + "\n"
                 if indent:
                     included = "\n".join(
                         indent + line if line else line
@@ -253,11 +253,16 @@ def resolve_agent_vars(out_dir: Path) -> None:
     comment blocks in each .md file, extracts the values, substitutes them into
     {{TRIAGE_ICON}} and {{TRIAGE_EVENTS}} placeholders, then removes the comment
     blocks from the output.
+
+    Skips files inside _shared/ directories — those are include fragments that
+    intentionally contain unresolved placeholders.
     """
     icon_pat = re.compile(r"<!--\s*triage_icon:\s*(.+?)\s*-->")
     events_pat = re.compile(r"<!--\s*triage_events:\s*\n(.*?)-->", re.DOTALL)
 
     for md_file in sorted(out_dir.rglob("*.md")):
+        if "_shared" in md_file.parts:
+            continue  # Skip include fragments — placeholders are intentional
         content = md_file.read_text(encoding="utf-8")
         if "{{TRIAGE_ICON}}" not in content and "{{TRIAGE_EVENTS}}" not in content:
             continue
@@ -265,15 +270,31 @@ def resolve_agent_vars(out_dir: Path) -> None:
         icon_match = icon_pat.search(content)
         events_match = events_pat.search(content)
 
+        changed = False
+
         if icon_match:
             icon_val = icon_match.group(1).strip()
             content = content.replace("{{TRIAGE_ICON}}", icon_val)
-            content = content.replace(icon_match.group(0) + "\n", "")
+            content = re.sub(
+                re.escape(icon_match.group(0)) + r"\n?", "", content, count=1
+            )
+            changed = True
 
         if events_match:
             events_val = events_match.group(1).rstrip()
             content = content.replace("{{TRIAGE_EVENTS}}", events_val)
-            content = content.replace(events_match.group(0) + "\n", "")
+            content = re.sub(
+                re.escape(events_match.group(0)) + r"\n?", "", content, count=1
+            )
+            changed = True
+
+        if not changed:
+            print(
+                f"Warning: {md_file.name} has {{{{TRIAGE_*}}}} placeholders "
+                "but no matching comment blocks found",
+                file=sys.stderr,
+            )
+            continue
 
         _ = md_file.write_text(content, encoding="utf-8")
         print(f"{md_file.name}: resolved triage variables")

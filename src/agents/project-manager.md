@@ -185,6 +185,9 @@ follow its **Write Mode** instructions. The three post-work steps are
 -->
 {{include:agents/_shared/triage.md}}
 
+> **For cross-repo operations:** If no per-task directory exists, write to
+> `$AGENT_VAULT/tasks/_activity/project-manager/` instead.
+
 ## What you MUST NOT do
 
 - Edit source files in any repository

@@ -187,6 +187,9 @@ After writing the audit report, load the `vault-triage` skill and follow its
 -->
 {{include:agents/_shared/triage.md}}
 
+> **For audits:** If no task directory exists for the audited repo, write to
+> `$AGENT_VAULT/tasks/_activity/auto-auditor/` instead.
+
 ## Severity Reference
 
 | Severity     | Audit meaning                                                                    |

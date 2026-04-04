@@ -268,20 +268,6 @@ After all commit groups are done and validated:
      clean it up after merging: `wt_cleanup({ worktree_path: repo_path })` or
      `git worktree remove <worktree_path>`
 
-**Icon selection:** When calling `notify_triage`, pass `auto-implementor` as the icon (the `auto-` prefix triggers ⚙️ prepending automatically) and use the base semantic key:
-
-- Commit group completed → semantic key `activity` (resolves to ⚙️📋)
-- Review loop exhausted → semantic key `escalation` (resolves to ⚙️❗)
-- Design ambiguity → semantic key `design-question` (resolves to ⚙️❓)
-- Run summary → semantic key `activity` (resolves to ⚙️📋)
-
-```
-// Examples:
-notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Commit Group 1 Finished", body: "• Updated 6 scripts\n• Tests passing ✓", icon: "auto-implementor", emoji: "activity" })
-notify_triage({ type: "escalation", task: "<owner>/<repo>/<task>", headline: "Review Loop Exhausted", body: "• High findings persist in module X\n• 3 rounds attempted", icon: "auto-implementor", emoji: "escalation" })
-notify_triage({ type: "run-summary", task: "<owner>/<repo>/<task>", headline: "Run Complete", body: "• 5/5 commit groups done\n• 2 escalations logged", icon: "auto-implementor", emoji: "activity" })
-```
-
 ## What you MUST NOT do
 
 - Push to remote (`git push`) — this is a hard rule with no exceptions

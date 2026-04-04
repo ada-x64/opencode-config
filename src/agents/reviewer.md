@@ -65,9 +65,15 @@ After writing the review file, load the `vault-triage` skill and follow its
 -->
 {{include:agents/_shared/triage.md}}
 
+Pass `reviewer` as the icon **and an outcome semantic key**:
+
 - 0 high+ findings → semantic key `clean` (resolves to 🟢)
 - Only nit/low findings → semantic key `warn` (resolves to 🟡)
 - Any high/critical findings → semantic key `reject` (resolves to 🔴)
+
+```
+notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Review Complete", body: "• 3 findings, max severity: medium", icon: "reviewer", emoji: "clean" })
+```
 
 ## What you MUST NOT do
 
