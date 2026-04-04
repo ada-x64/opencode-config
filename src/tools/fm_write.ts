@@ -1,11 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
+import { libTool } from "./_lib";
 
-const configDir =
-  process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
-
-export default tool({
+export default libTool({
   description:
     "Write a value to the YAML frontmatter of a Markdown file. " +
     "Replaces the first occurrence of the key in frontmatter. " +
@@ -20,9 +16,8 @@ export default tool({
       .string()
       .describe("Value to set (e.g. 'in progress', 'complete')"),
   },
-  async execute(args) {
-    const lib = path.join(configDir, "skills/lib/frontmatter.sh");
-    await Bun.$`bash -c ${'source "$1" && fm_write "$2" "$3" "$4"'} _ ${lib} ${args.file} ${args.key} ${args.value}`;
-    return `Updated ${args.key} to '${args.value}' in ${args.file}`;
-  },
+  lib: "skills/lib/frontmatter.sh",
+  fn: "fm_write",
+  postProcess: (_result, args) =>
+    `Updated ${args.key} to '${args.value}' in ${args.file}`,
 });

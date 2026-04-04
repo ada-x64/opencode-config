@@ -1,11 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
+import { libTool } from "./_lib";
 
-const configDir =
-  process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
-
-export default tool({
+export default libTool({
   description:
     "Send a triage push notification via ntfy. " +
     "Fails silently if ntfy is not configured. " +
@@ -52,13 +48,8 @@ export default tool({
         "Semantic key for emoji prefix: activity, clean, warn, reject, escalation, design-question",
       ),
   },
-  async execute(args) {
-    const script = path.join(configDir, "skills/vault-triage/notify.sh");
-    const result =
-      await Bun.$`bash -c ${'source "$1" && notify_triage "$2" "$3" "$4" "$5" "$6" "$7" "$8"'} _ ${script} ${args.type} ${args.task} ${args.headline} ${args.body ?? ""} ${args.file ?? ""} ${args.icon ?? ""} ${args.emoji ?? ""}`.text();
-    return (
-      result.trim() ||
-      "Notification sent (or silently skipped if ntfy not configured)"
-    );
-  },
+  lib: "skills/vault-triage/notify.sh",
+  fn: "notify_triage",
+  postProcess: (result) =>
+    result || "Notification sent (or silently skipped if ntfy not configured)",
 });

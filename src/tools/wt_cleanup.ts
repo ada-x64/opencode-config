@@ -1,11 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
+import { libTool } from "./_lib";
 
-const configDir =
-  process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
-
-export default tool({
+export default libTool({
   description:
     "Remove a git worktree. Best-effort — never fails the caller's workflow. " +
     "Only operates on actual worktrees (not clones or bare roots). " +
@@ -15,12 +11,8 @@ export default tool({
       .string()
       .describe("Absolute path to the worktree to remove"),
   },
-  async execute(args) {
-    const lib = path.join(configDir, "skills/lib/worktree.sh");
-    const result =
-      await Bun.$`bash -c ${'source "$1" && wt_cleanup "$2"'} _ ${lib} ${args.worktree_path}`
-        .text()
-        .catch(() => "Cleanup completed (or already clean)");
-    return result.trim() || "Worktree cleanup completed";
-  },
+  lib: "skills/lib/worktree.sh",
+  fn: "wt_cleanup",
+  catchMessage: "Cleanup completed (or already clean)",
+  postProcess: (result) => result || "Worktree cleanup completed",
 });
