@@ -1,11 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
+import { scriptTool } from "./_lib";
 
-const configDir =
-  process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
-
-export default tool({
+export default scriptTool({
   description:
     "Regenerate the triage inbox dashboard at $AGENT_VAULT/triage-inbox.md. " +
     "Scans all triage files, groups by status (pending/addressed/dismissed), " +
@@ -17,15 +13,6 @@ export default tool({
       .optional()
       .describe("Send a triage summary notification after generating"),
   },
-  async execute(args) {
-    const script = path.join(
-      configDir,
-      "skills/vault-triage/triage-dashboard.sh",
-    );
-    const cmd = args.notify_summary
-      ? ["bash", script, "--notify-summary"]
-      : ["bash", script];
-    const result = await Bun.$`${cmd}`.text();
-    return result.trim();
-  },
+  script: "skills/vault-triage/triage-dashboard.sh",
+  buildArgs: (args) => (args.notify_summary ? ["--notify-summary"] : []),
 });
