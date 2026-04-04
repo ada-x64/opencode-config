@@ -308,7 +308,8 @@ def stamp_bash_permissions(
                     file=sys.stderr,
                 )
                 continue
-            bash_block = _build_bash_block(host_perm_file)
+            baseline_file = permissions_dir / "host" / "_baseline.yaml"
+            bash_block = _build_bash_block(host_perm_file, baseline_file=baseline_file)
         else:
             bash_block = sandbox_block  # type: ignore[possibly-undefined]
 
@@ -328,31 +329,41 @@ def stamp_bash_permissions(
         print(f"{agent_name}: stamped bash permissions ({variant})")
 
 
-def _build_bash_block(perm_file: Path) -> str:
+def _build_bash_block(perm_file: Path, baseline_file: Path | None = None) -> str:
     """Read a permissions YAML file and return the indented block for frontmatter.
 
     The permissions file has `bash:` at root level (no indent). When injected
     into agent frontmatter (under `permission:`), the `bash:` key is indented
     2 spaces and all entries are indented 4 spaces.
+
+    If baseline_file is provided and exists, its bash: entries are prepended
+    before the agent-specific entries from perm_file.
     """
-    raw = perm_file.read_text(encoding="utf-8")
-    lines = raw.splitlines()
 
-    result_lines: list[str] = []
-    in_bash = False
+    def _extract_bash_entries(path: Path) -> list[str]:
+        raw = path.read_text(encoding="utf-8")
+        lines = raw.splitlines()
+        entries: list[str] = []
+        in_bash = False
+        for line in lines:
+            if line.startswith("bash:"):
+                in_bash = True
+                continue
+            if in_bash:
+                if line == "" or line.startswith(" ") or line.startswith("\t"):
+                    # Entry line — add 2 more spaces of indent (4 total)
+                    entries.append("  " + line)
+                else:
+                    # New top-level key — stop
+                    break
+        return entries
 
-    for line in lines:
-        if line.startswith("bash:"):
-            in_bash = True
-            result_lines.append("  bash:")
-            continue
-        if in_bash:
-            if line == "" or line.startswith(" ") or line.startswith("\t"):
-                # Entry line — add 2 more spaces of indent (4 total)
-                result_lines.append("  " + line)
-            else:
-                # New top-level key — stop
-                break
+    result_lines: list[str] = ["  bash:"]
+
+    if baseline_file is not None and baseline_file.is_file():
+        result_lines.extend(_extract_bash_entries(baseline_file))
+
+    result_lines.extend(_extract_bash_entries(perm_file))
 
     return "\n".join(result_lines)
 
