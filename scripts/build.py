@@ -24,6 +24,7 @@ import json
 import re
 import shutil
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import IO, Any
 
@@ -195,9 +196,9 @@ def resolve_includes(out_dir: Path, src_dir: Path) -> None:
     Scans all .md files under out_dir. Each {{include:<path>}} is replaced
     with the contents of src_dir/<path>. The placeholder must be on its own
     line (optionally with leading whitespace, which is preserved as indent).
+    Path traversal (e.g. ../../etc/passwd) is blocked — includes must resolve
+    within src_dir.
     """
-    import re
-
     pattern = re.compile(r"^(\s*)\{\{include:(.+?)\}\}\s*$", re.MULTILINE)
 
     for md_file in sorted(out_dir.rglob("*.md")):
@@ -205,24 +206,41 @@ def resolve_includes(out_dir: Path, src_dir: Path) -> None:
         if "{{include:" not in content:
             continue
 
-        def replacer(m: re.Match[str]) -> str:
-            indent = m.group(1)
-            rel_path = m.group(2).strip()
-            include_path = src_dir / rel_path
-            if not include_path.is_file():
-                print(
-                    f"Warning: include not found: {include_path}",
-                    file=sys.stderr,
-                )
-                return m.group(0)  # Leave placeholder intact
-            included = include_path.read_text(encoding="utf-8").rstrip("\n")
-            if indent:
-                included = "\n".join(
-                    indent + line if line else line for line in included.splitlines()
-                )
-            return included
+        def make_replacer(
+            current_file: Path,
+        ) -> "Callable[[re.Match[str]], str]":
+            def replacer(m: re.Match[str]) -> str:
+                indent = m.group(1)
+                rel_path = m.group(2).strip()
+                include_path = (src_dir / rel_path).resolve()
+                # Guard against path traversal outside src_dir
+                try:
+                    include_path.relative_to(src_dir.resolve())
+                except ValueError:
+                    print(
+                        f"Warning: include path escapes src_dir "
+                        f"(in {current_file.name}): {rel_path}",
+                        file=sys.stderr,
+                    )
+                    return m.group(0)
+                if not include_path.is_file():
+                    print(
+                        f"Warning: include not found "
+                        f"(in {current_file.name}): {include_path}",
+                        file=sys.stderr,
+                    )
+                    return m.group(0)  # Leave placeholder intact
+                included = include_path.read_text(encoding="utf-8").rstrip("\n")
+                if indent:
+                    included = "\n".join(
+                        indent + line if line else line
+                        for line in included.splitlines()
+                    )
+                return included
 
-        new_content = pattern.sub(replacer, content)
+            return replacer
+
+        new_content = pattern.sub(make_replacer(md_file), content)
         if new_content != content:
             _ = md_file.write_text(new_content, encoding="utf-8")
             print(f"{md_file.name}: resolved includes")
