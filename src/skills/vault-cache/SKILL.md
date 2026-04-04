@@ -16,14 +16,13 @@ The vault caches GitHub metadata (projects, milestones, labels) at
 planning sessions. The `refresh.sh` script discovers all repos that have vault
 content and refreshes the cache for each one.
 
-## How to Invoke
+## Usage
 
-```bash
-# Refresh cache for all repos with vault content
-bash "$OPENCODE_CONFIG_SRC/skills/vault-cache/refresh.sh"
+Use the `vault_cache` tool:
 
-# Refresh a specific repo only
-bash "$OPENCODE_CONFIG_SRC/skills/vault-cache/refresh.sh" ada-x64/wf
+```
+vault_cache()                                        # refresh all repos
+vault_cache({ filter: "ada-x64/opencode-config" })  # refresh one repo
 ```
 
 ## What Gets Cached

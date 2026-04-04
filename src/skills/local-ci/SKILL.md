@@ -23,33 +23,14 @@ a Docker-based artifact server, and passes all arguments through to `gh act`.
 - Debugging a failing CI workflow by reproducing it locally
 - Running a specific job from a workflow in isolation
 
-## How to Invoke
+## Usage
 
-The `act.sh` script is located alongside this skill file at
-`$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh`. Always run it from within the
-target repository directory.
+Use the `local_ci` tool:
 
-```bash
-# Run from within a repo directory
-cd "$AGENT_REPOS/<owner>/<repo>"
-
-# Run all workflows triggered by push (default event)
-bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh"
-
-# Run a specific workflow file
-bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml
-
-# Run a specific job within a workflow
-bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml -j build
-
-# Dry run (validate without running containers)
-bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -n
-
-# List all available workflows and jobs
-bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" --list
-
-# Verbose output for debugging
-bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml -v
+```
+local_ci()                                                      # run all workflows
+local_ci({ workflow: ".github/workflows/lint.yml" })            # specific workflow
+local_ci({ workflow: ".github/workflows/lint.yml", job: "lint" })  # specific job
 ```
 
 ## What the Script Does
@@ -81,26 +62,26 @@ Follow this workflow:
 
 1. **List available workflows and jobs:**
 
-   ```bash
-   bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" --list
+   ```
+   local_ci({ extra_args: "--list" })
    ```
 
 2. **Run the failing workflow:**
 
-   ```bash
-   bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml -v
+   ```
+   local_ci({ workflow: ".github/workflows/ci.yml", extra_args: "-v" })
    ```
 
 3. **Isolate the failing job** if the workflow has multiple jobs:
 
-   ```bash
-   bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml -j <job-id> -v
+   ```
+   local_ci({ workflow: ".github/workflows/ci.yml", job: "<job-id>", extra_args: "-v" })
    ```
 
 4. **Iterate on fixes** — use `--reuse` to keep containers alive between runs:
 
-   ```bash
-   bash "$OPENCODE_CONFIG_SRC/skills/local-ci/act.sh" -W .github/workflows/ci.yml -j <job-id> --reuse
+   ```
+   local_ci({ workflow: ".github/workflows/ci.yml", job: "<job-id>", extra_args: "--reuse" })
    ```
 
 5. **Clean up** when done:
