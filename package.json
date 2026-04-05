@@ -1,6 +1,26 @@
 {
-  "dependencies": {},
   "devDependencies": {
-    "@opencode-ai/plugin": "^1.3.13"
+    "@opencode-ai/plugin": "^1.3.13",
+    "@types/bun": "latest"
+  },
+  "name": "cubething-occonf",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "cubething-occonf": "scripts/setup.ts"
+  },
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "install-config": "bun run scripts/install.ts",
+    "setup": "bun run scripts/setup.ts",
+    "lint": "bun run scripts/lint.ts"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "js-yaml": "^4.1.1"
   }
 }

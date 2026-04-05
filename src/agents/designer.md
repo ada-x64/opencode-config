@@ -9,7 +9,6 @@ permission:
   external_directory:
     "{env:AGENT_REPOS}/**": allow
     "{env:AGENT_VAULT}/**": allow
-    "{env:OPENCODE_CONFIG_SRC}/**": allow
     "/tmp/**": allow
 ---
 

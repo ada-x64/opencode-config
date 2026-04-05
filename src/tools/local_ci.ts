@@ -1,7 +1,6 @@
 import { tool } from "@opencode-ai/plugin";
-import { scriptTool } from "./_lib";
 
-export default scriptTool({
+export default tool({
   description:
     "Run and debug GitHub Actions workflows locally using gh act. " +
     "Starts a Docker artifact server and passes arguments through " +
@@ -27,14 +26,36 @@ export default scriptTool({
       .optional()
       .describe("Additional arguments to pass to gh act (space-separated)"),
   },
-  script: "skills/local-ci/act.sh",
-  buildArgs: (args) => {
-    const flags: string[] = [];
-    if (args.workflow) flags.push("-W", args.workflow);
-    if (args.job) flags.push("-j", args.job);
-    if (args.event_file) flags.push("-e", args.event_file);
-    if (args.extra_args)
-      flags.push(...args.extra_args.split(" ").filter(Boolean));
-    return flags;
+  async execute(args) {
+    // Start artifact server — nothrow because an already-running container is fine
+    await Bun.$`docker run --name artifact-server -d -p 8080:8080 --add-host artifacts.docker.internal:host-gateway -e AUTH_KEY=foo ghcr.io/jefuller/artifact-server:latest`.nothrow();
+
+    // Build gh act args
+    const actArgs: string[] = [
+      "--env",
+      "ACTIONS_RUNTIME_URL=http://artifacts.docker.internal:8080/",
+      "--env",
+      "ACTIONS_RUNTIME_TOKEN=foo",
+      "--env",
+      "ACTIONS_CACHE_URL=http://artifacts.docker.internal:8080/",
+      "--artifact-server-path",
+      "../artifacts",
+    ];
+
+    if (args.workflow) {
+      actArgs.push("-W", args.workflow);
+    }
+    if (args.job) {
+      actArgs.push("-j", args.job);
+    }
+    if (args.event_file) {
+      actArgs.push("-e", args.event_file);
+    }
+    if (args.extra_args) {
+      actArgs.push(...args.extra_args.split(" ").filter(Boolean));
+    }
+
+    const result = await Bun.$`gh act ${actArgs}`.text();
+    return result.trim();
   },
 });

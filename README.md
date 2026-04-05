@@ -8,7 +8,7 @@ across sessions.
 ## Quick install
 
 ```bash
-uvx cubething-occonf
+bunx cubething-occonf
 ```
 
 The installer prompts for your vault and repos paths, downloads the latest
@@ -130,14 +130,11 @@ template is deployed automatically during install.
 ### Other install methods
 
 ```bash
-uvx run cubething-occonf
-pipx run cubething-occonf
+# From a GitHub release tarball:
+bunx --from https://github.com/ada-x64/opencode-config/releases/latest/download/opencode-config.tar.gz cubething-occonf
 
-# From a GitHub release (no PyPI):
-uvx --from https://github.com/ada-x64/opencode-config/releases/latest/download/opencode-config.tar.gz cubething-occonf
-
-# curl | python3:
-curl -fsSL https://github.com/ada-x64/opencode-config/releases/latest/download/setup.py | python3
+# curl | bun:
+curl -fsSL https://github.com/ada-x64/opencode-config/releases/latest/download/setup.ts | bun
 ```
 
 ### From source
@@ -145,12 +142,12 @@ curl -fsSL https://github.com/ada-x64/opencode-config/releases/latest/download/s
 ```bash
 git clone https://github.com/ada-x64/opencode-config.git
 cd opencode-config
-python3 scripts/build.py      # src/ -> out/, stamps models + config
-python3 scripts/install.py    # out/ -> ~/.config/opencode
+bun run build             # src/ -> out/, stamps models + config
+bun run install-config    # out/ -> ~/.config/opencode
 ```
 
-On first run, `build.py` prompts for model configuration and writes
-`build.json` (gitignored, per-machine). Use `--reconfigure` to re-prompt.
+On first run, `build.ts` prompts for model configuration and writes
+`build.json` (gitignored, per-machine). Use `-- --reconfigure` to re-prompt.
 
 For build system internals, CI, Docker, and contributor conventions, see
 [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -160,12 +157,11 @@ For build system internals, CI, Docker, and contributor conventions, see
 The installer writes these to your shell profile. If installing from source,
 set them manually:
 
-| Variable              | Required            | Description                                                |
-| --------------------- | ------------------- | ---------------------------------------------------------- |
-| `OPENCODE_CONFIG_SRC` | No                  | Path to the deployed config (`~/.config/opencode` default) |
-| `AGENT_VAULT`         | Yes (for vault ops) | Path to the vault directory                                |
-| `AGENT_REPOS`         | Yes (for repo ops)  | Path to local repo checkouts                               |
-| `NTFY_TOPIC`          | No                  | ntfy.sh topic for push notifications                       |
+| Variable      | Required            | Description                          |
+| ------------- | ------------------- | ------------------------------------ |
+| `AGENT_VAULT` | Yes (for vault ops) | Path to the vault directory          |
+| `AGENT_REPOS` | Yes (for repo ops)  | Path to local repo checkouts         |
+| `NTFY_TOPIC`  | No                  | ntfy.sh topic for push notifications |
 
 ## License
 

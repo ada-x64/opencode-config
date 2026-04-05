@@ -115,7 +115,7 @@ Handle directly — without dispatching a subagent — when the user asks you to
 - Read and explain code
 - Answer questions about the codebase
 - Compare design options or discuss tradeoffs
-- Look up vault content (schemas, notes, reviews)
+- Look up vault content (schemas, notes, reviews) — use the `vault_find` tool
 
 ## Completion Notifications
 

@@ -7,6 +7,7 @@ import wt_detect from "../../src/tools/wt_detect";
 import wt_owner_repo from "../../src/tools/wt_owner_repo";
 import wt_switch_branch from "../../src/tools/wt_switch_branch";
 import wt_cleanup from "../../src/tools/wt_cleanup";
+import { execute_tool } from "./_lib";
 
 let tmp: string;
 let clonePath: string;
@@ -72,17 +73,17 @@ afterAll(async () => {
 
 describe("wt_detect", () => {
   it("detects a traditional clone", async () => {
-    const result = await wt_detect.execute({ path: clonePath });
+    const result = await execute_tool(wt_detect, { path: clonePath });
     expect(result).toBe("clone");
   });
 
   it("detects a worktree", async () => {
-    const result = await wt_detect.execute({ path: mainWt });
+    const result = await execute_tool(wt_detect, { path: mainWt });
     expect(result).toBe("worktree");
   });
 
   it("detects a bare repo", async () => {
-    const result = await wt_detect.execute({
+    const result = await execute_tool(wt_detect, {
       path: path.join(bareDir, ".bare"),
     });
     expect(result).toBe("bare");
@@ -91,26 +92,26 @@ describe("wt_detect", () => {
   it("returns unknown for a non-repo directory", async () => {
     const notRepo = path.join(tmp, "not-a-repo");
     await mkdir(notRepo, { recursive: true });
-    const result = await wt_detect.execute({ path: notRepo });
+    const result = await execute_tool(wt_detect, { path: notRepo });
     expect(result).toBe("unknown");
   });
 });
 
 describe("wt_owner_repo", () => {
   it("derives owner/repo from repo root", async () => {
-    const result = await wt_owner_repo.execute({ path: bareDir });
+    const result = await execute_tool(wt_owner_repo, { path: bareDir });
     expect(result).toBe("testowner/testrepo");
   });
 
   it("derives owner/repo from worktree path", async () => {
-    const result = await wt_owner_repo.execute({ path: mainWt });
+    const result = await execute_tool(wt_owner_repo, { path: mainWt });
     expect(result).toBe("testowner/testrepo");
   });
 
   it("derives owner/repo from nested worktree path", async () => {
     // Simulate a feat/foo worktree path (just needs the directory to exist
     // for realpath -m to resolve)
-    const result = await wt_owner_repo.execute({
+    const result = await execute_tool(wt_owner_repo, {
       path: path.join(bareDir, "feat", "foo"),
     });
     expect(result).toBe("testowner/testrepo");
@@ -119,7 +120,7 @@ describe("wt_owner_repo", () => {
 
 describe("wt_switch_branch", () => {
   it("returns same path when already on the branch (worktree)", async () => {
-    const result = await wt_switch_branch.execute({
+    const result = await execute_tool(wt_switch_branch, {
       repo_path: mainWt,
       branch: "main",
     });
@@ -127,7 +128,7 @@ describe("wt_switch_branch", () => {
   });
 
   it("creates a new worktree for a new branch", async () => {
-    const result = await wt_switch_branch.execute({
+    const result = await execute_tool(wt_switch_branch, {
       repo_path: mainWt,
       branch: "feat-test",
     });
@@ -140,7 +141,7 @@ describe("wt_switch_branch", () => {
   });
 
   it("returns existing worktree path if already created", async () => {
-    const result = await wt_switch_branch.execute({
+    const result = await execute_tool(wt_switch_branch, {
       repo_path: mainWt,
       branch: "feat-test",
     });
@@ -148,7 +149,7 @@ describe("wt_switch_branch", () => {
   });
 
   it("switches branch in a traditional clone", async () => {
-    const result = await wt_switch_branch.execute({
+    const result = await execute_tool(wt_switch_branch, {
       repo_path: clonePath,
       branch: "test-branch",
     });
@@ -166,13 +167,13 @@ describe("wt_cleanup", () => {
     const wtPath = path.join(bareDir, "feat-test");
     expect(existsSync(wtPath)).toBe(true);
 
-    const result = await wt_cleanup.execute({ worktree_path: wtPath });
+    const result = await execute_tool(wt_cleanup, { worktree_path: wtPath });
     expect(result).toBeTruthy();
     expect(existsSync(wtPath)).toBe(false);
   });
 
   it("is a no-op for non-worktree paths", async () => {
-    const result = await wt_cleanup.execute({ worktree_path: clonePath });
+    const result = await execute_tool(wt_cleanup, { worktree_path: clonePath });
     expect(result).toBeTruthy();
     // Clone should still exist
     expect(existsSync(clonePath)).toBe(true);

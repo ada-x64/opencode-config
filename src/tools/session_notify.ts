@@ -1,6 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
-import { configDir } from "./_lib";
+import { notifyTriage } from "./_notify";
 
 export default tool({
   description:
@@ -30,22 +29,26 @@ export default tool({
       .describe("Notification headline (default: 'Session Task Complete')"),
   },
   async execute(args) {
+    if (!/^\d+$/.test(args.start_epoch)) {
+      return "Invalid start_epoch — must be a Unix timestamp";
+    }
+
     const now = Math.floor(Date.now() / 1000);
     const start = parseInt(args.start_epoch, 10);
-    if (isNaN(start) || !/^\d+$/.test(args.start_epoch))
-      return "Invalid start_epoch — must be a Unix timestamp";
-
     const elapsed = now - start;
+
     if (elapsed <= 180) {
       return `Task completed in ${elapsed}s — below 3-minute notification threshold`;
     }
 
     const minutes = Math.floor(elapsed / 60);
-    const taskCtx = args.task ?? "session";
-    const headline = args.headline ?? "Session Task Complete";
-
-    const notifyScript = path.join(configDir, "skills/vault-triage/notify.sh");
-    await Bun.$`bash -c ${'source "$1" && notify_triage "$2" "$3" "$4" "$5" "" "$6" ""'} _ ${notifyScript} activity ${taskCtx} ${headline} ${"Elapsed: " + minutes + " minutes"} ${args.icon}`.nothrow();
+    await notifyTriage({
+      type: "activity",
+      task: args.task ?? "session",
+      headline: args.headline ?? "Session Task Complete",
+      body: "Elapsed: " + minutes + " minutes",
+      icon: args.icon,
+    });
 
     return `Notification sent — task took ${minutes} minutes`;
   },

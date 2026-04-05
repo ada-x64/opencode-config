@@ -81,9 +81,10 @@ run `ntfy subscribe --from-config &` in a startup script.
 
 ### 4. Test it
 
+Use the `notify_triage` tool in an agent session, or run the script directly:
+
 ```bash
-source "$OPENCODE_CONFIG_SRC/skills/vault-triage/notify.sh"
-notify_triage escalation test/task "Hello from setup" "" "" "default"
+bash "$OPENCODE_CONFIG_SRC/tools/notify.sh" escalation test/task "Hello from setup" "" "" "default"
 ```
 
 You should receive a high-priority notification on your phone within a few
@@ -94,7 +95,7 @@ seconds.
 ### Refresh the dashboard
 
 ```bash
-bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh"
+bash "$OPENCODE_CONFIG_SRC/tools/triage-dashboard.sh"
 ```
 
 Opens/refreshes `$AGENT_VAULT/triage-inbox.md`. The scheduled timer does this
@@ -104,14 +105,14 @@ automatically and sends a summary notification instead of writing the file
 ### Check pending items without opening Obsidian
 
 ```bash
-bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh" && \
+bash "$OPENCODE_CONFIG_SRC/tools/triage-dashboard.sh" && \
   grep -A 20 "## Pending" "$AGENT_VAULT/triage-inbox.md"
 ```
 
 ### Send a manual summary notification now
 
 ```bash
-bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/triage-dashboard.sh" --notify-summary
+bash "$OPENCODE_CONFIG_SRC/tools/triage-dashboard.sh" --notify-summary
 ```
 
 ## Environment variables
@@ -128,10 +129,11 @@ existing topic. Run it again after migrating to a new machine.
 
 ## Files
 
-| File                  | Purpose                                                                    |
-| --------------------- | -------------------------------------------------------------------------- |
-| `setup.sh`            | One-time platform setup (run manually)                                     |
-| `triage-dashboard.sh` | Dashboard generator and summary notifier (run on demand or by timer)       |
-| `notify.sh`           | `notify_triage` function — sourced by agents, not run directly             |
-| `toast-handler.sh`    | Cross-platform toast handler for ntfy subscribe (icon + platform dispatch) |
-| `SKILL.md`            | Agent-facing descriptor loaded by the `vault-triage` skill                 |
+| File                                             | Purpose                                                                    |
+| ------------------------------------------------ | -------------------------------------------------------------------------- |
+| `setup.sh`                                       | One-time platform setup (run manually)                                     |
+| `toast-handler.sh`                               | Cross-platform toast handler for ntfy subscribe (icon + platform dispatch) |
+| `SKILL.md`                                       | Agent-facing descriptor loaded by the `vault-triage` skill                 |
+| `$OPENCODE_CONFIG_SRC/tools/triage-dashboard.sh` | Dashboard generator and summary notifier (run on demand or by timer)       |
+| `$OPENCODE_CONFIG_SRC/tools/notify.sh`           | `notify_triage` function — used by agents via the `notify_triage` tool     |
+| `$OPENCODE_CONFIG_SRC/tools/triage-write.sh`     | Triage entry writer — used by agents via the `triage_write` tool           |

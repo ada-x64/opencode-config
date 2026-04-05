@@ -1,0 +1,734 @@
+#!/usr/bin/env bun
+/**
+ * build.ts — build stamped config from src/ templates into out/host/ and out/sandbox/.
+ *
+ * Copies src/ → out/host/ and out/sandbox/ (excluding profiles/ and permissions/),
+ * then applies all stamps:
+ *   - model field in opencode.json
+ *   - model + external_directory in agent frontmatter
+ *   - {{BASH_PERMISSIONS}} placeholder resolved per-variant from permissions
+ *   - {{CONFIG_DIR}} placeholder resolution in agent files
+ *
+ * Source files in src/ are NEVER modified.
+ *
+ * On first run (build.json absent), prompts for model config interactively
+ * and writes build.json to the repo root (gitignored — not checked in).
+ *
+ * Usage:
+ *   bun run scripts/build.ts                # build using existing build.json
+ *   bun run scripts/build.ts --reconfigure  # re-prompt for model config
+ */
+
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { parseArgs } from "node:util";
+import { createInterface, type Interface as RLInterface } from "node:readline";
+import { load as yamlLoad, dump as yamlDump } from "js-yaml";
+
+// --- Permission YAML loading ---
+function loadPermYaml(rel: string): PermissionData {
+  return yamlLoad(
+    fs.readFileSync(path.join(REPO_ROOT, rel), "utf-8"),
+  ) as PermissionData;
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface PermissionData {
+  bash: Record<string, string>;
+}
+
+interface TierConfig {
+  model?: string | null;
+}
+
+interface BuildConfig {
+  global: {
+    model: string;
+    external_directory: string[];
+    sandbox_config_dir?: string;
+  };
+  tiers: Record<string, TierConfig>;
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const SCRIPT_DIR = import.meta.dir;
+const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
+const SRC_DIR = path.join(REPO_ROOT, "src");
+const CONFIG_PATH = path.join(REPO_ROOT, "build.json");
+
+const DEFAULT_CONFIG: BuildConfig = {
+  global: {
+    model: "github-copilot/claude-opus-4.6",
+    external_directory: [
+      "{env:AGENT_REPOS}/**",
+      "{env:AGENT_VAULT}/**",
+      "{env:OPENCODE_CONFIG_SRC}/**",
+      "/tmp/**",
+    ],
+    sandbox_config_dir: "/root/.config/opencode",
+  },
+  tiers: {
+    design: { model: null },
+    execute: { model: "github-copilot/claude-sonnet-4.6" },
+  },
+};
+
+const baselinePerms = loadPermYaml("src/permissions/host/_baseline.yaml");
+const sandboxPerms = loadPermYaml("src/permissions/sandbox.yaml");
+
+/** Map agent stem name → host permission data */
+const HOST_PERMISSIONS: Record<string, PermissionData> = {
+  "auto-auditor": loadPermYaml("src/permissions/host/auto-auditor.yaml"),
+  "auto-implementor": loadPermYaml(
+    "src/permissions/host/auto-implementor.yaml",
+  ),
+  designer: loadPermYaml("src/permissions/host/designer.yaml"),
+  implementor: loadPermYaml("src/permissions/host/implementor.yaml"),
+  planner: loadPermYaml("src/permissions/host/planner.yaml"),
+  "project-manager": loadPermYaml("src/permissions/host/project-manager.yaml"),
+  reviewer: loadPermYaml("src/permissions/host/reviewer.yaml"),
+};
+
+// ---------------------------------------------------------------------------
+// File utilities
+// ---------------------------------------------------------------------------
+
+/** Recursively find all files with a given extension under dir, sorted. */
+function findFilesRecursive(dir: string, ext: string): string[] {
+  const results: string[] = [];
+  const walk = (d: string): void => {
+    for (const entry of fs.readdirSync(d, { withFileTypes: true })) {
+      const full = path.join(d, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith(ext)) results.push(full);
+    }
+  };
+  walk(dir);
+  return results.sort();
+}
+
+/** List .md files in a single directory (non-recursive), sorted. */
+function listMdFiles(dir: string): string[] {
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".md"))
+    .sort()
+    .map((f) => path.join(dir, f));
+}
+
+// ---------------------------------------------------------------------------
+// Frontmatter helpers
+// ---------------------------------------------------------------------------
+
+export function extractFrontmatter(content: string): [string, string] | null {
+  const m = content.match(/^---\n(.*?)\n---/s);
+  if (!m) return null;
+  return [m[1]!, content.slice(m[0].length)];
+}
+
+export function fmGet(fmStr: string, key: string): string | null {
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`^${escaped}:\\s*(.+)$`, "m");
+  const m = fmStr.match(re);
+  return m ? m[1]!.trim() : null;
+}
+
+export function rebuildContent(fmLines: string[], rest: string): string {
+  return "---\n" + fmLines.join("\n") + "\n---" + rest;
+}
+
+// ---------------------------------------------------------------------------
+// Readline prompt helper
+// ---------------------------------------------------------------------------
+
+function rlQuestion(rl: RLInterface, query: string): Promise<string> {
+  return new Promise((resolve) => {
+    rl.question(query, resolve);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Config management
+// ---------------------------------------------------------------------------
+
+async function promptConfig(): Promise<BuildConfig> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const config: BuildConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+
+    const defaultGlobal = DEFAULT_CONFIG.global.model;
+    const globalVal = await rlQuestion(rl, `Global model [${defaultGlobal}]: `);
+    if (globalVal) config.global.model = globalVal;
+
+    const defaultExecute = DEFAULT_CONFIG.tiers.execute?.model ?? "";
+    const executeVal = await rlQuestion(
+      rl,
+      `Execute-tier model [${defaultExecute}]: `,
+    );
+    if (executeVal && config.tiers.execute)
+      config.tiers.execute.model = executeVal;
+
+    console.log(
+      "Design tier inherits global model (no override). Edit build.json to change.",
+    );
+    return config;
+  } finally {
+    rl.close();
+  }
+}
+
+async function ensureConfig(reconfigure = false): Promise<BuildConfig> {
+  if (fs.existsSync(CONFIG_PATH) && !reconfigure) {
+    return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8")) as BuildConfig;
+  }
+
+  const hasTty = process.stdin.isTTY ?? false;
+
+  if (!hasTty) {
+    if (fs.existsSync(CONFIG_PATH)) {
+      console.error("No TTY available, using existing build.json.");
+      return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8")) as BuildConfig;
+    }
+    console.error("No TTY available, writing default build.json.");
+    const config: BuildConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n");
+    return config;
+  }
+
+  if (reconfigure) {
+    console.log("Reconfiguring build.json...");
+  } else {
+    console.log("No build.json found — running first-time setup.");
+  }
+  console.log();
+
+  const config = await promptConfig();
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n");
+  console.log(`\nWrote ${CONFIG_PATH}`);
+  return config;
+}
+
+// ---------------------------------------------------------------------------
+// Build steps
+// ---------------------------------------------------------------------------
+
+function copySrcToOut(srcDir: string, outDir: string): void {
+  if (fs.existsSync(outDir)) {
+    fs.rmSync(outDir, { recursive: true });
+  }
+  fs.cpSync(srcDir, outDir, {
+    recursive: true,
+    filter: (src) => {
+      const rel = path.relative(srcDir, src);
+      return !rel.startsWith("profiles") && !rel.startsWith("permissions");
+    },
+  });
+  console.log(
+    `Copied ${srcDir}/ → ${outDir}/ (excluding profiles/, permissions/)`,
+  );
+}
+
+export function resolveIncludes(outDir: string, srcDir: string): void {
+  const pattern = /^(\s*)\{\{include:(.+?)\}\}\s*$/gm;
+  const resolvedSrcDir = path.resolve(srcDir);
+
+  for (const mdFile of findFilesRecursive(outDir, ".md")) {
+    const content = fs.readFileSync(mdFile, "utf-8");
+    if (!content.includes("{{include:")) continue;
+
+    const fileName = path.basename(mdFile);
+    const newContent = content.replace(
+      pattern,
+      (match, indent: string, relPath: string) => {
+        relPath = relPath.trim();
+        const includePath = path.resolve(srcDir, relPath);
+
+        // Guard against path traversal
+        if (!includePath.startsWith(resolvedSrcDir)) {
+          console.warn(
+            `Warning: include path escapes src_dir (in ${fileName}): ${relPath}`,
+          );
+          return match;
+        }
+        if (!fs.existsSync(includePath)) {
+          console.warn(
+            `Warning: include not found (in ${fileName}): ${includePath}`,
+          );
+          return match;
+        }
+
+        let included =
+          fs.readFileSync(includePath, "utf-8").replace(/\n+$/, "") + "\n";
+        if (indent) {
+          included = included
+            .split("\n")
+            .map((line) => (line ? indent + line : line))
+            .join("\n");
+        }
+        return included;
+      },
+    );
+
+    if (newContent !== content) {
+      fs.writeFileSync(mdFile, newContent);
+      console.log(`${fileName}: resolved includes`);
+    }
+  }
+}
+
+export function resolveAgentVars(outDir: string): void {
+  const iconPat = /<!--\s*triage_icon:\s*(.+?)\s*-->/;
+  const eventsPat = /<!--\s*triage_events:\s*\n(.*?)-->/s;
+
+  for (const mdFile of findFilesRecursive(outDir, ".md")) {
+    // Skip include fragments in _shared/ directories
+    if (mdFile.includes(`${path.sep}_shared${path.sep}`)) continue;
+
+    let content = fs.readFileSync(mdFile, "utf-8");
+    if (
+      !content.includes("{{TRIAGE_ICON}}") &&
+      !content.includes("{{TRIAGE_EVENTS}}")
+    )
+      continue;
+
+    const fileName = path.basename(mdFile);
+    let changed = false;
+
+    const iconMatch = content.match(iconPat);
+    const eventsMatch = content.match(eventsPat);
+
+    if (content.includes("{{TRIAGE_ICON}}")) {
+      if (iconMatch) {
+        const iconVal = iconMatch[1]!.trim();
+        content = content.replace("{{TRIAGE_ICON}}", iconVal);
+        content = content.replace(
+          new RegExp(
+            iconMatch[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\n?",
+          ),
+          "",
+        );
+        changed = true;
+      } else {
+        console.warn(
+          `Warning: ${fileName} has {{TRIAGE_ICON}} placeholder ` +
+            "but no <!-- triage_icon: … --> comment found",
+        );
+      }
+    }
+
+    if (content.includes("{{TRIAGE_EVENTS}}")) {
+      if (eventsMatch) {
+        const eventsVal = eventsMatch[1]!.trimEnd();
+        content = content.replace("{{TRIAGE_EVENTS}}", eventsVal);
+        content = content.replace(
+          new RegExp(
+            eventsMatch[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\n?",
+          ),
+          "",
+        );
+        changed = true;
+      } else {
+        console.warn(
+          `Warning: ${fileName} has {{TRIAGE_EVENTS}} placeholder ` +
+            "but no <!-- triage_events: … --> comment found",
+        );
+      }
+    }
+
+    if (changed) {
+      fs.writeFileSync(mdFile, content);
+      console.log(`${fileName}: resolved triage variables`);
+    }
+  }
+}
+
+export function stampOpencodeJson(outDir: string, globalModel: string): void {
+  const ocPath = path.join(outDir, "opencode.json");
+  const oc = JSON.parse(fs.readFileSync(ocPath, "utf-8"));
+  const currentModel: string = oc.model ?? "";
+
+  if (currentModel !== globalModel) {
+    oc.model = globalModel;
+    fs.writeFileSync(ocPath, JSON.stringify(oc, null, 2) + "\n");
+    console.log(`opencode.json: model ${currentModel} → ${globalModel}`);
+  } else {
+    console.log(`opencode.json: model already ${globalModel} (no change)`);
+  }
+}
+
+export function stampAgentModels(agentsDir: string, config: BuildConfig): void {
+  const tiersConfig = config.tiers ?? {};
+
+  for (const agentFile of listMdFiles(agentsDir)) {
+    const agentName = path.basename(agentFile, ".md");
+    const content = fs.readFileSync(agentFile, "utf-8");
+
+    const parsed = extractFrontmatter(content);
+    if (!parsed) {
+      console.log(`${agentName}: no frontmatter, skipping model`);
+      continue;
+    }
+
+    const [fmStr, rest] = parsed;
+    let fmLines = fmStr.split("\n");
+    const tier = fmGet(fmStr, "tier");
+
+    if (!tier) {
+      console.log(`${agentName}: no tier set, skipping model`);
+      continue;
+    }
+
+    const tierConfig = tiersConfig[tier];
+    const tierModel: string | null | undefined = tierConfig?.model;
+    const currentModel = fmGet(fmStr, "model");
+
+    if (tierModel == null) {
+      // null or undefined → tier inherits global — remove model line if present
+      if (currentModel !== null) {
+        fmLines = fmLines.filter((line) => !line.startsWith("model:"));
+        fs.writeFileSync(agentFile, rebuildContent(fmLines, rest));
+        console.log(
+          `${agentName} (tier: ${tier}): removed model override (inherits global)`,
+        );
+      } else {
+        console.log(
+          `${agentName} (tier: ${tier}): no model override (no change)`,
+        );
+      }
+    } else if (currentModel !== tierModel) {
+      const hasModel = fmLines.some((line) => line.startsWith("model:"));
+      if (hasModel) {
+        fmLines = fmLines.map((line) =>
+          line.startsWith("model:") ? `model: ${tierModel}` : line,
+        );
+      } else {
+        // Insert after tier: line
+        const inserted: string[] = [];
+        for (const line of fmLines) {
+          inserted.push(line);
+          if (line.startsWith("tier:")) {
+            inserted.push(`model: ${tierModel}`);
+          }
+        }
+        fmLines = inserted;
+      }
+      fs.writeFileSync(agentFile, rebuildContent(fmLines, rest));
+      console.log(`${agentName} (tier: ${tier}): model → ${tierModel}`);
+    } else {
+      console.log(
+        `${agentName} (tier: ${tier}): model already ${tierModel} (no change)`,
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bash permission stamping (JSON imports → YAML output via js-yaml)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the YAML bash permission block for injection into agent frontmatter.
+ *
+ * For host variant: merges baseline + agent-specific permissions.
+ * For sandbox variant: uses the sandbox permissions.
+ *
+ * Returns the block indented 2 spaces (to sit inside `permission:` in frontmatter),
+ * or null if no permissions are found for the agent.
+ */
+export function buildBashBlock(
+  agentName: string,
+  variant: "host" | "sandbox",
+): string | null {
+  let bashEntries: Record<string, string>;
+
+  if (variant === "sandbox") {
+    bashEntries = { ...(sandboxPerms as PermissionData).bash };
+  } else {
+    const agentPerms = HOST_PERMISSIONS[agentName];
+    if (!agentPerms) {
+      console.warn(
+        `Warning: no host permission file for ${agentName}, ` +
+          "skipping bash permissions",
+      );
+      return null;
+    }
+    // Merge baseline + agent-specific (baseline first, agent overrides/appends)
+    bashEntries = {
+      ...(baselinePerms as PermissionData).bash,
+      ...agentPerms.bash,
+    };
+  }
+
+  // Serialize to YAML and indent 2 spaces for frontmatter permission: block
+  const yamlStr = yamlDump(
+    { bash: bashEntries },
+    {
+      indent: 2,
+      lineWidth: -1,
+      quotingType: '"',
+      forceQuotes: false,
+      sortKeys: false,
+    },
+  );
+
+  return yamlStr
+    .trimEnd()
+    .split("\n")
+    .map((line) => "  " + line)
+    .join("\n");
+}
+
+export function stampBashPermissions(
+  agentsDir: string,
+  variant: "host" | "sandbox",
+): void {
+  for (const agentFile of listMdFiles(agentsDir)) {
+    const agentName = path.basename(agentFile, ".md");
+    const content = fs.readFileSync(agentFile, "utf-8");
+
+    if (!content.includes("{{BASH_PERMISSIONS}}")) {
+      console.log(
+        `${agentName}: no {{BASH_PERMISSIONS}} placeholder, skipping`,
+      );
+      continue;
+    }
+
+    const bashBlock = buildBashBlock(agentName, variant);
+    if (bashBlock === null) continue;
+
+    // Replace the placeholder line with the bash block
+    const newContent = content
+      .split("\n")
+      .map((line) => (line.includes("{{BASH_PERMISSIONS}}") ? bashBlock : line))
+      .join("\n");
+
+    fs.writeFileSync(agentFile, newContent);
+    console.log(`${agentName}: stamped bash permissions (${variant})`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// External directory stamping
+// ---------------------------------------------------------------------------
+
+export function stampExternalDirs(
+  agentsDir: string,
+  extDirs: string[],
+  variant: "host" | "sandbox",
+): void {
+  const canonical: string[] =
+    variant === "host"
+      ? ["  external_directory:", ...extDirs.map((d) => `    "${d}": allow`)]
+      : []; // sandbox: no external_directory restrictions
+
+  for (const agentFile of listMdFiles(agentsDir)) {
+    const agentName = path.basename(agentFile, ".md");
+    const content = fs.readFileSync(agentFile, "utf-8");
+
+    const parsed = extractFrontmatter(content);
+    if (!parsed) {
+      console.log(`${agentName}: external_directory no frontmatter`);
+      continue;
+    }
+
+    const [fmStr, rest] = parsed;
+    const fmLines = fmStr.split("\n");
+
+    const newLines: string[] = [];
+    let skip = false;
+    let found = false;
+
+    for (const line of fmLines) {
+      if (/^\s{2}external_directory:\s*$/.test(line)) {
+        found = true;
+        skip = true;
+        newLines.push(...canonical);
+        continue;
+      }
+      if (skip) {
+        if (/^\s{4}/.test(line)) continue;
+        skip = false;
+      }
+      newLines.push(line);
+    }
+
+    if (!found && variant === "host") {
+      let insertIdx = newLines.length;
+      for (let i = 0; i < newLines.length; i++) {
+        if (/^\s{2}task:/.test(newLines[i]!)) {
+          insertIdx = i;
+          break;
+        }
+      }
+      newLines.splice(insertIdx, 0, ...canonical);
+    }
+
+    const newContent = rebuildContent(newLines, rest);
+    if (newContent !== content) {
+      fs.writeFileSync(agentFile, newContent);
+      console.log(`${agentName}: external_directory updated`);
+    } else {
+      console.log(`${agentName}: external_directory no change`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sandbox ask→allow conversion
+// ---------------------------------------------------------------------------
+
+export function convertAskToAllow(agentsDir: string): void {
+  let count = 0;
+  for (const agentFile of listMdFiles(agentsDir)) {
+    const content = fs.readFileSync(agentFile, "utf-8");
+    const parsed = extractFrontmatter(content);
+    if (!parsed) continue;
+
+    const [fmStr, rest] = parsed;
+    if (!fmStr.includes(": ask")) continue;
+
+    const newFmStr = fmStr.replaceAll(": ask", ": allow");
+    fs.writeFileSync(agentFile, rebuildContent(newFmStr.split("\n"), rest));
+    console.log(`  ${path.basename(agentFile)}: converted 'ask' → 'allow'`);
+    count++;
+  }
+  if (count) {
+    console.log(`  ${count} agent file(s) converted ask→allow.`);
+  } else {
+    console.log("  No 'ask' rules found in sandbox agents.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// {{CONFIG_DIR}} resolution
+// ---------------------------------------------------------------------------
+
+export function resolveConfigDir(
+  agentsDir: string,
+  configDirValue: string,
+): void {
+  let count = 0;
+  for (const agentFile of listMdFiles(agentsDir)) {
+    const text = fs.readFileSync(agentFile, "utf-8");
+    if (text.includes("{{CONFIG_DIR}}")) {
+      fs.writeFileSync(
+        agentFile,
+        text.replaceAll("{{CONFIG_DIR}}", configDirValue),
+      );
+      console.log(`  resolved: ${path.basename(agentFile)}`);
+      count++;
+    }
+  }
+  console.log(`  ${count} agent file(s) updated.`);
+}
+
+// ---------------------------------------------------------------------------
+// Main build orchestrator
+// ---------------------------------------------------------------------------
+
+export function build(
+  config: BuildConfig,
+  configDirValue = "",
+  sandboxConfigDirValue: string | null = null,
+): string {
+  if (!configDirValue) {
+    configDirValue =
+      Bun.env.OPENCODE_CONFIG_SRC ??
+      path.join(Bun.env.HOME ?? "~", ".config", "opencode");
+  }
+
+  const globalSection = config.global;
+  const globalModel = globalSection.model;
+  const extDirs = globalSection.external_directory;
+
+  if (sandboxConfigDirValue === null) {
+    sandboxConfigDirValue =
+      globalSection.sandbox_config_dir ?? "/root/.config/opencode";
+  }
+
+  const outRoot = path.join(REPO_ROOT, "out");
+  const outHost = path.join(outRoot, "host");
+  const outSandbox = path.join(outRoot, "sandbox");
+
+  // --- Build host variant ---
+  console.log("=".repeat(60));
+  console.log("Building host variant → out/host/");
+  console.log("=".repeat(60));
+
+  copySrcToOut(SRC_DIR, outHost);
+  resolveIncludes(outHost, SRC_DIR);
+  resolveAgentVars(outHost);
+  const agentsDirHost = path.join(outHost, "agents");
+
+  stampOpencodeJson(outHost, globalModel);
+  stampAgentModels(agentsDirHost, config);
+
+  console.log("Stamping {{BASH_PERMISSIONS}} (host)...");
+  stampBashPermissions(agentsDirHost, "host");
+
+  console.log("Stamping external_directory (host)...");
+  stampExternalDirs(agentsDirHost, extDirs, "host");
+
+  console.log(
+    `Resolving {{CONFIG_DIR}} → ${configDirValue} in host agent files...`,
+  );
+  resolveConfigDir(agentsDirHost, configDirValue);
+
+  console.log();
+  console.log("=".repeat(60));
+  console.log("Building sandbox variant → out/sandbox/");
+  console.log("=".repeat(60));
+
+  copySrcToOut(SRC_DIR, outSandbox);
+  resolveIncludes(outSandbox, SRC_DIR);
+  resolveAgentVars(outSandbox);
+  const agentsDirSandbox = path.join(outSandbox, "agents");
+
+  stampOpencodeJson(outSandbox, globalModel);
+  stampAgentModels(agentsDirSandbox, config);
+
+  console.log("Stamping {{BASH_PERMISSIONS}} (sandbox)...");
+  stampBashPermissions(agentsDirSandbox, "sandbox");
+
+  console.log("Removing external_directory restrictions (sandbox)...");
+  stampExternalDirs(agentsDirSandbox, extDirs, "sandbox");
+
+  console.log("Converting 'ask' → 'allow' in sandbox agents...");
+  convertAskToAllow(agentsDirSandbox);
+
+  console.log(
+    `Resolving {{CONFIG_DIR}} → ${sandboxConfigDirValue} in sandbox agent files...`,
+  );
+  resolveConfigDir(agentsDirSandbox, sandboxConfigDirValue);
+
+  console.log();
+  console.log(`Done. Build output in ${outRoot}/`);
+  console.log(`  Host:    ${outHost}/`);
+  console.log(`  Sandbox: ${outSandbox}/`);
+  return outRoot;
+}
+
+// ---------------------------------------------------------------------------
+// CLI entry point
+// ---------------------------------------------------------------------------
+
+if (import.meta.main) {
+  const { values } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      reconfigure: { type: "boolean", default: false },
+      "config-dir": { type: "string", default: "" },
+      "sandbox-config-dir": { type: "string", default: "" },
+    },
+    strict: true,
+  });
+
+  const config = await ensureConfig(values.reconfigure);
+  build(config, values["config-dir"], values["sandbox-config-dir"] || null);
+}
