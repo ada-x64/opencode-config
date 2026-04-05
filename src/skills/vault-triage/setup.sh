@@ -74,7 +74,8 @@ EOF
 echo "Wrote ntfy client config to $ntfy_config"
 
 # ── Scheduled timers for daily summaries ────────────────────────────
-dashboard_cmd="/bin/bash \"$skill_dir/triage-dashboard.sh\" --notify-summary"
+config_dir="$(cd "$skill_dir/../.." && pwd)"
+dashboard_cmd="/bin/bash \"$config_dir/tools/triage-dashboard.sh\" --notify-summary"
 
 case "$platform" in
 linux | wsl-systemd)
@@ -130,7 +131,7 @@ macos)
     <key>ProgramArguments</key>
     <array>
         <string>bash</string>
-        <string>$skill_dir/triage-dashboard.sh</string>
+        <string>$config_dir/tools/triage-dashboard.sh</string>
         <string>--notify-summary</string>
     </array>
     <key>EnvironmentVariables</key>
@@ -174,7 +175,7 @@ PLIST
 wsl)
 	# Windows scheduled tasks via schtasks.exe
 	# Note: BurntToast PowerShell module must be installed on Windows side.
-	win_script="$skill_dir/triage-dashboard.sh"
+	win_script="$config_dir/tools/triage-dashboard.sh"
 
 	schtasks.exe /Create /SC DAILY /TN "AgentVault\\TriageSummaryAM" \
 		/TR "wsl.exe bash -c \"AGENT_VAULT='$vault' NTFY_TOPIC='$topic' /bin/bash '$win_script' --notify-summary\"" \
@@ -208,7 +209,7 @@ echo "  2. Subscribe to your topic on your phone:"
 echo "     - Install the ntfy app (Android/iOS)"
 echo "     - Subscribe to topic: $topic"
 echo "  3. Test with:"
-echo "     source $skill_dir/notify.sh"
+echo "     source $config_dir/tools/notify.sh"
 echo "     notify_triage escalation test/task 'Hello from setup'"
 if [[ "$platform" == "wsl" || "$platform" == "wsl-systemd" ]]; then
 	echo ""

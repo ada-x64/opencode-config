@@ -1,7 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import { libTool } from "./_lib";
+import { wtDetect } from "./_worktree";
 
-export default libTool({
+export default tool({
   description:
     "Detect the git repository type at a given path. " +
     "Returns 'clone' (traditional .git directory), 'worktree' (.git file), " +
@@ -11,7 +11,7 @@ export default libTool({
       .string()
       .describe("Absolute path to the repository root to detect"),
   },
-  lib: "skills/lib/worktree.sh",
-  fn: "wt_detect",
-  nothrow: true,
+  async execute(args) {
+    return wtDetect(args.path);
+  },
 });

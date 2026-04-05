@@ -14,100 +14,20 @@ Every agent loads this skill after completing significant work. The three
 post-work steps are **mandatory** — skipping notify or inbox update is a
 protocol violation:
 
-1. **Write** a triage entry to the task directory
-2. **Send** a push notification via `notify_triage`
-3. **Regenerate** the triage inbox via `triage-dashboard.sh`
+1. **Write** a triage entry:
+   ```
+   triage_write({ type: "<type>", task: "<owner>/<repo>/<task>", agent: "<agent>", headline: "<headline>", body: "<body>" })
+   ```
+2. **Send** a push notification:
+   ```
+   notify_triage({ type: "<type>", task: "<owner>/<repo>/<task>", headline: "<headline>", body: "<body>", icon: "<icon>", emoji: "<semantic-key>" })
+   ```
+3. **Regenerate** the triage inbox:
+   ```
+   triage_dashboard({})
+   ```
 
-This skill applies in **Write Mode** (after completing work) and **Report Mode**
-(when summarising pending triage items for human review).
-
----
-
-## Write Mode
-
-Follow these steps in order after completing significant work:
-
-### Step 1 — Confirm AGENT_VAULT is set
-
-```bash
-echo "${AGENT_VAULT:?AGENT_VAULT must be set}"
-```
-
-### Step 2 — Determine the task directory
-
-```bash
-task_dir="$AGENT_VAULT/tasks/<owner>/<repo>/<task>/"
-```
-
-If no task context exists (e.g. designer writing repo notes, auto-auditor
-running a standalone audit), use the agent-specific fallback:
-
-- `@designer` → `$AGENT_VAULT/tasks/_activity/designer/`
-- `@auto-auditor` → `$AGENT_VAULT/tasks/_activity/auto-auditor/`
-- `@project-manager` → `$AGENT_VAULT/tasks/_activity/project-manager/`
-
-Task-bound agents (`@planner`, `@reviewer`, `@implementor`, `@auto-implementor`)
-always have a task context and do not need a fallback.
-
-Create the directory if it does not exist:
-
-```bash
-mkdir -p "$task_dir"
-```
-
-### Step 3 — Find the next available filename
-
-```bash
-find "$task_dir" -name "triage*.md" | sort
-```
-
-- If no files exist → use `triage.md`
-- If `triage.md` exists but not `triage-2.md` → use `triage-2.md`
-- Continue incrementing: `triage-3.md`, `triage-4.md`, etc.
-
-### Step 4 — Read the format template
-
-```bash
-cat "$AGENT_VAULT/_misc/templates/triage.md"
-```
-
-### Step 5 — Write the triage entry
-
-Use the Write tool. Follow the frontmatter format and body structure for the
-entry type (see **Entry Types** below). Set `status: pending`.
-
-### Step 6 — MANDATORY: Send notification
-
-```
-notify_triage({
-  type: "<type>",
-  task: "<owner>/<repo>/<task>",
-  headline: "<headline>",
-  body: "<body>",
-  icon: "<icon>",
-  emoji: "<semantic-key>"
-})
-```
-
-This is not optional. Failing to notify means the human has no real-time
-awareness of completed work. The tool fails silently if ntfy is not
-configured — it will never block your work.
-
-The `headline` is a short action phrase for the title. The `body` is optional
-bullet-point detail text. The `file` can be omitted to use the default triage
-path. The `icon` selects the notification icon (see reference table below). The
-`emoji` controls the emoji prefix — pass a key from the table below; the tool
-resolves it to the correct emoji. If omitted, a default emoji is derived from
-the triage type.
-
-### Step 7 — MANDATORY: Regenerate inbox
-
-```
-triage_dashboard({})
-```
-
-This is not optional. The triage inbox must always reflect the current
-state of the vault after every write.
+> **First-time setup:** Run `bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/setup.sh"` once after install.
 
 ---
 
@@ -138,9 +58,8 @@ Pass a semantic key as the `emoji` parameter. The tool resolves it to the
 correct emoji. **Always use semantic keys** — they are readable and their
 mappings are centrally managed. Unknown keys are ignored and fall back to the
 type-based default emoji.
-If the `emoji` parameter is omitted, a default emoji is derived from the triage type.
 
-#### Type-based defaults (when 7th arg is omitted)
+#### Type-based defaults (when `emoji` is omitted)
 
 | Triage type       | Emoji |
 | ----------------- | ----- |
@@ -166,22 +85,6 @@ If the `emoji` parameter is omitted, a default emoji is derived from the triage 
 and prepends ⚙️ to the resolved emoji. Agents do not use separate `auto-*`
 semantic keys — the ⚙️ prefix is derived automatically from the agent name.
 
-**Example calls with icon and semantic key:**
-
-```
-// Reviewer — clean result
-notify_triage({ type: "activity", task: "ada-x64/qproj/fix-tests", headline: "Review Complete", body: "• 0 high findings", icon: "reviewer", emoji: "clean" })
-
-// Auto-implementor — commit group complete (⚙️ prefix added automatically)
-notify_triage({ type: "activity", task: "ada-x64/qproj/fix-tests", headline: "Commit Group 1 Finished", body: "• All tests passing", icon: "auto-implementor", emoji: "activity" })
-
-// Auto-auditor — warnings (⚙️ prefix added automatically)
-notify_triage({ type: "activity", task: "ada-x64/qproj/audit", headline: "Audit Complete", body: "• 2 medium warnings", icon: "auto-auditor", emoji: "warn" })
-
-// Auto-implementor escalation (⚙️ prefix added automatically)
-notify_triage({ type: "escalation", task: "ada-x64/qproj/fix-tests", headline: "Review Loop Exhausted", body: "• High findings persist", icon: "auto-implementor", emoji: "escalation" })
-```
-
 ---
 
 ## Entry Types
@@ -196,21 +99,6 @@ audit complete, implementation commit group finished, project sync done, etc.)
 - What the agent did
 - The outcome / result
 - Next steps (if any)
-
-**Example:**
-
-```yaml
----
-type: activity
-agent: reviewer
-task: my-task
-date: 2026-03-31
-status: pending
----
-Completed code review of commit group 2. Found 3 nits and 1 medium finding
-(missing error handling in retry loop). Implementor should address the medium
-finding before proceeding to group 3.
-```
 
 ---
 
@@ -227,38 +115,6 @@ the agent is blocked and cannot proceed without human input.
 - **What was tried** — summary of fix attempts across all rounds
 - **Recommendation** — suggested human action
 
-**Example:**
-
-```yaml
----
-type: escalation
-agent: auto-implementor
-task: my-task
-date: 2026-03-31
-status: pending
----
-
-## Diagnosis: schema-ambiguity
-
-## Persistent Findings (Round 3)
-
-- [high/design] The retry logic in `src/client.rs` does not handle the
-  `ConnectionReset` variant — this was flagged in all 3 review rounds.
-
-## What Was Tried
-
-- Round 1: Added `ConnectionReset` to the retry match arm.
-- Round 2: Reviewer flagged that the fix introduced a loop without backoff.
-- Round 3: Added exponential backoff; reviewer flagged missing test coverage
-  for the backoff path, which requires integration test infrastructure not
-  present in this repo.
-
-## Recommendation
-
-Human should decide whether to add integration test infrastructure or accept
-the backoff logic without coverage. Schema §2c is underspecified on this point.
-```
-
 ---
 
 ### `design-question` — ambiguity resolved with judgment call
@@ -273,43 +129,6 @@ a non-trivial judgment call was made that the schema did not resolve.
 - **Why the agent couldn't resolve autonomously** — what was unclear
 - **Choice made and rationale** — what was chosen and why
 - **Recommendation for human review** — whether the choice should be revisited
-
-**Example:**
-
-```yaml
----
-type: design-question
-agent: auto-implementor
-task: my-task
-date: YYYY-MM-DD
-status: pending
----
-
-## Decision Point
-
-The schema specifies "add retry logic" but does not define the retry strategy
-(fixed delay vs. exponential backoff vs. jitter).
-
-## Options Considered
-
-1. Fixed delay (simple, predictable)
-2. Exponential backoff (standard for network retries)
-3. Exponential backoff with jitter (avoids thundering herd)
-
-## Why Agent Couldn't Resolve Autonomously
-
-Schema §2c says "handle transient errors with retries" with no further detail.
-Existing code in this repo uses fixed delays (see `src/http.rs:44`).
-
-## Choice Made
-
-Exponential backoff with jitter, matching the project's other HTTP client
-(`src/api_client.rs:88`). Avoids introducing a second retry pattern.
-
-## Recommendation
-
-Review whether this is consistent with the team's preferred pattern.
-```
 
 ---
 
@@ -361,16 +180,11 @@ context to continue.
 
 To read triage files and generate a summary of pending items:
 
-1. Collect all triage files in scope:
+1. Collect all triage files in scope using `vault_find`:
 
-   ```bash
-   find "$AGENT_VAULT/tasks/<owner>/<repo>/" -name "triage*.md" | sort
    ```
-
-   Or across the entire vault:
-
-   ```bash
-   find "$AGENT_VAULT/tasks/" -name "triage*.md" | sort
+   vault_find({ section: "triage" })
+   vault_find({ section: "triage", repo: "ada-x64/opencode-config" })
    ```
 
 2. Read each file and extract frontmatter fields using the `fm_read` tool:
@@ -394,35 +208,6 @@ To read triage files and generate a summary of pending items:
 
 ---
 
-## How to Invoke (Dashboard and Notifications)
-
-### Generate the dashboard
-
-```
-// Regenerate triage-inbox.md
-triage_dashboard({})
-
-// Send a summary notification instead of regenerating
-triage_dashboard({ notify_summary: true })
-```
-
-### Send a notification manually
-
-```
-notify_triage({ type: "escalation", task: "ada-x64/qproj/fix-tests", headline: "Review loop exhausted on commit group 2", icon: "auto-implementor", emoji: "escalation" })
-notify_triage({ type: "activity", task: "ada-x64/qproj/fix-tests", headline: "Commit group 1 complete", body: "• All tests passing", icon: "auto-implementor", emoji: "activity" })
-```
-
-### First-time setup
-
-> **Note:** `setup.sh` is shipped separately. Run once after the full skill is installed.
-
-```bash
-bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/setup.sh"
-```
-
----
-
 ## Environment
 
 | Variable      | Required | Source                                                  |
@@ -436,9 +221,6 @@ Generated at `$AGENT_VAULT/triage-inbox.md`. Sections: Pending, Addressed,
 Dismissed. Each row has a wiki-link to the triage file, type, agent, and date.
 
 ## Notification priorities
-
-All triage types produce desktop toasts (via ntfy subscriber) and phone
-notifications. Priority controls audible alerts on mobile:
 
 | Triage type       | ntfy priority | Phone audible |
 | ----------------- | ------------- | ------------- |

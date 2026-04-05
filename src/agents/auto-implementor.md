@@ -12,7 +12,6 @@ permission:
   external_directory:
     "{env:AGENT_REPOS}/**": allow
     "{env:AGENT_VAULT}/**": allow
-    "{env:OPENCODE_CONFIG_SRC}/**": allow
     "/tmp/**": allow
   task:
     "*": allow
@@ -29,7 +28,6 @@ your own.
 
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
-- `OPENCODE_CONFIG_SRC` — opencode config source directory (run `printenv OPENCODE_CONFIG_SRC` to confirm; set by `install.sh`, default `~/.config/opencode`)
 
 If `$AGENT_VAULT` is not set or the vault doesn't exist, use the `vault-init`
 skill to set it up before proceeding.

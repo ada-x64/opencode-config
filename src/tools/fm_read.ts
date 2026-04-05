@@ -1,7 +1,8 @@
 import { tool } from "@opencode-ai/plugin";
-import { libTool } from "./_lib";
+import { readFile } from "node:fs/promises";
+import { fmRead } from "./_frontmatter";
 
-export default libTool({
+export default tool({
   description:
     "Read a value from the YAML frontmatter of a Markdown file. " +
     "Returns the value of the specified key, or the default if the key is absent.",
@@ -15,6 +16,8 @@ export default libTool({
       .optional()
       .describe("Value to return if the key is absent (default: empty string)"),
   },
-  lib: "skills/lib/frontmatter.sh",
-  fn: "fm_read",
+  async execute(args) {
+    const content = await readFile(args.file, "utf-8");
+    return fmRead(content, args.key, args.default_value ?? "");
+  },
 });

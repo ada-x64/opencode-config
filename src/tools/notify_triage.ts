@@ -1,7 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
-import { libTool } from "./_lib";
+import { notifyTriage } from "./_notify";
 
-export default libTool({
+export default tool({
   description:
     "Send a triage push notification via ntfy. " +
     "Fails silently if ntfy is not configured. " +
@@ -48,8 +48,16 @@ export default libTool({
         "Semantic key for emoji prefix: activity, clean, warn, reject, escalation, design-question",
       ),
   },
-  lib: "skills/vault-triage/notify.sh",
-  fn: "notify_triage",
-  postProcess: (result) =>
-    result || "Notification sent (or silently skipped if ntfy not configured)",
+  async execute(args) {
+    await notifyTriage({
+      type: args.type,
+      task: args.task,
+      headline: args.headline,
+      body: args.body,
+      file: args.file,
+      icon: args.icon,
+      emoji: args.emoji,
+    });
+    return "Notification sent (or silently skipped if ntfy not configured)";
+  },
 });

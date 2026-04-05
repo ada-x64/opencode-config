@@ -1,18 +1,22 @@
 import { describe, it, expect } from "bun:test";
 import notify_triage from "../../src/tools/notify_triage";
 import triage_dashboard from "../../src/tools/triage_dashboard";
+import type { ToolContext } from "@opencode-ai/plugin";
 
 describe("notify_triage", () => {
   it("fails silently when ntfy is not configured", async () => {
     // notify.sh is designed to fail silently — should not throw
-    const result = await notify_triage.execute({
-      type: "activity",
-      task: "test-owner/test-repo/test-task",
-      headline: "Test Notification",
-      body: "• test bullet",
-      icon: "reviewer",
-      emoji: "activity",
-    });
+    const result = await notify_triage.execute(
+      {
+        type: "activity",
+        task: "test-owner/test-repo/test-task",
+        headline: "Test Notification",
+        body: "• test bullet",
+        icon: "reviewer",
+        emoji: "activity",
+      },
+      {} as ToolContext,
+    );
     expect(result).toBeTruthy();
   });
 

@@ -102,7 +102,7 @@ Dispatch when the user wants to:
 - Assign milestones in bulk or create new milestones
 - Triage the open-issue backlog for a repo
 - Refresh `$AGENT_VAULT/projects/<owner>/<repo>.md` status documents
-- Run vault-gc and vault-lint as part of a project cleanup
+- Run `vault_gc` and `vault_lint` as part of a project cleanup
 
 PM operates only on repos that are vault-managed (`tasks/<owner>/<repo>/` or
 `repo-notes/<owner>/<repo>/` must exist). It never touches source files or
