@@ -1,4 +1,4 @@
-name: Lint
+name: Lint and Test
 
 on:
   push:
@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
       - uses: oven-sh/setup-bun@v2
       - run: bun install
-      - run: sudo apt-get update && sudo apt-get install -y shfmt shellcheck
-      - run: ./scripts/lint.sh
+      - run: bun run scripts/lint.ts
