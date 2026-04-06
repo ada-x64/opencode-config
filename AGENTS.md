@@ -21,18 +21,16 @@ opencode-config/
 ├── src/                       # Source templates (never modified by build)
 │   ├── opencode.json          #   Core config: model, mode prompts
 │   ├── aoe-config.toml        #   AoE sandbox config template
-│   ├── agents/                #   Subagent definitions (7 agents)
+│   ├── agents/                #   Subagent definitions (6 agents)
 │   │   ├── planner.md
 │   │   ├── project-manager.md
 │   │   ├── implementor.md
-│   │   ├── auto-implementor.md
 │   │   ├── reviewer.md
 │   │   ├── designer.md
 │   │   └── auto-auditor.md
 │   ├── permissions/           #   Per-agent bash permission blocks
 │   │   ├── host/              #     Per-agent YAML files for host variant
 │   │   │   ├── auto-auditor.yaml
-│   │   │   ├── auto-implementor.yaml
 │   │   │   ├── designer.yaml
 │   │   │   ├── implementor.yaml
 │   │   │   ├── planner.yaml
@@ -158,8 +156,7 @@ The seven agents map to distinct phases of the development workflow:
 ```
 Plan ──────► Implement ──────► Review
   @planner    @implementor       @reviewer
-  @project-manager  @auto-implementor
-                                 @designer  (notes / design docs)
+  @project-manager               @designer  (notes / design docs)
                                  @auto-auditor (quality audits)
 ```
 
@@ -204,16 +201,15 @@ Plan ──────► Implement ──────► Review
   notifications (`notify_triage`/`triage_dashboard`), and issue creation (`create_issue`).
 - **Does not:** `git commit` (the user does that); push; skip approval gates.
 
-#### `@auto-implementor` — autonomous schema execution
+#### `auto-impl` skill — autonomous schema execution
 
-- **File:** `src/agents/auto-implementor.md`
-- **Role:** Executes a schema **end-to-end without pausing**. After each commit
-  group it stages, commits, then runs a bounded review loop (max 3 rounds of
-  `@reviewer`). Escalations are recorded via the vault-triage skill. Sends push
-  notifications at key milestones.
-- **Write access:** Everything `@implementor` has, plus `git commit`,
-  `git stash`, `gh pr comment*`.
-- **Does not:** Push to remote (hard rule, no exceptions).
+- **File:** `src/skills/auto-impl/SKILL.md`
+- **Role:** A skill loaded by build mode that turns it into an autonomous
+  orchestrator. Dispatches `@implementor` and `@reviewer` as first-level
+  subagents. After each commit group it stages, commits, then runs a bounded
+  review loop (max 3 rounds of `@reviewer`). Escalations are recorded via
+  the vault-triage skill. Sends push notifications at key milestones.
+- **Permissions:** Inherits build mode's permissions. Never pushes to remote.
 - **Review loop:** After each commit, up to 3 review rounds. If high+ findings
   persist after round 3, escalates and continues.
 
@@ -258,10 +254,12 @@ This is the opposite of the global `opencode.json` list, which grants a wide
 read-only baseline. The deny-override makes each agent's capabilities
 independently auditable without cross-referencing the global config.
 
-**Orchestrators vs. leaf agents:** `@planner` and `@auto-implementor` carry
-`task: allow` and may dispatch subagents. All other agents (`@implementor`,
-`@project-manager`, `@reviewer`, `@designer`, `@auto-auditor`) are **leaf agents** —
-they have no `task:` permission and cannot spawn further subagents.
+**Orchestrators vs. leaf agents:** `@planner` carries `task: allow` and may
+dispatch subagents. All other agents (`@implementor`, `@project-manager`,
+`@reviewer`, `@designer`, `@auto-auditor`) are **leaf agents** — they have no
+`task:` permission and cannot spawn further subagents. The `auto-impl` skill
+gives build mode autonomous orchestration capabilities (dispatching
+`@implementor` and `@reviewer`) when loaded.
 
 For full details — including the complete read-only baseline, the per-agent
 write permission table, file-system scope restrictions, and instructions for
@@ -293,6 +291,7 @@ detailed instructions and references to bundled scripts.
 
 | Skill          | Directory                  | Purpose                                                                                      |
 | -------------- | -------------------------- | -------------------------------------------------------------------------------------------- |
+| `auto-impl`    | `src/skills/auto-impl/`    | Autonomous schema execution — turns build mode into an orchestrator                          |
 | `local-ci`     | `src/skills/local-ci/`     | Run and debug GitHub Actions workflows locally via `gh act`; use the `local_ci` tool         |
 | `vault-cache`  | `src/skills/vault-cache/`  | Refresh the GitHub metadata cache (projects, milestones, labels); use the `vault_cache` tool |
 | `vault-init`   | `src/skills/vault-init/`   | Initialize or verify the vault directory structure; use the `vault_init` tool                |
@@ -406,20 +405,21 @@ after writing the schema and waits for user approval before creating the issue.
 ### Phase 2 — Implement
 
 **Mode:** build
-**Agent:** `@implementor` (manual) or `@auto-implementor` (autonomous)
+**Agent:** `@implementor` (manual) or `auto-impl` skill (autonomous)
 
 Choose based on how much oversight is needed:
 
 - `@implementor` — pauses after each commit group; the user reviews and says
   "continue". Good for unfamiliar codebases, risky changes, or when the user
   wants granular control.
-- `@auto-implementor` — runs end-to-end; uses a bounded review loop per commit
-  group; escalates persistent problems via the vault-triage skill. Good for
-  well-specified schemas in repos with good test coverage.
+- `auto-impl` skill — build mode loads the skill and runs end-to-end; uses a
+  bounded review loop per commit group; escalates persistent problems via the
+  vault-triage skill. Good for well-specified schemas in repos with good test
+  coverage.
 
 ### Phase 3 — Review
 
-**Mode:** build (or triggered automatically by `@auto-implementor`)
+**Mode:** build (or triggered automatically by the `auto-impl` skill)
 **Agent:** `@reviewer`
 
 The reviewer examines staged changes or the latest commit and writes a
@@ -505,7 +505,7 @@ execute via Bun and bypass bash permissions entirely.
 Remaining bash permissions for worktree operations:
 
 - All agents: `"git worktree list*": allow` (read-only)
-- `@implementor` and `@auto-implementor`: additionally `"git worktree add*": allow` and `"git worktree remove*": allow`
+- `@implementor`: additionally `"git worktree add*": allow` and `"git worktree remove*": allow`
 
 ---
 
@@ -520,9 +520,9 @@ immediately post a comment on the PR using the format:
 Opened #<number> to track <short description>.
 ```
 
-This applies to `@planner` (ask), `@project-manager` (allow), and
-`@auto-implementor` (allow). `@reviewer` does not create issues and is
-therefore exempt.
+This applies to `@planner` (ask) and `@project-manager` (allow). The
+`auto-impl` skill also posts cross-reference comments when escalations create
+issues. `@reviewer` does not create issues and is therefore exempt.
 
 ```bash
 gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."
@@ -548,9 +548,9 @@ gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 ## Notifications
 
 Push notifications to phone/desktop are sent via ntfy.sh. The `notify_triage`
-custom tool wraps `tools/notify.sh`. The `icon` parameter is the agent
-name (e.g. `"implementor"`, `"reviewer"`, `"auto-implementor"`) and the
-optional `emoji` parameter resolves to an emoji prefix (e.g. `"clean"`
+custom tool wraps `tools/notify.sh`. The `icon` parameter is the agent or
+skill icon name (e.g. `"implementor"`, `"reviewer"`, `"auto-implementor"`)
+and the optional `emoji` parameter resolves to an emoji prefix (e.g. `"clean"`
 → 🟢, `"escalation"` → ❗). When the icon starts with `auto-` (e.g.
 `"auto-implementor"`), the script strips the prefix for the PNG URL and
 prepends ⚙️ to the emoji automatically. Full key table in
@@ -576,10 +576,10 @@ notify_triage({
 })
 ```
 
-All 7 agents load the `vault-triage` skill after completing significant work,
-write a triage entry, send a notification (via `notify_triage` tool), and
-regenerate the inbox (via `triage_dashboard` tool). These three post-work steps
-are mandatory — see the skill's Overview section.
+All 6 agents (and the `auto-impl` skill) load the `vault-triage` skill after
+completing significant work, write a triage entry, send a notification (via
+`notify_triage` tool), and regenerate the inbox (via `triage_dashboard` tool).
+These three post-work steps are mandatory — see the skill's Overview section.
 
 Notification priorities: escalation/design-question → high (audible);
 activity/handoff → default (non-audible); run-summary → low (silent). All

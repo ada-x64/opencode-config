@@ -1,6 +1,6 @@
 # Triage Document Format
 
-Triage documents capture autonomous agent output within a task directory. They are written by agents (especially the auto-implementor) to record decisions, escalations, and handoff notes for human review.
+Triage documents capture autonomous agent output within a task directory. They are written by agents (especially via the `auto-impl` skill) to record decisions, escalations, and handoff notes for human review.
 
 ## Location
 
@@ -17,7 +17,7 @@ Every triage document starts with YAML frontmatter:
 ```yaml
 ---
 type: escalation | handoff | design-question | run-summary
-agent: auto-implementor | planner | designer
+agent: auto-impl | implementor | planner | designer | reviewer
 task: task-name
 date: YYYY-MM-DD
 status: pending | addressed | dismissed
@@ -32,7 +32,7 @@ status: pending | addressed | dismissed
 |          | `handoff`                                 | Agent completed partial work, handing off context          |
 |          | `design-question`                         | Agent encountered an ambiguous design decision             |
 |          | `run-summary`                             | Summary of an autonomous run (what was done, what remains) |
-| `agent`  | `auto-implementor`, `planner`, `designer` | Which agent wrote this                                     |
+| `agent`  | `auto-impl`, `implementor`, `planner`, `designer`, `reviewer` | Which agent wrote this                                     |
 | `task`   | string                                    | Task name matching the parent directory                    |
 | `date`   | `YYYY-MM-DD`                              | When the triage was written                                |
 | `status` | `pending`                                 | Awaiting human review                                      |

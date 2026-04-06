@@ -47,7 +47,6 @@ for model configuration and writes the file. Use `--reconfigure` to re-prompt.
 | `@designer`         | `design`  |
 | `@auto-auditor`     | `design`  |
 | `@implementor`      | `execute` |
-| `@auto-implementor` | `execute` |
 | `@reviewer`         | `execute` |
 
 ### `scripts/build.ts`

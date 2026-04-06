@@ -41,7 +41,7 @@ from the opencode-config repo.
 | Agent / Mode        | Icon argument      |
 | ------------------- | ------------------ |
 | `@implementor`      | `implementor`      |
-| `@auto-implementor` | `auto-implementor` |
+| `auto-impl` skill      | `auto-implementor` |
 | `@auto-auditor`     | `auto-auditor`     |
 | Audit mode          | `auditor`          |
 | `@reviewer`         | `reviewer`         |
@@ -167,10 +167,10 @@ context to continue.
 | `@reviewer`         | Review completed (include finding counts + max severity) | `activity`        |
 | `@designer`         | Repo notes or design document written                    | `activity`        |
 | `@implementor`      | Commit group completed; Full implementation complete     | `activity`        |
-| `@auto-implementor` | Review loop exhausted                                    | `escalation`      |
-| `@auto-implementor` | Design ambiguity resolved                                | `design-question` |
-| `@auto-implementor` | Run complete                                             | `run-summary`     |
-| `@auto-implementor` | Commit group completed                                   | `activity`        |
+| `auto-impl` skill  | Review loop exhausted                                    | `escalation`      |
+| `auto-impl` skill  | Design ambiguity resolved                                | `design-question` |
+| `auto-impl` skill  | Run complete                                             | `run-summary`     |
+| `auto-impl` skill  | Commit group completed                                   | `activity`        |
 | `@auto-auditor`     | Audit report completed (include critical/high counts)    | `activity`        |
 | `@project-manager`  | Bulk operations completed; Vault cleanup; Project sync   | `activity`        |
 

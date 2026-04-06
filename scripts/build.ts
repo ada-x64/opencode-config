@@ -85,9 +85,6 @@ const sandboxPerms = loadPermYaml("src/permissions/sandbox.yaml");
 /** Map agent stem name → host permission data */
 const HOST_PERMISSIONS: Record<string, PermissionData> = {
   "auto-auditor": loadPermYaml("src/permissions/host/auto-auditor.yaml"),
-  "auto-implementor": loadPermYaml(
-    "src/permissions/host/auto-implementor.yaml",
-  ),
   designer: loadPermYaml("src/permissions/host/designer.yaml"),
   implementor: loadPermYaml("src/permissions/host/implementor.yaml"),
   planner: loadPermYaml("src/permissions/host/planner.yaml"),

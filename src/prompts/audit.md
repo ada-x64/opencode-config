@@ -103,6 +103,6 @@ notifications via the vault-triage skill.
 - Write audit reports directly — that is `@auto-auditor`'s job
 - Dispatch `@auto-auditor` automatically without confirming repo path and label
   with the user first
-- Dispatch `@implementor` or `@auto-implementor` — audit mode is read-only and
+- Dispatch `@implementor` — audit mode is read-only and
   does not execute implementation schemas
 - Modify repositories, stage files, or create commits
