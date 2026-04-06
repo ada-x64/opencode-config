@@ -6,6 +6,13 @@ bash:
   "mv *": allow
   "rm *": allow
   "mkdir *": allow
+  "cp *": allow
+  "ln *": allow
+  "mktemp*": allow
+  "rmdir *": allow
+  "chmod *": allow
+  "touch *": allow
+  "install *": allow
   # Git (write — staging, branch switching, and worktree management)
   "git add*": allow
   "git switch*": allow
