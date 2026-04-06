@@ -1,7 +1,8 @@
 # AoE (Agent of Empires) configuration template
 #
 # This file is a versioned template with placeholders. install.ts resolves
-# {{AGENT_VAULT}} and {{SANDBOX_CONFIG_DIR}} and deploys the result to
+# {{AGENT_VAULT}}, {{OPENCODE_CONFIG_SRC}}, {{SANDBOX_CONFIG_DIR}}, and
+# {{OPENCODE_DATA_DIR}} and deploys the result to
 # ~/.config/agent-of-empires/config.toml.
 #
 # Requires on host:
@@ -22,6 +23,7 @@ mount_ssh = false
 extra_volumes = [
     "{{AGENT_VAULT}}:/root/obsidian/agent.obs",
     "{{SANDBOX_CONFIG_DIR}}:/root/.config/opencode",
+    "{{OPENCODE_DATA_DIR}}:/root/.local/share/opencode",
 ]
 
 environment = [

@@ -21,7 +21,7 @@
  *   4. rsyncs out/host/ contents to CONFIG_DIR.
  *   5. rsyncs out/sandbox/ contents to SANDBOX_CONFIG_DIR (if it exists).
  *   6. Deploys AoE config (resolving {{AGENT_VAULT}}, {{OPENCODE_CONFIG_SRC}},
- *      and {{SANDBOX_CONFIG_DIR}}) from src/aoe-config.toml.
+ *      {{SANDBOX_CONFIG_DIR}}, and {{OPENCODE_DATA_DIR}}) from src/aoe-config.toml.
  *   7. Prints a deployment summary.
  *
  * Separation of concerns:
@@ -33,6 +33,7 @@
 
 import { parseArgs } from "node:util";
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -202,6 +203,9 @@ function expandHome(p: string): string {
 const configDir = resolve(expandHome(configDirStr));
 opencodeConfigSrc = expandHome(opencodeConfigSrc);
 const sandboxConfigDir = resolve(expandHome(sandboxConfigDirStr));
+const opencodeDataDir = resolve(
+  expandHome("~/.local/share/opencode-sandbox-data"),
+);
 
 // --- Check out/host/ exists ---
 if (!existsSync(outHostDir) || !statSync(outHostDir).isDirectory()) {
@@ -271,17 +275,56 @@ if (existsSync(outSandboxDir) && statSync(outSandboxDir).isDirectory()) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// AoE data directory helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Create the sandbox opencode data directory and seed it if empty.
+ *
+ * The dedicated directory (~/.local/share/opencode-sandbox-data) is
+ * bind-mounted into the container at /root/.local/share/opencode, shadowing
+ * AoE's automatic sync target. This prevents AoE's refresh_agent_configs()
+ * from overwriting the container's live database.
+ *
+ * Seeding is a one-time operation: if opencode.db already exists in dataDir,
+ * the function returns immediately. To re-seed, delete the file manually and
+ * re-run install.
+ */
+function ensureOpencodeDataDir(dataDir: string): void {
+  mkdirSync(dataDir, { recursive: true });
+
+  const targetDb = join(dataDir, "opencode.db");
+  if (existsSync(targetDb)) {
+    console.log(`  Opencode data dir already seeded: ${targetDb}`);
+    return;
+  }
+
+  const hostDb = join(homedir(), ".local", "share", "opencode", "opencode.db");
+  if (existsSync(hostDb) && statSync(hostDb).isFile()) {
+    copyFileSync(hostDb, targetDb);
+    console.log(`  Seeded ${targetDb} from ${hostDb}`);
+  } else {
+    console.log(
+      `  No host DB at ${hostDb} — container will create a fresh database.`,
+    );
+  }
+}
+
 // --- Deploy AoE config ---
 const aoeSrc = join(srcDir, "aoe-config.toml");
 const aoeDest = join(homedir(), ".config", "agent-of-empires", "config.toml");
 
 if (existsSync(aoeSrc)) {
   if (agentVault) {
+    console.log(`Ensuring opencode data directory: ${opencodeDataDir}`);
+    ensureOpencodeDataDir(opencodeDataDir);
     mkdirSync(dirname(aoeDest), { recursive: true });
     let content = readFileSync(aoeSrc, "utf-8");
     content = content.replaceAll("{{AGENT_VAULT}}", agentVault);
     content = content.replaceAll("{{OPENCODE_CONFIG_SRC}}", opencodeConfigSrc);
     content = content.replaceAll("{{SANDBOX_CONFIG_DIR}}", sandboxConfigDir);
+    content = content.replaceAll("{{OPENCODE_DATA_DIR}}", opencodeDataDir);
     writeFileSync(aoeDest, content, "utf-8");
     console.log(`AoE config deployed to: ${aoeDest}`);
   } else {
@@ -301,6 +344,7 @@ console.log(`  Host target:         ${configDir}`);
 console.log(`  Sandbox source:      ${outSandboxDir}`);
 console.log(`  Sandbox target:      ${sandboxConfigDir}`);
 console.log(`  OPENCODE_CONFIG_SRC: ${opencodeConfigSrc}`);
+console.log(`  Opencode data dir:   ${opencodeDataDir}`);
 console.log();
 console.log(
   "To use this config, ensure OPENCODE_CONFIG_SRC is set in your environment:",
