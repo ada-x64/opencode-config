@@ -38,7 +38,7 @@ export default tool({
       .string()
       .optional()
       .describe(
-        "Agent/icon name (e.g. 'planner', 'auto-implementor'). " +
+        "Agent/skill icon name (e.g. 'planner', 'auto-implementor'). " +
           "Maps to PNG on GitHub. Auto- prefix is stripped for URL.",
       ),
     emoji: tool.schema

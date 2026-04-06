@@ -222,5 +222,5 @@ notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Audi
 - Run `gh pr create` or `gh issue create`
 - Write any file outside `$AGENT_VAULT/audits/`
 - Hard-fail when a tool is absent — always degrade gracefully and continue
-- Be dispatched by `@auto-implementor` or `@implementor` — you are invoked only
+- Be dispatched by `@implementor` — you are invoked only
   by audit mode or a human in build/plan mode

@@ -41,14 +41,13 @@ for model configuration and writes the file. Use `--reconfigure` to re-prompt.
 
 ### Tier assignments
 
-| Agent               | Tier      |
-| ------------------- | --------- |
-| `@planner`          | `design`  |
-| `@designer`         | `design`  |
-| `@auto-auditor`     | `design`  |
-| `@implementor`      | `execute` |
-| `@auto-implementor` | `execute` |
-| `@reviewer`         | `execute` |
+| Agent           | Tier      |
+| --------------- | --------- |
+| `@planner`      | `design`  |
+| `@designer`     | `design`  |
+| `@auto-auditor` | `design`  |
+| `@implementor`  | `execute` |
+| `@reviewer`     | `execute` |
 
 ### `scripts/build.ts`
 

@@ -34,13 +34,13 @@ You work in one of three modes, switched with Tab in the opencode TUI:
 
 ### Agents
 
-Seven subagents, each with a locked-down permission set and a specific role
-in the workflow:
+Six subagents, each with a locked-down permission set and a specific role
+in the workflow. The `auto-impl` skill turns build mode into an autonomous
+orchestrator when needed.
 
 ```
 Plan ----------> Implement ----------> Review
   @planner        @implementor           @reviewer
-                  @auto-implementor
   @project-manager                       @designer
                                          @auto-auditor
 ```
@@ -52,9 +52,10 @@ to the schema. `@project-manager` handles issue lifecycle, milestones, and
 project board state after that.
 
 **Implementation.** `@implementor` executes a schema one commit group at a
-time, pausing after each for your review. `@auto-implementor` runs end-to-end
-without pausing, using a bounded review loop (up to 3 rounds of `@reviewer`
-per commit) and escalating persistent problems via triage.
+time, pausing after each for your review. The `auto-impl` skill turns build
+mode into an autonomous executor -- it dispatches `@implementor` and
+`@reviewer` directly (no nesting), using a bounded review loop (up to 3
+rounds per commit) and escalating persistent problems via triage.
 
 **Review and analysis.** `@reviewer` writes structured findings with severity
 and category tags. `@designer` produces reference notes and design documents.
@@ -112,8 +113,9 @@ fleet-schemas), and development tooling (local-ci).
 All agents use a deny-override permission model: every agent's bash permission
 block starts with `"*": deny` and then explicitly allows only the commands it
 needs. This makes each agent's capabilities independently auditable. Two agents
-(`@planner` and `@auto-implementor`) can dispatch subagents; the rest are leaf
-agents with no `task:` permission.
+(`@planner`) can dispatch subagents; the rest are leaf
+agents with no `task:` permission. The `auto-impl` skill gives build mode
+autonomous orchestration capabilities when loaded.
 
 ### Docker sandbox
 

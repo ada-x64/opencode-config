@@ -105,8 +105,8 @@ All non-trivial implementation work follows three phases:
 
 1. **Plan** — \`@planner\` explores the codebase, discusses with the user, writes
    a schema to \`tasks/<owner>/<repo>/<task>/schema.md\`.
-2. **Implement** — \`@implementor\` or \`@auto-implementor\` executes the schema
-   step-by-step, committing after each group.
+2. **Implement** — \`@implementor\` executes the schema (manual) or build mode
+   with the \`auto-impl\` skill executes autonomously, committing after each group.
 3. **Review** — \`@reviewer\` writes a structured review to
    \`tasks/<owner>/<repo>/<task>/review.md\`.
 
@@ -117,7 +117,7 @@ All non-trivial implementation work follows three phases:
 | \`@planner\` | Schema authoring, GitHub issue creation |
 | \`@project-manager\` | Issue lifecycle, project board ops, milestone management, vault project status |
 | \`@implementor\` | Manual schema execution with approval gates |
-| \`@auto-implementor\` | Autonomous schema execution with bounded review loop |
+| \`auto-impl\` skill | Autonomous schema execution via build mode |
 | \`@reviewer\` | Structured code review |
 | \`@designer\` | Repo notes, design documents, drafts |
 | \`@auto-auditor\` | Headless audit agent — tool detection, static analysis, vault report |
