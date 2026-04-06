@@ -39,6 +39,51 @@ bash:
   "uname *": allow
   "date *": allow
   "hostname": allow
+  # Text processing
+  "sed *": allow
+  "paste *": allow
+  "join *": allow
+  "nl *": allow
+  "fold *": allow
+  "fmt *": allow
+  "rev *": allow
+  "tac *": allow
+  "expand *": allow
+  "unexpand *": allow
+  "strings *": allow
+  # Data / checksums
+  "sha256sum *": allow
+  "sha1sum *": allow
+  "md5sum *": allow
+  "b2sum *": allow
+  "cksum *": allow
+  "base64 *": allow
+  "od *": allow
+  "xxd *": allow
+  "hexdump *": allow
+  # System inspection
+  "du *": allow
+  "df *": allow
+  "free*": allow
+  "nproc*": allow
+  "uptime": allow
+  "lsof *": allow
+  "getconf *": allow
+  "locale*": allow
+  # Shell builtins / control
+  "test *": allow
+  "true": allow
+  "false": allow
+  "type *": allow
+  "command *": allow
+  "printf *": allow
+  "seq *": allow
+  "yes *": allow
+  "timeout *": allow
+  # Pipeline utilities
+  "xargs *": allow
+  "tee *": allow
+  "iconv *": allow
   # Git (read-only)
   "git status*": allow
   "git log*": allow
