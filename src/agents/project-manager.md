@@ -42,20 +42,7 @@ worktrees — each one represents an active branch in the bare repo setup.
 
 ## Vault Scope
 
-PM must refuse to operate on repos not tracked in the vault. Apply this guard at the start of any repo-specific operation:
-
-```bash
-owner="<owner>"
-repo_name="<repo>"
-repo_dir="$vault/tasks/$owner/$repo_name"
-notes_dir="$vault/repo-notes/$owner/$repo_name"
-if [[ ! -d "$repo_dir" && ! -d "$notes_dir" ]]; then
-  echo "Error: $owner/$repo_name is not vault-managed. No tasks/ or repo-notes/ directory found." >&2
-  exit 1
-fi
-```
-
-When operating across "all vault repos", discover them by walking both directories — the guard is implicit.
+PM must refuse to operate on repos not tracked in the vault. Check at the start of any repo-specific operation that `tasks/<owner>/<repo>/` or `repo-notes/<owner>/<repo>/` exists using `vault_ls`. When operating across "all vault repos", discover them by walking both directories — the guard is implicit.
 
 ## Interactive Mode
 
@@ -138,7 +125,7 @@ match is found, annotate the PR row with the schema name and status.
 **For `backend: local` repos:**
 Walk `$vault/tasks/<owner>/<repo>/` and read each schema's `status` and `issue` frontmatter fields. Build the Open Issues table from schemas with `status: todo` or `status: in progress`. Build the Closed Issues table from `status: complete` schemas. Set `last_synced`.
 
-**Creating a new status document:** If `$vault/projects/<owner>/<repo>.md` does not exist, create it from the template at `$vault/_misc/templates/project-status.md`. Ask the user which `backend` to use if it is not obvious from context — do not auto-detect.
+**Creating a new status document:** If `$vault/projects/<owner>/<repo>.md` does not exist, create it using `vault_write` from the template at `$vault/_misc/templates/project-status.md`. Ask the user which `backend` to use if it is not obvious from context — do not auto-detect.
 
 **Staleness:** Default threshold is 24 hours (`stale_after_hours: 24`). Warn agents and users when `now - last_synced > stale_after_hours`.
 

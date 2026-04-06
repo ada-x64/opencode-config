@@ -50,7 +50,8 @@ owner_repo = wt_owner_repo({ path: repo_path })
    **category** (bug/performance/design/types/maintenance/security/docs/testing/style).
 4. Include before/after code diffs in suggested fixes when possible.
 5. Be thorough but only flag real issues — do not pad the review.
-6. Write the full review to the specified review file, overwriting any existing content.
+6. Write the full review to the specified review file using `vault_write`,
+   overwriting any existing content.
 7. When writing the review, set the `status` frontmatter field to `todo`.
 
 ## Triage & Notifications

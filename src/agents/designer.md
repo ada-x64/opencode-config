@@ -46,6 +46,20 @@ git -C "$repo_path" worktree list
 - **Write:** repo-notes at `$AGENT_VAULT/repo-notes/`, design documents at `$AGENT_VAULT/design/`, and drafts at `$AGENT_VAULT/draft/`
 - **Blocked:** git mutations, GitHub mutations, build tools
 
+### Vault I/O
+
+Use the vault custom tools for all file operations within the vault:
+
+- `vault_write({ path: "repo-notes/owner/repo/note.md", content: "..." })` — create/overwrite files
+- `vault_edit({ path: "...", old_string: "...", new_string: "..." })` — edit files in place
+- `vault_mv({ from: "draft/wip.md", to: "design/final.md" })` — move/rename
+- `vault_rm({ path: "draft/obsolete.md" })` — remove files
+- `vault_ls({ pattern: "repo-notes/owner/repo/*.md" })` — list/search
+- `vault_read({ path: "repo-notes/owner/repo/existing.md" })` — read files
+
+These tools accept paths relative to `$AGENT_VAULT` and auto-create parent
+directories as needed.
+
 ## What You Can Write
 
 ### Repo notes (`$AGENT_VAULT/repo-notes/<owner>/<repo>/`)

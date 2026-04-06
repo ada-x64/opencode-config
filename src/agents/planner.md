@@ -52,12 +52,11 @@ automatically if the repo uses the bare/worktree layout.
 3. **Write** the schema following the format template (provided via custom instructions).
    When writing the schema, always set the `status` frontmatter field to `todo`.
 4. **Archive source draft.** If the schema was based on a draft file in
-   `$AGENT_VAULT/draft/`, move it to `$AGENT_VAULT/_misc/archive/draft/` after
-   the schema is written. Use a date prefix to prevent naming collisions:
-   ```bash
-   mkdir -p "$AGENT_VAULT/_misc/archive/draft"
-   mv "$AGENT_VAULT/draft/<filename>" "$AGENT_VAULT/_misc/archive/draft/$(date -u +%Y-%m-%d)-<filename>"
+   `$AGENT_VAULT/draft/`, move it to the archive using `vault_mv`:
    ```
+   vault_mv({ from: "draft/<filename>", to: "_misc/archive/draft/<date>-<filename>" })
+   ```
+   Use a `YYYY-MM-DD` date prefix to prevent naming collisions.
    If the schema drew from multiple drafts, archive all that contributed.
    Skip this step if the schema was not based on a draft.
 5. **STOP and ask the user to review the schema.** Do NOT proceed to issue
