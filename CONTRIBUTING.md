@@ -83,15 +83,18 @@ bun run build -- --config-dir /path/to/config   # override host CONFIG_DIR
 
 Deploys built output to the target config directories:
 
-1. Loads the selected profile (`src/profiles/<name>.env`) to determine
-   `CONFIG_DIR` and `SANDBOX_CONFIG_DIR`.
+1. Validates the `--profile` name, then loads the profile using 2-level fallback
+   (e.g. `src/profiles/gh/username.env` → `src/profiles/gh.env`) to determine
+   `CONFIG_DIR`, `OPENCODE_CONFIG_SRC`, and `SANDBOX_CONFIG_DIR`.
 2. Rsyncs `out/host/` contents to `CONFIG_DIR`.
 3. Rsyncs `out/sandbox/` contents to `SANDBOX_CONFIG_DIR`.
-4. Deploys the AoE config (resolving `{{AGENT_VAULT}}` and `{{SANDBOX_CONFIG_DIR}}`
-   in `src/aoe-config.toml`).
+4. Deploys the AoE config using 3-level fallback (exact → base → default),
+   resolving `{{AGENT_VAULT}}`, `{{OPENCODE_CONFIG_SRC}}`,
+   `{{SANDBOX_CONFIG_DIR}}`, and `{{OPENCODE_DATA_DIR}}` placeholders.
 
 ```bash
 bun run install-config                              # host profile (default)
+bun run install-config -- --profile gh/myuser       # gh/* profile (SSH-prefer)
 bun run install-config -- --config-dir /custom     # override CONFIG_DIR
 ```
 
@@ -105,11 +108,40 @@ writes environment variables to the user's shell profile. See
 ### Profiles
 
 Profiles live in `src/profiles/` and are excluded from the build output.
-Each is a shell-style `.env` file defining `CONFIG_DIR` and `SANDBOX_CONFIG_DIR`.
+Each is a shell-style `.env` file defining `CONFIG_DIR`, `OPENCODE_CONFIG_SRC`,
+and `SANDBOX_CONFIG_DIR`.
+A profile may also include a `.aoe.toml` file for a profile-specific AoE
+configuration (otherwise `src/aoe-config.toml` is used as the default).
 
-| Profile | File                    | CONFIG_DIR               | SANDBOX_CONFIG_DIR               |
-| ------- | ----------------------- | ------------------------ | -------------------------------- |
-| `host`  | `src/profiles/host.env` | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` |
+| Profile         | Files                                             | CONFIG_DIR               | SANDBOX_CONFIG_DIR               | AoE config                       |
+| --------------- | ------------------------------------------------- | ------------------------ | -------------------------------- | -------------------------------- |
+| `host`          | `src/profiles/host.env`                           | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` | `src/aoe-config.toml` (default)  |
+| `gh/<username>` | `src/profiles/gh.env`, `src/profiles/gh.aoe.toml` | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` | `src/profiles/gh.aoe.toml` (SSH) |
+
+#### Profile resolution
+
+For slash-separated profile names like `gh/v-phoenixman`:
+
+1. **`.env` lookup:** tries `src/profiles/gh/v-phoenixman.env` first, then
+   falls back to `src/profiles/gh.env` (base for the `gh/*` family).
+2. **`.aoe.toml` lookup:** tries `src/profiles/gh/v-phoenixman.aoe.toml`,
+   then `src/profiles/gh.aoe.toml`, then `src/aoe-config.toml`.
+
+This allows per-user overrides while sharing a common base.
+
+#### `gh/*` profile
+
+The `gh/*` profile family differs from `host` only in the AoE sandbox config:
+
+- `mount_ssh = true` — mounts the host SSH agent into the container
+- Adds a git config `insteadOf` rule that rewrites `https://github.com/` URLs
+  to `git@github.com:` so clones/fetches/pushes use SSH
+
+Usage:
+
+```bash
+bun run install-config -- --profile gh/myuser
+```
 
 The sandbox build variant (`out/sandbox/`) replaces the former `docker` profile.
 The sandbox config is built with universal `allow` permissions (minus `gh api *`
@@ -157,12 +189,16 @@ the Docker workflow on pushes to `main` that touch `docker/`.
 
 ### AoE config
 
-`src/aoe-config.toml` is a versioned template. The `install.ts` script
-deploys it to `~/.config/agent-of-empires/config.toml`, resolving `{{AGENT_VAULT}}`
-and `{{SANDBOX_CONFIG_DIR}}` placeholders. The config mounts `$SANDBOX_CONFIG_DIR`
-(the pre-built sandbox config tree) into the container at `/root/.config/opencode`,
-sets up: sandbox-by-default, custom image, vault bind-mount (RW), credential
-passthrough (`GH_TOKEN`, `GIT_CONFIG_COUNT`), and resource limits (4 CPU / 8 GB RAM).
+`src/aoe-config.toml` is the default AoE template. Profiles can override it by
+placing a `.aoe.toml` file alongside the `.env` (e.g. `src/profiles/gh.aoe.toml`).
+The `install.ts` script resolves the AoE config source using the same fallback
+chain as profile `.env` files (exact → base → default), then deploys it to
+`~/.config/agent-of-empires/config.toml`, resolving `{{AGENT_VAULT}}`,
+`{{OPENCODE_CONFIG_SRC}}`, `{{SANDBOX_CONFIG_DIR}}`, and `{{OPENCODE_DATA_DIR}}`
+placeholders. The config mounts `$SANDBOX_CONFIG_DIR` (the pre-built sandbox
+config tree) into the container at `/root/.config/opencode`, sets up:
+sandbox-by-default, custom image, vault bind-mount (RW), credential passthrough
+(`GH_TOKEN`, `GIT_CONFIG_COUNT`), and resource limits (4 CPU / 8 GB RAM).
 
 ---
 

@@ -1,0 +1,51 @@
+# AoE (Agent of Empires) configuration template — GitHub user profile
+#
+# SSH-prefer variant: mounts the host SSH agent and rewrites HTTPS GitHub
+# URLs to SSH (url.git@github.com:.insteadOf = https://github.com/).
+#
+# install.ts resolves {{AGENT_VAULT}}, {{OPENCODE_CONFIG_SRC}},
+# {{SANDBOX_CONFIG_DIR}}, and {{OPENCODE_DATA_DIR}} at deploy time.
+#
+# Requires on host:
+#   export GH_TOKEN=$(gh auth token 2>/dev/null)
+#   export NTFY_TOPIC="<your-ntfy-topic>"
+
+[session]
+default_tool = "opencode"
+
+[sandbox]
+enabled_by_default = true
+default_image = "cubething-occonf-sandbox:latest"
+auto_cleanup = false
+cpu_limit = "4"
+memory_limit = "8g"
+mount_ssh = true
+
+extra_volumes = [
+    "{{AGENT_VAULT}}:/root/obsidian/agent.obs",
+    "{{SANDBOX_CONFIG_DIR}}:/root/.config/opencode",
+    "{{OPENCODE_DATA_DIR}}:/root/.local/share/opencode",
+]
+
+environment = [
+    "AGENT_VAULT=/root/obsidian/agent.obs",
+    "AGENT_REPOS=/workspace",
+    "OPENCODE_CONFIG_SRC=/root/.config/opencode",
+
+    # GH_TOKEN (bare key = passthrough from host): needed for `gh` CLI API calls
+    # (issues, PRs, releases) even though git operations use SSH. The HTTPS
+    # credential helper (KEY_0/VALUE_0) is kept as a fallback for any HTTPS git
+    # operation that bypasses the insteadOf rewrite (e.g. explicit HTTPS remotes).
+    "GH_TOKEN",
+    "NTFY_TOPIC",
+    # Git config: HTTPS credential helper + protocol v2 + SSH-prefer URL rewrite.
+    # The insteadOf rule (KEY_2/VALUE_2) rewrites https://github.com/ URLs to
+    # git@github.com: so clones/fetches/pushes use the mounted SSH agent.
+    "GIT_CONFIG_COUNT=3",
+    "GIT_CONFIG_KEY_0=credential.https://github.com.helper",
+    "GIT_CONFIG_VALUE_0=!gh auth git-credential",
+    "GIT_CONFIG_KEY_1=protocol.version",
+    "GIT_CONFIG_VALUE_1=2",                     # git protocol v2: more efficient transport
+    "GIT_CONFIG_KEY_2=url.git@github.com:.insteadOf",
+    "GIT_CONFIG_VALUE_2=https://github.com/",
+]
