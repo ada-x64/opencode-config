@@ -2,9 +2,7 @@ bash:
   # GitHub CLI (mutations — label state transitions and issue comments)
   "gh issue edit*": allow
   "gh issue comment*": allow
-  # Vault write (filesystem)
-  "mv *": allow
-  "rm *": allow
+  # Repo filesystem (directory creation during implementation)
   "mkdir *": allow
   "cp *": allow
   "ln *": allow

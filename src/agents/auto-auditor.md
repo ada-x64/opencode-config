@@ -160,15 +160,16 @@ Read the codebase within scope and synthesise findings:
 
 ### Phase 4: Write Report
 
-Construct the output path using the `wt_owner_repo` tool result from startup:
+Construct the output path and write using `vault_write`:
 
-```bash
-date_str=$(date +%Y-%m-%d)
-out_dir="$AGENT_VAULT/audits/$owner_repo"
-out_file="$out_dir/${date_str}-${label}.md"
+```
+vault_write({
+  path: "audits/<owner>/<repo>/<date>-<label>.md",
+  content: "<full audit report>"
+})
 ```
 
-Write the full audit report following `$AGENT_VAULT/_misc/templates/audit.md`.
+Follow the template at `$AGENT_VAULT/_misc/templates/audit.md`.
 Set `status: complete` in the frontmatter. The `audits/` directory structure
 is created implicitly when writing the first file.
 

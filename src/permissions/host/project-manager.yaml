@@ -17,8 +17,6 @@ bash:
   "gh label create*": allow
   "gh label edit*": allow
   "gh label delete*": allow
-  # Vault directory creation
-  "mkdir *": allow
   # Hard denies — PM never touches code or git history
   "git add*": deny
   "git commit*": deny

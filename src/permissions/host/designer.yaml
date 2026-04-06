@@ -1,8 +1,5 @@
 bash:
-  # Vault write (filesystem)
-  "mv *": allow
-  "rm *": allow
-  "mkdir *": allow
+  # Filesystem write
   "cp *": allow
   "ln *": allow
   "mktemp*": allow
