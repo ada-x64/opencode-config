@@ -47,6 +47,7 @@ from the opencode-config repo.
 | `@reviewer`        | `reviewer`         |
 | `@planner`         | `planner`          |
 | `@designer`        | `designer`         |
+| `@investigate`     | `investigate`      |
 | `@project-manager` | `project-manager`  |
 | Build mode         | `build`            |
 | Plan mode          | `plan`             |
@@ -165,7 +166,8 @@ context to continue.
 | ------------------ | -------------------------------------------------------- | ----------------- |
 | `@planner`         | Schema written; Issue created                            | `activity`        |
 | `@reviewer`        | Review completed (include finding counts + max severity) | `activity`        |
-| `@designer`        | Repo notes or design document written                    | `activity`        |
+| `@designer`        | Design document written                                  | `activity`        |
+| `@investigate`     | Repo notes written (include note count + topics)         | `activity`        |
 | `@implementor`     | Commit group completed; Full implementation complete     | `activity`        |
 | `auto-impl` skill  | Review loop exhausted                                    | `escalation`      |
 | `auto-impl` skill  | Design ambiguity resolved                                | `design-question` |
