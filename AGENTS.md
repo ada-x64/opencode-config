@@ -43,6 +43,7 @@ opencode-config/
 │   │   └── audit.md
 │   ├── tools/                 #   Custom tools (TypeScript + shell scripts)
 │   │   ├── _lib.ts
+│   │   ├── _vault.ts
 │   │   ├── fm_read.ts
 │   │   ├── fm_write.ts
 │   │   ├── wt_detect.ts
@@ -61,6 +62,12 @@ opencode-config/
 │   │   ├── session_notify.ts
 │   │   ├── create_issue.ts
 │   │   ├── create_pr.ts
+│   │   ├── vault_read.ts
+│   │   ├── vault_write.ts
+│   │   ├── vault_edit.ts
+│   │   ├── vault_ls.ts
+│   │   ├── vault_mv.ts
+│   │   ├── vault_rm.ts
 │   │   ├── frontmatter.sh      #     YAML frontmatter helpers (sourced by gc.sh, triage-dashboard.sh)
 │   │   ├── worktree.sh         #     Bare-repo worktree helpers
 │   │   ├── create-issue.sh     #     GitHub issue creation from schema
@@ -232,7 +239,7 @@ Plan ──────► Implement ──────► Review
   - Repo notes at `$AGENT_VAULT/repo-notes/<owner>/<repo>/`
   - Design documents at `$AGENT_VAULT/design/`
   - Work-in-progress drafts at `$AGENT_VAULT/draft/`
-- **Write access:** Full vault mutations (Write/Edit tools, `mv`, `rm`, `mkdir`).
+- **Write access:** Full vault mutations (`vault_write`, `vault_edit`, `vault_mv`, `vault_rm`).
 - **Does not:** Write schemas or reviews; run build tools; mutate git state.
 
 #### `@auto-auditor` — headless quality audit
@@ -308,22 +315,23 @@ All agent-facing scripts live in `src/tools/` alongside the TypeScript tool
 wrappers. Agents call the tool directly instead of constructing bash commands.
 The tools shell out to the scripts via `Bun.$`.
 
-| Script                          | Custom tool                                                    | Purpose                                |
-| ------------------------------- | -------------------------------------------------------------- | -------------------------------------- |
-| `src/tools/frontmatter.sh`      | `fm_read`, `fm_write`                                          | YAML frontmatter read/write            |
-| `src/tools/worktree.sh`         | `wt_detect`, `wt_owner_repo`, `wt_switch_branch`, `wt_cleanup` | Bare-repo worktree operations          |
-| `src/tools/create-issue.sh`     | `create_issue`                                                 | Create GitHub issue from schema        |
-| `src/tools/create-pr.sh`        | `create_pr`                                                    | Create PR from commit log              |
-| `src/tools/vault-find.sh`       | `vault_find`                                                   | Search vault sections (JSON output)    |
-| `src/tools/gc.sh`               | `vault_gc`                                                     | Archive completed schemas/reviews      |
-| `src/tools/lint.sh`             | `vault_lint`                                                   | Validate vault files against templates |
-| `src/tools/notify.sh`           | `notify_triage`                                                | Push notifications via ntfy            |
-| `src/tools/triage-dashboard.sh` | `triage_dashboard`                                             | Regenerate `triage-inbox.md`           |
-| `src/tools/triage-write.sh`     | `triage_write`                                                 | Write triage entries to vault          |
-| `src/tools/refresh.sh`          | `vault_cache`                                                  | Refresh GitHub metadata cache          |
-| `src/tools/init.sh`             | `vault_init`                                                   | Initialize vault directory structure   |
-| `src/tools/act.sh`              | `local_ci`                                                     | Run GitHub Actions workflows locally   |
-| _(no script — standalone tool)_ | `session_notify`                                               | Send session-completion notification   |
+| Script                          | Custom tool                                                                   | Purpose                                              |
+| ------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `src/tools/frontmatter.sh`      | `fm_read`, `fm_write`                                                         | YAML frontmatter read/write                          |
+| `src/tools/worktree.sh`         | `wt_detect`, `wt_owner_repo`, `wt_switch_branch`, `wt_cleanup`                | Bare-repo worktree operations                        |
+| `src/tools/create-issue.sh`     | `create_issue`                                                                | Create GitHub issue from schema                      |
+| `src/tools/create-pr.sh`        | `create_pr`                                                                   | Create PR from commit log                            |
+| `src/tools/vault-find.sh`       | `vault_find`                                                                  | Search vault sections (JSON output)                  |
+| `src/tools/gc.sh`               | `vault_gc`                                                                    | Archive completed schemas/reviews                    |
+| `src/tools/lint.sh`             | `vault_lint`                                                                  | Validate vault files against templates               |
+| `src/tools/notify.sh`           | `notify_triage`                                                               | Push notifications via ntfy                          |
+| `src/tools/triage-dashboard.sh` | `triage_dashboard`                                                            | Regenerate `triage-inbox.md`                         |
+| `src/tools/triage-write.sh`     | `triage_write`                                                                | Write triage entries to vault                        |
+| `src/tools/refresh.sh`          | `vault_cache`                                                                 | Refresh GitHub metadata cache                        |
+| `src/tools/init.sh`             | `vault_init`                                                                  | Initialize vault directory structure                 |
+| `src/tools/act.sh`              | `local_ci`                                                                    | Run GitHub Actions workflows locally                 |
+| _(no script — standalone tool)_ | `session_notify`                                                              | Send session-completion notification                 |
+| _(no script — standalone tool)_ | `vault_read`, `vault_write`, `vault_edit`, `vault_ls`, `vault_mv`, `vault_rm` | Vault file I/O (path-safe, scoped to `$AGENT_VAULT`) |
 
 ---
 
@@ -363,16 +371,17 @@ $AGENT_VAULT/
 ### Vault access pattern
 
 The vault is a plain directory of Markdown files with YAML frontmatter. Agents
-access it directly via standard filesystem tools — no app needs to be running.
+access it through dedicated vault I/O tools that accept paths relative to
+`$AGENT_VAULT`.
 
-- **Read:** Read tool, `cat`, `find`, `rg`
-- **Create/modify:** Write and Edit tools
-- **Frontmatter:** `fm_read({ file: "path.md", key: "key" })` /
-  `fm_write({ file: "path.md", key: "key", value: "value" })` custom tools
+- **Read:** `vault_read` tool (scoped to vault; for repo files, use the built-in Read tool)
+- **List/search:** `vault_ls` tool (directory listing and glob matching)
+- **Create/modify:** `vault_write` (create/overwrite) and `vault_edit` (find-and-replace)
+- **Frontmatter:** `fm_read` / `fm_write` custom tools
   (thin wrappers around `tools/frontmatter.sh`)
-- **Move/rename:** `mv`
-- **Delete:** `rm`
-- **List:** `find "$AGENT_VAULT" -name "*.md"`
+- **Move/rename:** `vault_mv` tool
+- **Delete:** `vault_rm` tool (files only; use `vault_gc` for bulk cleanup)
+- **Specialized:** `vault_gc`, `vault_lint`, `triage_dashboard`, etc. (unchanged)
 
 ### Initializing the vault
 
