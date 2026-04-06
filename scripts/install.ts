@@ -6,7 +6,9 @@
  *   bun scripts/install.ts [--profile <name>] [--config-dir <path>] [--help]
  *
  * Options:
- *   --profile <name>     Profile to use (default: host). Loads src/profiles/<name>.env.
+ *   --profile <name>     Profile to use (default: host). Supports slash-separated
+ *                         names like "gh/username" — tries src/profiles/gh/username.env
+ *                         first, then falls back to src/profiles/gh.env.
  *   --config-dir <path>  Override CONFIG_DIR from the profile.
  *   --help               Show this help message and exit.
  *
@@ -21,7 +23,8 @@
  *   4. rsyncs out/host/ contents to CONFIG_DIR.
  *   5. rsyncs out/sandbox/ contents to SANDBOX_CONFIG_DIR (if it exists).
  *   6. Deploys AoE config (resolving {{AGENT_VAULT}}, {{OPENCODE_CONFIG_SRC}},
- *      {{SANDBOX_CONFIG_DIR}}, and {{OPENCODE_DATA_DIR}}) from src/aoe-config.toml.
+ *      {{SANDBOX_CONFIG_DIR}}, and {{OPENCODE_DATA_DIR}}) — uses a profile-specific
+ *      .aoe.toml if present, otherwise falls back to src/aoe-config.toml.
  *   7. Prints a deployment summary.
  *
  * Separation of concerns:
@@ -112,7 +115,9 @@ Usage:
   bun scripts/install.ts [--profile <name>] [--config-dir <path>] [--help]
 
 Options:
-  --profile <name>     Profile to use (default: host). Loads src/profiles/<name>.env.
+  --profile <name>     Profile to use (default: host). Supports slash-separated
+                       names like "gh/username" — tries the exact .env first,
+                       then falls back to the base (e.g. gh.env for gh/*).
   --config-dir <path>  Override CONFIG_DIR from the profile.
   --help               Show this help message and exit.
 `;
@@ -152,9 +157,32 @@ const profile = args.profile ?? "host";
 const configDirOverride = args["config-dir"] ?? "";
 
 // --- Load profile ---
-const profileFile = join(srcDir, "profiles", `${profile}.env`);
-if (!existsSync(profileFile)) {
-  console.error(`Error: profile file not found: ${profileFile}`);
+// Profile resolution: for "gh/username", try src/profiles/gh/username.env first,
+// then fall back to src/profiles/gh.env (base profile for the gh/* family).
+function resolveProfileFile(profileName: string): string | null {
+  const exact = join(srcDir, "profiles", `${profileName}.env`);
+  if (existsSync(exact)) return exact;
+
+  // Fall back to base: "gh/username" → "gh"
+  const slashIdx = profileName.indexOf("/");
+  if (slashIdx !== -1) {
+    const base = profileName.slice(0, slashIdx);
+    const basePath = join(srcDir, "profiles", `${base}.env`);
+    if (existsSync(basePath)) return basePath;
+  }
+
+  return null;
+}
+
+const profileFile = resolveProfileFile(profile);
+if (!profileFile) {
+  console.error(`Error: profile not found for: ${profile}`);
+  console.error(
+    `  Tried: src/profiles/${profile}.env` +
+      (profile.includes("/")
+        ? `, src/profiles/${profile.slice(0, profile.indexOf("/"))}.env`
+        : ""),
+  );
   console.error("Available profiles:");
   const profilesDir = join(srcDir, "profiles");
   if (existsSync(profilesDir)) {
@@ -312,10 +340,31 @@ function ensureOpencodeDataDir(dataDir: string): void {
 }
 
 // --- Deploy AoE config ---
-const aoeSrc = join(srcDir, "aoe-config.toml");
+// AoE config resolution: try profile-specific .aoe.toml, then base, then default.
+function resolveAoeConfig(profileName: string): string | null {
+  // Exact: src/profiles/gh/username.aoe.toml (or src/profiles/host.aoe.toml)
+  const exact = join(srcDir, "profiles", `${profileName}.aoe.toml`);
+  if (existsSync(exact)) return exact;
+
+  // Base: "gh/username" → src/profiles/gh.aoe.toml
+  const slashIdx = profileName.indexOf("/");
+  if (slashIdx !== -1) {
+    const base = profileName.slice(0, slashIdx);
+    const basePath = join(srcDir, "profiles", `${base}.aoe.toml`);
+    if (existsSync(basePath)) return basePath;
+  }
+
+  // Default: src/aoe-config.toml
+  const defaultPath = join(srcDir, "aoe-config.toml");
+  if (existsSync(defaultPath)) return defaultPath;
+
+  return null;
+}
+
+const aoeSrc = resolveAoeConfig(profile);
 const aoeDest = join(homedir(), ".config", "agent-of-empires", "config.toml");
 
-if (existsSync(aoeSrc)) {
+if (aoeSrc) {
   if (agentVault) {
     console.log(`Ensuring opencode data directory: ${opencodeDataDir}`);
     ensureOpencodeDataDir(opencodeDataDir);
@@ -327,11 +376,14 @@ if (existsSync(aoeSrc)) {
     content = content.replaceAll("{{OPENCODE_DATA_DIR}}", opencodeDataDir);
     writeFileSync(aoeDest, content, "utf-8");
     console.log(`AoE config deployed to: ${aoeDest}`);
+    console.log(`  Source: ${aoeSrc}`);
   } else {
     console.error(
       "Warning: AGENT_VAULT not set — skipping AoE config deployment.",
     );
   }
+} else {
+  console.error("Warning: no AoE config template found — skipping.");
 }
 
 // --- Summary ---
