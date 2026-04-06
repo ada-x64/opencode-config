@@ -26,18 +26,18 @@ status: pending | addressed | dismissed
 
 ### Field definitions
 
-| Field    | Values                                    | Meaning                                                    |
-| -------- | ----------------------------------------- | ---------------------------------------------------------- |
-| `type`   | `escalation`                              | Agent is stuck — needs human intervention                  |
-|          | `handoff`                                 | Agent completed partial work, handing off context          |
-|          | `design-question`                         | Agent encountered an ambiguous design decision             |
-|          | `run-summary`                             | Summary of an autonomous run (what was done, what remains) |
+| Field    | Values                                                        | Meaning                                                    |
+| -------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| `type`   | `escalation`                                                  | Agent is stuck — needs human intervention                  |
+|          | `handoff`                                                     | Agent completed partial work, handing off context          |
+|          | `design-question`                                             | Agent encountered an ambiguous design decision             |
+|          | `run-summary`                                                 | Summary of an autonomous run (what was done, what remains) |
 | `agent`  | `auto-impl`, `implementor`, `planner`, `designer`, `reviewer` | Which agent wrote this                                     |
-| `task`   | string                                    | Task name matching the parent directory                    |
-| `date`   | `YYYY-MM-DD`                              | When the triage was written                                |
-| `status` | `pending`                                 | Awaiting human review                                      |
-|          | `addressed`                               | Human has reviewed and acted on this                       |
-|          | `dismissed`                               | Human reviewed and decided no action needed                |
+| `task`   | string                                                        | Task name matching the parent directory                    |
+| `date`   | `YYYY-MM-DD`                                                  | When the triage was written                                |
+| `status` | `pending`                                                     | Awaiting human review                                      |
+|          | `addressed`                                                   | Human has reviewed and acted on this                       |
+|          | `dismissed`                                                   | Human reviewed and decided no action needed                |
 
 ## Body
 
