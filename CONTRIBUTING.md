@@ -84,15 +84,18 @@ bun run build -- --config-dir /path/to/config   # override host CONFIG_DIR
 
 Deploys built output to the target config directories:
 
-1. Loads the selected profile (`src/profiles/<name>.env`) to determine
-   `CONFIG_DIR` and `SANDBOX_CONFIG_DIR`.
+1. Validates the `--profile` name, then loads the profile using 2-level fallback
+   (e.g. `src/profiles/gh/username.env` → `src/profiles/gh.env`) to determine
+   `CONFIG_DIR`, `OPENCODE_CONFIG_SRC`, and `SANDBOX_CONFIG_DIR`.
 2. Rsyncs `out/host/` contents to `CONFIG_DIR`.
 3. Rsyncs `out/sandbox/` contents to `SANDBOX_CONFIG_DIR`.
-4. Deploys the AoE config (resolving `{{AGENT_VAULT}}` and `{{SANDBOX_CONFIG_DIR}}`
-   in `src/aoe-config.toml`).
+4. Deploys the AoE config using 3-level fallback (exact → base → default),
+   resolving `{{AGENT_VAULT}}`, `{{OPENCODE_CONFIG_SRC}}`,
+   `{{SANDBOX_CONFIG_DIR}}`, and `{{OPENCODE_DATA_DIR}}` placeholders.
 
 ```bash
 bun run install-config                              # host profile (default)
+bun run install-config -- --profile gh/myuser       # gh/* profile (SSH-prefer)
 bun run install-config -- --config-dir /custom     # override CONFIG_DIR
 ```
 
@@ -106,14 +109,15 @@ writes environment variables to the user's shell profile. See
 ### Profiles
 
 Profiles live in `src/profiles/` and are excluded from the build output.
-Each is a shell-style `.env` file defining `CONFIG_DIR` and `SANDBOX_CONFIG_DIR`.
+Each is a shell-style `.env` file defining `CONFIG_DIR`, `OPENCODE_CONFIG_SRC`,
+and `SANDBOX_CONFIG_DIR`.
 A profile may also include a `.aoe.toml` file for a profile-specific AoE
 configuration (otherwise `src/aoe-config.toml` is used as the default).
 
-| Profile         | Files                                | CONFIG_DIR               | SANDBOX_CONFIG_DIR               | AoE config                       |
-| --------------- | ------------------------------------ | ------------------------ | -------------------------------- | -------------------------------- |
-| `host`          | `src/profiles/host.env`              | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` | `src/aoe-config.toml` (default)  |
-| `gh/<username>` | `src/profiles/gh.env`, `gh.aoe.toml` | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` | `src/profiles/gh.aoe.toml` (SSH) |
+| Profile         | Files                                             | CONFIG_DIR               | SANDBOX_CONFIG_DIR               | AoE config                       |
+| --------------- | ------------------------------------------------- | ------------------------ | -------------------------------- | -------------------------------- |
+| `host`          | `src/profiles/host.env`                           | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` | `src/aoe-config.toml` (default)  |
+| `gh/<username>` | `src/profiles/gh.env`, `src/profiles/gh.aoe.toml` | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` | `src/profiles/gh.aoe.toml` (SSH) |
 
 #### Profile resolution
 
@@ -131,9 +135,8 @@ This allows per-user overrides while sharing a common base.
 The `gh/*` profile family differs from `host` only in the AoE sandbox config:
 
 - `mount_ssh = true` — mounts the host SSH agent into the container
-- Adds `url.git@github.com:.insteadOf = https://github.com/` so all GitHub
-  clones use SSH instead of HTTPS
-- `GIT_CONFIG_COUNT` is bumped from 2 to 3 to accommodate the extra entry
+- Adds a git config `insteadOf` rule that rewrites `https://github.com/` URLs
+  to `git@github.com:` so clones/fetches/pushes use SSH
 
 Usage:
 

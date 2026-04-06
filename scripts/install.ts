@@ -153,8 +153,32 @@ const outDir = join(repoRoot, "out");
 const outHostDir = join(outDir, "host");
 const outSandboxDir = join(outDir, "sandbox");
 
-const profile = args.profile ?? "host";
-const configDirOverride = args["config-dir"] ?? "";
+const profile = args.profile!;
+const configDirOverride = args["config-dir"]!;
+
+// --- Validate profile name ---
+// Positive allowlist: segments must start with an alphanumeric character,
+// followed by word chars, dots, or dashes. An optional single slash separates
+// family/user profiles (e.g. "gh/username"). Requiring a leading alphanumeric
+// rejects all-dot segments (".", "..") which would cause path traversal via
+// join() normalization. Also inherently blocks null bytes, backslashes, and
+// multi-depth paths.
+function assertSafeProfileName(name: string): void {
+  if (
+    !/^[a-zA-Z0-9][a-zA-Z0-9._-]*(\/[a-zA-Z0-9][a-zA-Z0-9._-]*)?$/.test(name)
+  ) {
+    console.error(`Error: unsafe or malformed profile name: ${name}`);
+    console.error(
+      "Profile names must match <name> or <family>/<name>. Each segment must",
+    );
+    console.error(
+      "start with an alphanumeric character and contain only [a-zA-Z0-9._-].",
+    );
+    process.exit(1);
+  }
+}
+
+assertSafeProfileName(profile);
 
 // --- Load profile ---
 // Profile resolution: for "gh/username", try src/profiles/gh/username.env first,
@@ -176,11 +200,12 @@ function resolveProfileFile(profileName: string): string | null {
 
 const profileFile = resolveProfileFile(profile);
 if (!profileFile) {
+  const slashIdx = profile.indexOf("/");
   console.error(`Error: profile not found for: ${profile}`);
   console.error(
     `  Tried: src/profiles/${profile}.env` +
-      (profile.includes("/")
-        ? `, src/profiles/${profile.slice(0, profile.indexOf("/"))}.env`
+      (slashIdx !== -1
+        ? `, src/profiles/${profile.slice(0, slashIdx)}.env`
         : ""),
   );
   console.error("Available profiles:");
@@ -340,7 +365,14 @@ function ensureOpencodeDataDir(dataDir: string): void {
 }
 
 // --- Deploy AoE config ---
-// AoE config resolution: try profile-specific .aoe.toml, then base, then default.
+// AoE config resolution (3 levels — one more than .env resolution):
+//   1. Exact:   src/profiles/gh/username.aoe.toml
+//   2. Base:    src/profiles/gh.aoe.toml
+//   3. Default: src/aoe-config.toml
+// The extra default level ensures a valid AoE config is always found, even for
+// profiles that don't define a custom one. The .env resolution intentionally
+// stops at 2 levels because there is no meaningful "default .env" — every
+// profile must explicitly declare its directory paths.
 function resolveAoeConfig(profileName: string): string | null {
   // Exact: src/profiles/gh/username.aoe.toml (or src/profiles/host.aoe.toml)
   const exact = join(srcDir, "profiles", `${profileName}.aoe.toml`);
