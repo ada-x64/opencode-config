@@ -13,7 +13,7 @@
 default_tool = "opencode"
 
 [sandbox]
-enabled_by_default = true
+enabled_by_default = false
 default_image = "cubething-occonf-sandbox:latest"
 auto_cleanup = false
 cpu_limit = "4"
