@@ -46,24 +46,28 @@ Provide the implementor with:
 If no schema exists yet, dispatch `@planner` first or switch to plan mode
 (Tab key) to design one before implementing.
 
-### `@auto-implementor` — autonomous schema execution
+### `auto-impl` skill — autonomous schema execution
 
-Dispatch when the user wants to execute a schema **without manual approval gates
-between commit groups**. The auto-implementor will:
+Load the `auto-impl` skill when the user wants to execute a schema without
+manual approval gates between commit groups. The skill turns build mode into
+an autonomous orchestrator:
 
-- Read the schema and switch to the correct branch
-- Work through each commit group autonomously
-- Run a bounded review loop (max 3 reviews per group) after each commit
-- Writes triage entries directly via the vault-triage skill
+- Dispatches `@implementor` for each commit group (first-level subagent)
+- Commits changes after each group
+- Dispatches `@reviewer` for bounded review (up to 3 rounds per group)
+- Writes triage entries for escalations, design decisions, and run summary
+- Never pushes to remote
 
-Provide the auto-implementor with:
+Load with: `skill("auto-impl")`
+
+Provide:
 
 - The repository path (e.g. `$AGENT_REPOS/<owner>/<repo>`)
 - The task directory (e.g. `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/`)
 
-Use `@auto-implementor` for well-specified schemas on repos with good test
-coverage. Use `@implementor` when the user wants to review each commit group
-before proceeding.
+Use the `auto-impl` skill for well-specified schemas on repos with good test
+coverage. Use `@implementor` directly when the user wants to review each commit
+group before proceeding.
 
 ### `@reviewer` — code review
 
@@ -182,6 +186,9 @@ the reality.
   `git switch`, `git checkout` — pre-approved
 - `git commit`, `git push`, `gh pr create`, `gh issue create` — always prompt
   the user before running
+- When the `auto-impl` skill is loaded, `git commit` is pre-approved — the
+  skill implies autonomous commit consent. The prompting rule above applies
+  only when the skill is NOT loaded.
 - For PR creation, prefer the `create_pr` tool which generates a body from commit
   history: `create_pr({ repo: "<owner/repo>" })`
 
@@ -232,4 +239,4 @@ notifications via the vault-triage skill.
 
 - Skip the approval gate between commit groups when using `@implementor`
 - Commit or push without explicit user confirmation
-- Write to the vault directly — vault writes go through the appropriate subagent (exception: triage entries written via the `vault-triage` skill are sanctioned)
+- Write to the vault directly — vault writes go through the appropriate subagent (exceptions: triage entries written via the `vault-triage` skill, and schema/review status updates when the `auto-impl` skill is loaded)
