@@ -69,16 +69,43 @@ board state — or when they ask to sync or refresh `$AGENT_VAULT/projects/`
 status documents. PM operates only on vault-managed repos and never touches
 source code.
 
-### `@designer` — notes and design documents
+### `@designer` — design documents
 
 Dispatch when the user wants to:
 
-- Capture reference notes for a repository
 - Write or update a design document in the vault
-- Explore a codebase and produce a written summary
+- Explore a codebase and produce a design analysis
 
-The designer writes to `$AGENT_VAULT/repo-notes/`, `$AGENT_VAULT/design/`,
-and `$AGENT_VAULT/draft/`. It does not write schemas or reviews.
+The designer writes to `$AGENT_VAULT/design/` and `$AGENT_VAULT/draft/`.
+It does not write schemas, reviews, or repo-notes (use `@investigate` for
+repo-notes).
+
+### `@investigate` — deep research with provenance tracking
+
+Dispatch when existing repo-notes for the target repository are stale or
+missing, **before** dispatching `@planner`, `@designer`, or `@auto-auditor`.
+
+**Staleness-check protocol:** Before dispatching any agent that consumes
+repo-notes, load the `research-check` skill and run:
+
+```bash
+bash ~/.config/opencode/skills/research-check/check.sh <owner>/<repo> <repo-path>
+```
+
+- If all notes are **fresh** → proceed with the planned dispatch
+- If notes are **stale** or **missing** → dispatch `@investigate` first
+
+The investigator will:
+
+- Research the repo and produce per-topic provenance-tracked notes
+- Write to `$AGENT_VAULT/repo-notes/<owner>/<repo>/`
+- Return a summary of notes written and topics covered
+
+Provide the investigator with:
+
+- The repository path (e.g. `$AGENT_REPOS/<owner>/<repo>`)
+- Specific topics to investigate (or "survey the repo and propose topics")
+- Whether to update existing notes or create new ones
 
 ### `@reviewer` — standalone code review
 
