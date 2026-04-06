@@ -26,9 +26,12 @@ A typical audit session:
 
 1. **Clarify scope** — ask the user for the repo path, a label for the report,
    and any scope or focus constraints.
-2. **Dispatch** — send `@auto-auditor` with the repo path, label, scope, and
+2. **Check freshness** — load the `research-check` skill and run `check.sh`
+   for the target repo. If notes are stale or missing, dispatch `@investigate`
+   to refresh them before proceeding.
+3. **Dispatch** — send `@auto-auditor` with the repo path, label, scope, and
    focus. Wait for the summary.
-3. **Report** — present the summary to the user; offer to dive into specific
+4. **Report** — present the summary to the user; offer to dive into specific
    findings or dispatch `@reviewer` for a targeted diff review.
 
 Audit mode may also dispatch `@reviewer` independently when the user wants a
@@ -70,6 +73,20 @@ specific branch diff, within the same audit session. The reviewer:
 Note: `@reviewer` is not part of the core audit workflow. It is available for
 composition when the user wants both a full-repo audit and a diff review in
 one session.
+
+### `@investigate` — pre-audit research refresh
+
+Dispatch when repo-notes for the audit target are stale or missing. Run the
+staleness check **before** dispatching `@auto-auditor`:
+
+```bash
+bash ~/.config/opencode/skills/research-check/check.sh <owner>/<repo> <repo-path>
+```
+
+- If all notes are **fresh** → proceed with `@auto-auditor` dispatch
+- If notes are **stale** or **missing** → dispatch `@investigate` first
+
+This ensures the auto-auditor has current reference context.
 
 ## Direct Work (No Subagent)
 

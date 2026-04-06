@@ -21,18 +21,20 @@ opencode-config/
 ├── src/                       # Source templates (never modified by build)
 │   ├── opencode.json          #   Core config: model, mode prompts
 │   ├── aoe-config.toml        #   AoE sandbox config template
-│   ├── agents/                #   Subagent definitions (6 agents)
+│   ├── agents/                #   Subagent definitions (7 agents)
 │   │   ├── planner.md
 │   │   ├── project-manager.md
 │   │   ├── implementor.md
 │   │   ├── reviewer.md
 │   │   ├── designer.md
+│   │   ├── investigate.md
 │   │   └── auto-auditor.md
 │   ├── permissions/           #   Per-agent bash permission blocks
 │   │   ├── host/              #     Per-agent YAML files for host variant
 │   │   │   ├── auto-auditor.yaml
 │   │   │   ├── designer.yaml
 │   │   │   ├── implementor.yaml
+│   │   │   ├── investigate.yaml
 │   │   │   ├── planner.yaml
 │   │   │   ├── project-manager.yaml
 │   │   │   └── reviewer.yaml
@@ -84,6 +86,7 @@ opencode-config/
 │   │   └── act.sh              #     Run GitHub Actions locally via gh act
 │   ├── skills/                #   Loadable skill instruction sets
 │   │   ├── local-ci/          #     SKILL.md only (script moved to tools/)
+│   │   ├── research-check/    #     SKILL.md + check.sh (repo-notes freshness)
 │   │   ├── vault-cache/       #     SKILL.md only (script moved to tools/)
 │   │   ├── vault-init/        #     SKILL.md + templates/
 │   │   └── vault-triage/      #     SKILL.md + setup.sh + toast-handler.sh
@@ -158,13 +161,13 @@ frontmatter block that declares its permissions, followed by its system prompt.
 
 ### Workflow roles
 
-The seven agents map to distinct phases of the development workflow:
+The eight agents map to distinct phases of the development workflow:
 
 ```
-Plan ──────► Implement ──────► Review
-  @planner    @implementor       @reviewer
-  @project-manager               @designer  (notes / design docs)
-                                 @auto-auditor (quality audits)
+Research ──► Plan ──────► Implement ──────► Review
+  @investigate @planner    @implementor       @reviewer
+               @project-manager               @designer  (design docs)
+                                              @auto-auditor (quality audits)
 ```
 
 ### Agent reference
@@ -232,15 +235,14 @@ Plan ──────► Implement ──────► Review
   the test/lint suite for verification.
 - **Does not:** Run build tools; create PRs or issues; write outside the review file.
 
-#### `@designer` — repo notes and design documents
+#### `@designer` — design documents
 
 - **File:** `src/agents/designer.md`
-- **Role:** Explores repositories and produces written reference material:
-  - Repo notes at `$AGENT_VAULT/repo-notes/<owner>/<repo>/`
+- **Role:** Explores repositories and produces design documents:
   - Design documents at `$AGENT_VAULT/design/`
   - Work-in-progress drafts at `$AGENT_VAULT/draft/`
 - **Write access:** Full vault mutations (`vault_write`, `vault_edit`, `vault_mv`, `vault_rm`).
-- **Does not:** Write schemas or reviews; run build tools; mutate git state.
+- **Does not:** Write to `repo-notes/` (use `@investigate`); write schemas or reviews; run build tools; mutate git state.
 
 #### `@auto-auditor` — headless quality audit
 
@@ -253,6 +255,18 @@ Plan ──────► Implement ──────► Review
   (Rust, Node, Python, cross-language).
 - **Does not:** Run build/install tools; modify the repository; commit; push.
 
+#### `@investigate` — deep research with provenance tracking
+
+- **File:** `src/agents/investigate.md`
+- **Role:** Conducts deep research on a repository and produces per-topic
+  provenance-tracked reference notes at `$AGENT_VAULT/repo-notes/<owner>/<repo>/`.
+  Each note includes a `commit` SHA, `date`, and `sources` list in frontmatter
+  for staleness detection. Can fetch online documentation via `webfetch` and `curl`.
+- **Write access:** Write/Edit tools (for repo-notes and drafts), `mv`, `rm`, `mkdir`
+  (vault filesystem), `curl` (for web research and triage notifications).
+- **Does not:** Write to `design/`; write schemas or reviews; run build tools;
+  mutate git state; dispatch subagents (leaf agent).
+
 ### Permission model
 
 All agents use a **deny-override** pattern: the bash permission block opens
@@ -263,9 +277,9 @@ independently auditable without cross-referencing the global config.
 
 **Orchestrators vs. leaf agents:** `@planner` carries `task: allow` and may
 dispatch subagents. All other agents (`@implementor`, `@project-manager`,
-`@reviewer`, `@designer`, `@auto-auditor`) are **leaf agents** — they have no
-`task:` permission and cannot spawn further subagents. The `auto-impl` skill
-gives build mode autonomous orchestration capabilities (dispatching
+`@reviewer`, `@designer`, `@investigate`, `@auto-auditor`) are **leaf agents** —
+they have no `task:` permission and cannot spawn further subagents. The `auto-impl`
+skill gives build mode autonomous orchestration capabilities (dispatching
 `@implementor` and `@reviewer`) when loaded.
 
 For full details — including the complete read-only baseline, the per-agent
@@ -296,13 +310,14 @@ detailed instructions and references to bundled scripts.
 
 ### Available skills
 
-| Skill          | Directory                  | Purpose                                                                                      |
-| -------------- | -------------------------- | -------------------------------------------------------------------------------------------- |
-| `auto-impl`    | `src/skills/auto-impl/`    | Autonomous schema execution — turns build mode into an orchestrator                          |
-| `local-ci`     | `src/skills/local-ci/`     | Run and debug GitHub Actions workflows locally via `gh act`; use the `local_ci` tool         |
-| `vault-cache`  | `src/skills/vault-cache/`  | Refresh the GitHub metadata cache (projects, milestones, labels); use the `vault_cache` tool |
-| `vault-init`   | `src/skills/vault-init/`   | Initialize or verify the vault directory structure; use the `vault_init` tool                |
-| `vault-triage` | `src/skills/vault-triage/` | Write triage entries, send push notifications, regenerate the inbox                          |
+| Skill            | Directory                    | Purpose                                                                                      |
+| ---------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
+| `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                          |
+| `local-ci`       | `src/skills/local-ci/`       | Run and debug GitHub Actions workflows locally via `gh act`; use the `local_ci` tool         |
+| `research-check` | `src/skills/research-check/` | Check repo-notes freshness against current repo state; outputs structured staleness report   |
+| `vault-cache`    | `src/skills/vault-cache/`    | Refresh the GitHub metadata cache (projects, milestones, labels); use the `vault_cache` tool |
+| `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool                |
+| `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                          |
 
 Six lookup skills (`archive`, `fleet-schemas`, `repo-notes`, `reviews`, `schemas`,
 `vault`) have been replaced by the `vault_find` tool. Three tool-only skills
@@ -585,7 +600,7 @@ notify_triage({
 })
 ```
 
-All 6 agents (and the `auto-impl` skill) load the `vault-triage` skill after
+All 7 agents (and the `auto-impl` skill) load the `vault-triage` skill after
 completing significant work, write a triage entry, send a notification (via
 `notify_triage` tool), and regenerate the inbox (via `triage_dashboard` tool).
 These three post-work steps are mandatory — see the skill's Overview section.

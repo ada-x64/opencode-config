@@ -87,6 +87,7 @@ const HOST_PERMISSIONS: Record<string, PermissionData> = {
   "auto-auditor": loadPermYaml("src/permissions/host/auto-auditor.yaml"),
   designer: loadPermYaml("src/permissions/host/designer.yaml"),
   implementor: loadPermYaml("src/permissions/host/implementor.yaml"),
+  investigate: loadPermYaml("src/permissions/host/investigate.yaml"),
   planner: loadPermYaml("src/permissions/host/planner.yaml"),
   "project-manager": loadPermYaml("src/permissions/host/project-manager.yaml"),
   reviewer: loadPermYaml("src/permissions/host/reviewer.yaml"),
