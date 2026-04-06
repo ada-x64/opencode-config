@@ -314,7 +314,7 @@ detailed instructions and references to bundled scripts.
 | ---------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                          |
 | `local-ci`       | `src/skills/local-ci/`       | Run and debug GitHub Actions workflows locally via `gh act`; use the `local_ci` tool         |
-| `research-check` | `src/skills/research-check/` | Check repo-notes freshness against current repo state; outputs structured staleness report    |
+| `research-check` | `src/skills/research-check/` | Check repo-notes freshness against current repo state; outputs structured staleness report   |
 | `vault-cache`    | `src/skills/vault-cache/`    | Refresh the GitHub metadata cache (projects, milestones, labels); use the `vault_cache` tool |
 | `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool                |
 | `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                          |

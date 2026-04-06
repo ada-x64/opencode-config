@@ -22,6 +22,7 @@ bash ~/.config/opencode/skills/research-check/check.sh <owner>/<repo> <repo-path
 ```
 
 **Arguments:**
+
 - `<owner>/<repo>` — the repo identifier (e.g. `ada-x64/opencode-config`)
 - `<repo-path>` — absolute path to the local repository checkout
 

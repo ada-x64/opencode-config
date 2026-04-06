@@ -66,10 +66,10 @@ repo: <owner>/<repo>
 commit: <full SHA at time of investigation>
 date: YYYY-MM-DD
 sources:
-  - local     # code files read
-  - vault     # existing vault content referenced
-  - github    # issues, PRs, API data
-  - web       # online documentation, references
+  - local # code files read
+  - vault # existing vault content referenced
+  - github # issues, PRs, API data
+  - web # online documentation, references
 ---
 ```
 
