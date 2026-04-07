@@ -50,7 +50,7 @@ phase: "<optional phase label>"
 | ------------ | --------- | -------- | ---------------------------------------------- |
 | `title`      | `string`  | Yes      | AoE session title                              |
 | `repo`       | `string`  | Yes      | `<owner>/<repo>` identifier                    |
-| `branch`     | `string`  | Yes      | Target branch name                             |
+| `branch`     | `string`  | No       | Target branch name                             |
 | `backend`    | `string`  | Yes      | `"copilot"` or `"opencode"`                    |
 | `new_branch` | `boolean` | No       | Create a new branch (default: `true`)          |
 | `group`      | `string`  | No       | AoE group for session organization             |
@@ -169,6 +169,8 @@ delegate_fleet({
 - Prompt files remain in the staging directory as a record of what was sent.
 - If a session fails and needs re-dispatch, the prompt is already available —
   re-read and re-dispatch.
+- For fleet dispatch, the returned array may be shorter than the input if
+  some sessions failed to create. Check stderr for error details.
 
 ## Tool Reference
 
@@ -200,7 +202,7 @@ Returns the **session ID** (UUID string).
 | -------- | -------- | -------- | ---------------------------- |
 | `title`  | `string` | Yes      | AoE session title            |
 | `prompt` | `string` | Yes      | Task prompt for this session |
-| `branch` | `string` | No       | Branch name for this session |
+| `branch` | `string` | No       | Branch or commit to check out in the temporary worktree |
 
 Returns a **JSON array of session IDs**.
 
