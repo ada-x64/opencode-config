@@ -48,6 +48,10 @@ delegate_session() {
   if [[ -z "$session_id" ]]; then
     echo "ERROR: Failed to parse session ID from aoe add output:" >&2
     echo "$add_output" >&2
+    # Clean up orphaned worktree before returning
+    if [[ -n "$worktree_path" && -d "$worktree_path" ]]; then
+      git -C "$repo" worktree remove "$worktree_path" --force 2>/dev/null || true
+    fi
     return 1
   fi
 
@@ -57,7 +61,7 @@ delegate_session() {
   if [[ "$tool" == "opencode" ]]; then
     _delegate_opencode "$session_id" "$prompt"
   else
-    _delegate_copilot "$session_id" "$prompt" "$title"
+    _delegate_copilot "$session_id" "$prompt" "$title" || true
   fi
 
   # Clean up temporary copilot worktree (no longer needed after delegation handoff)
@@ -142,6 +146,7 @@ delegate_fleet() {
   local session_ids=()
   local worktree_paths=()
   local tmux_sessions=()
+  local json_indices=()  # Track original indices for prompt–session alignment
 
   # Phase 1: Create worktrees and aoe sessions
   for i in $(seq 0 $((session_count - 1))); do
@@ -155,10 +160,16 @@ delegate_fleet() {
     short_id=$(head -c 8 /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N | sha256sum | head -c 8)
     local wt_path="/tmp/delegate-${short_id}"
     if [[ -n "$branch" ]]; then
-      git -C "$repo" worktree add "$wt_path" "$branch" --detach 2>/dev/null || \
-        git -C "$repo" worktree add "$wt_path" --detach
+      if ! git -C "$repo" worktree add "$wt_path" "$branch" --detach 2>/dev/null && \
+         ! git -C "$repo" worktree add "$wt_path" --detach 2>/dev/null; then
+        echo "ERROR: Failed to create worktree for $title" >&2
+        continue
+      fi
     else
-      git -C "$repo" worktree add "$wt_path" --detach
+      if ! git -C "$repo" worktree add "$wt_path" --detach 2>/dev/null; then
+        echo "ERROR: Failed to create worktree for $title" >&2
+        continue
+      fi
     fi
     worktree_paths+=("$wt_path")
 
@@ -176,6 +187,7 @@ delegate_fleet() {
       continue
     fi
     session_ids+=("$sid")
+    json_indices+=("$i")  # Remember which JSON index this session came from
   done
 
   if [[ ${#session_ids[@]} -eq 0 ]]; then
@@ -197,8 +209,9 @@ delegate_fleet() {
   # Phase 4: Send prompts with 1s stagger
   for i in "${!session_ids[@]}"; do
     local sid="${session_ids[$i]}"
+    local ji="${json_indices[$i]}"
     local prompt
-    prompt=$(echo "$sessions_json" | jq -r ".[$i].prompt")
+    prompt=$(echo "$sessions_json" | jq -r ".[$ji].prompt")
 
     aoe send "$sid" "Read this task. Do NOT execute. Confirm understanding, then I will send /delegate.
 
