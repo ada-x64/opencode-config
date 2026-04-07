@@ -9,7 +9,8 @@ export default tool({
   description:
     "Batch-dispatch multiple copilot AoE sessions in parallel. " +
     "Creates isolated worktrees, runs the confirmation protocol once " +
-    "for all sessions, and returns all session IDs. " +
+    "for all sessions, and returns successfully created session IDs as a JSON array. " +
+    "Partial failures are logged to stderr; the array may be shorter than the input. " +
     "Use this instead of multiple delegate() calls for copilot fleet work.",
   args: {
     repo: tool.schema.string().describe("Absolute path to the repository"),
@@ -23,7 +24,7 @@ export default tool({
           branch: tool.schema
             .string()
             .optional()
-            .describe("Branch name for this session"),
+            .describe("Branch or commit to check out in the temporary worktree"),
         })
       )
       .describe("Array of session specs to dispatch in parallel"),
