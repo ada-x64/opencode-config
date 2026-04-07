@@ -23,7 +23,7 @@ export default tool({
     branch: tool.schema
       .string()
       .optional()
-      .describe("Branch name (implies --worktree in AoE)"),
+      .describe("Branch name (opencode: creates worktree; copilot: context only)"),
     new_branch: tool.schema
       .boolean()
       .optional()
