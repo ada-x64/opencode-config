@@ -18,14 +18,14 @@ export default tool({
       .array(
         tool.schema.object({
           title: tool.schema.string().describe("AoE session title"),
-          prompt: tool.schema
-            .string()
-            .describe("Task prompt for this session"),
+          prompt: tool.schema.string().describe("Task prompt for this session"),
           branch: tool.schema
             .string()
             .optional()
-            .describe("Branch or commit to check out in the temporary worktree"),
-        })
+            .describe(
+              "Branch or commit to check out in the temporary worktree",
+            ),
+        }),
       )
       .describe("Array of session specs to dispatch in parallel"),
     group: tool.schema

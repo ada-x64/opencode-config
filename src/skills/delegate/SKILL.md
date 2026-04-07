@@ -30,7 +30,7 @@ Two dispatch tools are available:
 
 Each prompt is a standalone Markdown file with YAML frontmatter:
 
-````markdown
+```markdown
 ---
 title: "<session title>"
 repo: "<owner>/<repo>"
@@ -42,7 +42,7 @@ phase: "<optional phase label>"
 ---
 
 <Full task instructions for the delegated agent>
-````
+```
 
 ### Frontmatter fields
 
@@ -109,6 +109,7 @@ After composing all prompts, present them to the user for review:
 4. **STOP and wait for explicit confirmation.** Do NOT proceed to dispatch.
 
 The user may:
+
 - Approve all prompts → proceed to Phase 3.
 - Request edits → modify the prompt files and re-present for review.
 - Cancel → do not dispatch.
@@ -124,12 +125,12 @@ Read all prompt files from the staging directory and dispatch sessions.
 
 Group prompts by backend and repo for optimal dispatch:
 
-| Scenario                          | Dispatch method                                                                                    |
-| --------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Opencode (any)                    | Individual `delegate()` call per session                                                           |
-| Copilot, all same repo            | Single `delegate_fleet()` call                                                                     |
-| Copilot, different repos          | Individual `delegate()` calls (parallel OK)                                                        |
-| Mixed fleet                       | Group copilot by repo → `delegate_fleet()` per group; opencode → individual `delegate()` |
+| Scenario                 | Dispatch method                                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------------- |
+| Opencode (any)           | Individual `delegate()` call per session                                                 |
+| Copilot, all same repo   | Single `delegate_fleet()` call                                                           |
+| Copilot, different repos | Individual `delegate()` calls (parallel OK)                                              |
+| Mixed fleet              | Group copilot by repo → `delegate_fleet()` per group; opencode → individual `delegate()` |
 
 ### Dispatch pattern
 
@@ -190,18 +191,18 @@ Returns the **session ID** (UUID string).
 
 ### `delegate_fleet()` Parameters
 
-| Parameter  | Type            | Required | Default | Description                       |
-| ---------- | --------------- | -------- | ------- | --------------------------------- |
-| `repo`     | `string`        | Yes      | —       | Absolute path to the repository   |
-| `sessions` | `SessionSpec[]` | Yes      | —       | Array of session specs (see below)|
-| `group`    | `string`        | No       | —       | AoE group for organizing sessions |
+| Parameter  | Type            | Required | Default | Description                        |
+| ---------- | --------------- | -------- | ------- | ---------------------------------- |
+| `repo`     | `string`        | Yes      | —       | Absolute path to the repository    |
+| `sessions` | `SessionSpec[]` | Yes      | —       | Array of session specs (see below) |
+| `group`    | `string`        | No       | —       | AoE group for organizing sessions  |
 
 **SessionSpec:**
 
-| Field    | Type     | Required | Description                  |
-| -------- | -------- | -------- | ---------------------------- |
-| `title`  | `string` | Yes      | AoE session title            |
-| `prompt` | `string` | Yes      | Task prompt for this session |
+| Field    | Type     | Required | Description                                             |
+| -------- | -------- | -------- | ------------------------------------------------------- |
+| `title`  | `string` | Yes      | AoE session title                                       |
+| `prompt` | `string` | Yes      | Task prompt for this session                            |
 | `branch` | `string` | No       | Branch or commit to check out in the temporary worktree |
 
 Returns a **JSON array of session IDs**.
