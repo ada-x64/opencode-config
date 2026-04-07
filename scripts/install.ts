@@ -23,8 +23,9 @@
  *   4. rsyncs out/host/ contents to CONFIG_DIR.
  *   5. rsyncs out/sandbox/ contents to SANDBOX_CONFIG_DIR (if it exists).
  *   6. Deploys AoE config (resolving {{AGENT_VAULT}}, {{OPENCODE_CONFIG_SRC}},
- *      {{SANDBOX_CONFIG_DIR}}, and {{OPENCODE_DATA_DIR}}) — uses a profile-specific
- *      .aoe.toml if present, otherwise falls back to src/aoe-config.toml.
+ *      {{SANDBOX_CONFIG_DIR}}, {{OPENCODE_DATA_DIR}}, and {{GH_TOKEN}}) — uses
+ *      a profile-specific .aoe.toml if present, otherwise falls back to
+ *      src/aoe-config.toml.
  *   7. Prints a deployment summary.
  *
  * Separation of concerns:
@@ -451,6 +452,19 @@ Options:
       );
       content = content.replaceAll("{{SANDBOX_CONFIG_DIR}}", sandboxConfigDir);
       content = content.replaceAll("{{OPENCODE_DATA_DIR}}", opencodeDataDir);
+
+      // Resolve GH_TOKEN from the host environment
+      const ghToken = Bun.env.GH_TOKEN ?? "";
+      if (!ghToken) {
+        console.error(
+          "Warning: GH_TOKEN not set — sandbox will have no GitHub authentication.",
+        );
+        console.error(
+          "  Set GH_TOKEN in your environment and re-run install to fix this.",
+        );
+      }
+      content = content.replaceAll("{{GH_TOKEN}}", ghToken);
+
       writeFileSync(aoeDest, content, "utf-8");
       console.log(`AoE config deployed to: ${aoeDest}`);
       console.log(`  Source: ${aoeSrc}`);

@@ -7,8 +7,11 @@
 # {{SANDBOX_CONFIG_DIR}}, and {{OPENCODE_DATA_DIR}} at deploy time.
 #
 # Requires on host:
-#   export GH_TOKEN=$(gh auth token 2>/dev/null)
 #   export NTFY_TOPIC="<your-ntfy-topic>"
+#
+# GH_TOKEN is resolved from $GH_TOKEN at install time via the {{GH_TOKEN}}
+# placeholder. If GH_TOKEN is not set in the environment when install.ts runs,
+# a warning is printed and the sandbox will have no GitHub authentication.
 
 [session]
 default_tool = "opencode"
@@ -32,11 +35,11 @@ environment = [
     "AGENT_REPOS=/workspace",
     "OPENCODE_CONFIG_SRC=/root/.config/opencode",
 
-    # GH_TOKEN (bare key = passthrough from host): needed for `gh` CLI API calls
-    # (issues, PRs, releases) even though git operations use SSH. The HTTPS
-    # credential helper (KEY_0/VALUE_0) is kept as a fallback for any HTTPS git
-    # operation that bypasses the insteadOf rewrite (e.g. explicit HTTPS remotes).
-    "GH_TOKEN",
+    # GH_TOKEN: resolved at install time from $GH_TOKEN. Needed for `gh` CLI
+    # API calls (issues, PRs, releases) even though git operations use SSH.
+    # The HTTPS credential helper (KEY_0/VALUE_0) is kept as a fallback for
+    # any HTTPS git operation that bypasses the insteadOf rewrite.
+    "GH_TOKEN={{GH_TOKEN}}",
     "NTFY_TOPIC",
     # Git config: HTTPS credential helper + protocol v2 + SSH-prefer URL rewrite.
     # The insteadOf rule (KEY_2/VALUE_2) rewrites https://github.com/ URLs to

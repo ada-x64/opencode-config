@@ -6,8 +6,11 @@
 # ~/.config/agent-of-empires/config.toml.
 #
 # Requires on host:
-#   export GH_TOKEN=$(gh auth token 2>/dev/null)
 #   export NTFY_TOPIC="<your-ntfy-topic>"
+#
+# GH_TOKEN is resolved from $GH_TOKEN at install time via the {{GH_TOKEN}}
+# placeholder. If GH_TOKEN is not set in the environment when install.ts runs,
+# a warning is printed and the sandbox will have no GitHub authentication.
 
 [session]
 default_tool = "opencode"
@@ -30,7 +33,7 @@ environment = [
     "AGENT_VAULT=/root/obsidian/agent.obs",
     "AGENT_REPOS=/workspace",
     "OPENCODE_CONFIG_SRC=/root/.config/opencode",
-    "GH_TOKEN",
+    "GH_TOKEN={{GH_TOKEN}}",
     "NTFY_TOPIC",
     "GIT_CONFIG_COUNT=2",
     "GIT_CONFIG_KEY_0=credential.https://github.com.helper",
