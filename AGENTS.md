@@ -82,6 +82,7 @@ opencode-config/
 │   │   ├── create_issue.ts    #     GitHub issue creation from schema
 │   │   ├── create_pr.ts       #     PR creation from commit log
 │   │   ├── delegate.ts        #     AoE delegation tool
+│   │   ├── delegate_fleet.ts  #     Batch copilot fleet dispatch
 │   │   └── local_ci.ts        #     Run GitHub Actions locally via gh act
 │   ├── skills/                #   Loadable skill instruction sets
 │   │   ├── auto-impl/        #     Autonomous schema execution skill
@@ -315,7 +316,7 @@ detailed instructions and references to bundled scripts.
 | Skill            | Directory                    | Purpose                                                                               |
 | ---------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
 | `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                   |
-| `delegate`       | `src/skills/delegate/`       | Spawn AoE sessions for parallel agent work                                            |
+| `delegate`       | `src/skills/delegate/`       | Fleet orchestration — compose/approve/dispatch workflow with opencode and copilot backends |
 | `research-check` | `src/skills/research-check/` | Check notes freshness against current repo state; outputs structured staleness report |
 | `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool         |
 | `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                   |
@@ -341,7 +342,7 @@ call tools directly — there are no shell scripts to invoke.
 | Triage      | `triage_dashboard`, `triage_write`                                                                                                                 |
 | Vault       | `vault_cache`, `vault_edit`, `vault_find`, `vault_gc`, `vault_init`, `vault_lint`, `vault_ls`, `vault_mv`, `vault_read`, `vault_rm`, `vault_write` |
 | GitHub      | `create_issue`, `create_pr`                                                                                                                        |
-| Other       | `delegate`, `local_ci`                                                                                                                             |
+| Other       | `delegate`, `delegate_fleet`, `local_ci`                                                                                                           |
 
 ---
 
