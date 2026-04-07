@@ -10,93 +10,204 @@ description: >
 
 ## Overview
 
-The delegate tool spawns [Agent of Empires](https://github.com/njbrake/agent-of-empires)
-(AoE) sessions for parallel agent work. Two backends are supported:
+The delegate skill orchestrates parallel agent work through a three-phase
+workflow: **compose → approve → dispatch**. Prompts are vault-managed
+Markdown files that the user reviews in Obsidian before any session launches.
 
-1. **opencode** — local Docker sandbox sessions. The common case for
-   repository work. Runs with `-s` (sandbox) and `-y` (YOLO mode).
+Two dispatch backends are supported:
+
+1. **opencode** — local Docker sandbox sessions. Runs with `-s` (sandbox)
+   and `-y` (YOLO mode). The common case for repository work.
 2. **copilot** — cloud delegation via GitHub Copilot's `/delegate` command.
    Uses a two-step confirmation protocol with tmux interaction.
 
+Two dispatch tools are available:
+
+- `delegate()` — single session dispatch (either backend)
+- `delegate_fleet()` — batch copilot dispatch for same-repo sessions
+
+## Prompt File Format
+
+Each prompt is a standalone Markdown file with YAML frontmatter:
+
+````markdown
+---
+title: "<session title>"
+repo: "<owner>/<repo>"
+branch: "<branch name>"
+backend: "copilot" | "opencode"
+new_branch: true | false
+group: "<optional AoE group>"
+phase: "<optional phase label>"
+---
+
+<Full task instructions for the delegated agent>
+````
+
+### Frontmatter fields
+
+| Field        | Type      | Required | Description                                    |
+| ------------ | --------- | -------- | ---------------------------------------------- |
+| `title`      | `string`  | Yes      | AoE session title                              |
+| `repo`       | `string`  | Yes      | `<owner>/<repo>` identifier                    |
+| `branch`     | `string`  | Yes      | Target branch name                             |
+| `backend`    | `string`  | Yes      | `"copilot"` or `"opencode"`                    |
+| `new_branch` | `boolean` | No       | Create a new branch (default: `true`)          |
+| `group`      | `string`  | No       | AoE group for session organization             |
+| `phase`      | `string`  | No       | Phase label for ordering in multi-phase fleets |
+
+### Body conventions
+
+- Flat text. No Markdown formatting that could confuse tmux.
+- Avoid `--` at line starts — tmux interprets these as flags.
+- Opencode prompts: direct task instructions. The session starts in build
+  mode; instruct the agent to switch modes if needed.
+- Copilot prompts: end with explicit push/PR instructions
+  (e.g., "Create a PR via GitHub referencing #NNN").
+
+### Schema execution prompts
+
+For prompts that execute an existing schema, reference the auto-impl skill
+rather than inlining the execution protocol:
+
+```
+Load the auto-impl skill and execute the schema at
+$AGENT_VAULT/tasks/<task>/schema.md
+
+Repository: $AGENT_REPOS/<owner>/<repo>
+Task directory: $AGENT_VAULT/tasks/<task>/
+
+<Any additional context or constraints>
+```
+
+## Phase 1: Compose
+
+Write prompt files to the staging directory in the vault:
+
+| Context    | Staging path                                        |
+| ---------- | --------------------------------------------------- |
+| Any task   | `$AGENT_VAULT/tasks/<task>/prompts/<name>.md`       |
+
+### Generation guidance
+
+- One prompt file per session. Filenames are freeform but should be descriptive.
+- Use the `phase` frontmatter field to indicate ordering for multi-phase fleets.
+- Derive prompt content from the schema's commit groups, reformatted as agent
+  instructions with setup/completion context.
+- For schema execution, reference the auto-impl skill (see above) — do not
+  inline the full execution protocol.
+- Use the template at `$AGENT_VAULT/_misc/templates/delegate-prompt.md` as a
+  starting point.
+
+## Phase 2: Approve
+
+After composing all prompts, present them to the user for review:
+
+1. Tell the user how many prompts are staged and where they are located.
+2. List each prompt by filename and title.
+3. Instruct the user to review them in Obsidian.
+4. **STOP and wait for explicit confirmation.** Do NOT proceed to dispatch.
+
+The user may:
+- Approve all prompts → proceed to Phase 3.
+- Request edits → modify the prompt files and re-present for review.
+- Cancel → do not dispatch.
+
+This gate is **mandatory**. The agent MUST NOT dispatch sessions without
+the user explicitly saying to proceed.
+
+## Phase 3: Dispatch
+
+Read all prompt files from the staging directory and dispatch sessions.
+
+### Backend grouping
+
+Group prompts by backend and repo for optimal dispatch:
+
+| Scenario                          | Dispatch method                                                                                    |
+| --------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Opencode (any)                    | Individual `delegate()` call per session                                                           |
+| Copilot, all same repo            | Single `delegate_fleet()` call                                                                     |
+| Copilot, different repos          | Individual `delegate()` calls (parallel OK)                                                        |
+| Mixed fleet                       | Group copilot by repo → `delegate_fleet()` per group; opencode → individual `delegate()` |
+
+### Dispatch pattern
+
+For each prompt file, read the frontmatter to extract tool parameters and the
+body as the prompt text. Then invoke the appropriate tool:
+
+**Individual dispatch (opencode or single copilot):**
+
+```
+delegate({
+  repo: "<resolved absolute path from owner/repo>",
+  prompt: "<prompt body text>",
+  title: "<title from frontmatter>",
+  tool: "<backend from frontmatter>",
+  branch: "<branch from frontmatter>",
+  new_branch: <new_branch from frontmatter>,
+  group: "<group from frontmatter>"
+})
+```
+
+**Fleet dispatch (multiple copilot, same repo):**
+
+```
+delegate_fleet({
+  repo: "<resolved absolute path>",
+  group: "<shared group>",
+  sessions: [
+    { title: "<title>", prompt: "<body>", branch: "<branch>" },
+    ...
+  ]
+})
+```
+
+### After dispatch
+
+- Record returned session IDs for monitoring.
+- Prompt files remain in the staging directory as a record of what was sent.
+- If a session fails and needs re-dispatch, the prompt is already available —
+  re-read and re-dispatch.
+
 ## Tool Reference
 
-### Parameters
+### `delegate()` Parameters
 
-| Parameter    | Type                        | Required | Default      | Description                                           |
-| ------------ | --------------------------- | -------- | ------------ | ----------------------------------------------------- |
-| `repo`       | `string`                    | Yes      | —            | Absolute path to the repository                       |
-| `prompt`     | `string`                    | Yes      | —            | Task prompt text to send to the spawned agent         |
-| `title`      | `string`                    | Yes      | —            | AoE session title                                     |
-| `tool`       | `"opencode"` \| `"copilot"` | No       | `"opencode"` | Backend to use                                        |
-| `branch`     | `string`                    | No       | —            | Branch name (implies `--worktree` in AoE)             |
-| `new_branch` | `boolean`                   | No       | `true`       | Create a new branch (only applies when branch is set) |
-| `group`      | `string`                    | No       | —            | AoE group for organizing sessions                     |
+| Parameter    | Type                        | Required | Default      | Description                                                     |
+| ------------ | --------------------------- | -------- | ------------ | --------------------------------------------------------------- |
+| `repo`       | `string`                    | Yes      | —            | Absolute path to the repository                                 |
+| `prompt`     | `string`                    | Yes      | —            | Task prompt text to send to the spawned agent                   |
+| `title`      | `string`                    | Yes      | —            | AoE session title                                               |
+| `tool`       | `"opencode"` \| `"copilot"` | No       | `"opencode"` | Backend to use                                                  |
+| `branch`     | `string`                    | No       | —            | Branch name (opencode: creates worktree; copilot: context only) |
+| `new_branch` | `boolean`                   | No       | `true`       | Create a new branch (only applies when branch is set)           |
+| `group`      | `string`                    | No       | —            | AoE group for organizing sessions                               |
 
-### Return Value
+Returns the **session ID** (UUID string).
 
-Returns the **session ID** (UUID string) for the spawned AoE session. Use
-this ID with monitoring commands to track progress.
+### `delegate_fleet()` Parameters
 
-### Usage Examples
+| Parameter  | Type            | Required | Default | Description                       |
+| ---------- | --------------- | -------- | ------- | --------------------------------- |
+| `repo`     | `string`        | Yes      | —       | Absolute path to the repository   |
+| `sessions` | `SessionSpec[]` | Yes      | —       | Array of session specs (see below)|
+| `group`    | `string`        | No       | —       | AoE group for organizing sessions |
 
-**Opencode (default):**
+**SessionSpec:**
 
-```
-delegate({
-  repo: "/workspace/owner/repo/main",
-  prompt: "Implement the caching layer per schema. Run tests after each commit group.",
-  title: "cache-layer",
-  branch: "feat/cache-layer"
-})
-```
+| Field    | Type     | Required | Description                  |
+| -------- | -------- | -------- | ---------------------------- |
+| `title`  | `string` | Yes      | AoE session title            |
+| `prompt` | `string` | Yes      | Task prompt for this session |
+| `branch` | `string` | No       | Branch name for this session |
 
-**Copilot (cloud):**
+Returns a **JSON array of session IDs**.
 
-```
-delegate({
-  repo: "/workspace/owner/repo/main",
-  prompt: "Fix the race condition in the connection pool. Do NOT push. Create a PR via GitHub referencing #42.",
-  title: "fix-race-condition",
-  tool: "copilot",
-  branch: "fix/race-condition"
-})
-```
+**Performance:** Fleet dispatch takes ~2 minutes regardless of session count.
+Individual copilot dispatch takes ~2 minutes per session.
 
-**With group (fleet orchestration):**
-
-```
-delegate({
-  repo: "/workspace/owner/repo/main",
-  prompt: "Run the full audit suite and write findings to the vault.",
-  title: "audit-repo-a",
-  group: "weekly-audit"
-})
-```
-
-## Fleet Orchestration
-
-To orchestrate parallel work across multiple repos or branches:
-
-1. **Spawn sessions** — call `delegate` once per session, collecting the
-   returned session IDs.
-2. **Monitor progress** — enter a polling loop using the monitoring commands
-   below.
-3. **Collect results** — check for triage entries, PRs, or specific output
-   patterns depending on the backend.
-
-### Pattern
-
-```
-# Spawn sessions
-id_1 = delegate({ repo: repo_a, prompt: task_a, title: "task-a", group: "batch" })
-id_2 = delegate({ repo: repo_b, prompt: task_b, title: "task-b", group: "batch" })
-
-# Monitor loop
-# Use aoe status, aoe session capture <id>, and aoe session show <id> --json
-# to track progress across all sessions.
-```
-
-## Monitoring Commands
+## Monitoring
 
 After spawning sessions, use these AoE commands to track progress:
 
@@ -109,24 +220,19 @@ After spawning sessions, use these AoE commands to track progress:
 | `aoe session stop <id>`          | Stop a session            |
 | `aoe send <id> <message>`        | Send a follow-up message  |
 
-## Prompt Guidelines
+### Completion signals
 
-- **Flat text only.** No Markdown formatting that could confuse tmux.
-- **Avoid `--` at line starts.** tmux interprets these as flags, which
-  corrupts the prompt delivery.
-- **Opencode prompts:** Direct task instructions. The session starts in
-  build mode; for audit or note-taking, instruct the agent to switch modes
-  in the prompt.
-- **Copilot prompts:** End with explicit instructions like
-  "Do NOT push. Create a PR via GitHub referencing #NNN." Copilot handles
-  its own git operations.
+- **Opencode:** Poll for an idle prompt, check for triage entries in
+  `$AGENT_VAULT/_misc/activity/`, or check schema status changes in vault
+  frontmatter.
+- **Copilot:** Poll the session output for a PR URL. Copilot creates a PR
+  on GitHub when delegation completes.
 
 ## Copilot-Specific
 
 ### Two-Step Protocol
 
-The copilot backend uses a confirmation protocol to ensure the agent
-understands the task before delegation:
+The copilot backend uses a confirmation protocol:
 
 1. The prompt is sent prefixed with
    "Read this task. Do NOT execute. Confirm understanding."
@@ -135,24 +241,43 @@ understands the task before delegation:
 3. Once confirmed (or timed out), `/delegate` is sent.
 4. The "Send to GitHub?" dialog is confirmed via Enter keypress.
 
+### Worktree Isolation
+
+Each copilot session gets its own temporary worktree under
+`/tmp/delegate-<id>` to prevent `index.lock` conflicts when multiple
+sessions target the same repository. Worktrees are cleaned up automatically
+after delegation completes.
+
+- Single dispatch (`delegate()`): worktree created/cleaned within `delegate_session()`.
+- Fleet dispatch (`delegate_fleet()`): all worktrees created upfront, cleaned after all sessions complete.
+
 ### Timing Expectations
 
-- **Init:** ~8 seconds for copilot to become responsive.
+- **Init:** ~8 seconds per session, ~15 seconds shared (fleet).
 - **Confirmation:** Typically 15–25 seconds after prompt delivery.
 - **Delegation:** ~5 seconds after `/delegate` is sent.
 
 ### Troubleshooting
 
-- **"Session not found" on `/delegate`:** This is intermittent. Dismiss
-  with Esc, run `/clear`, then retry `/delegate`.
-- **Copilot did not confirm within 90s:** The script continues anyway and
-  sends `/delegate`. Check the session output manually to verify the task
-  was received.
+- **"Session not found" on `/delegate`:** Dismiss with Esc, run `/clear`,
+  retry `/delegate`.
+- **Copilot did not confirm within 90s:** The script continues and sends
+  `/delegate`. Check session output manually.
+- **index.lock errors:** Should not occur with worktree isolation. If seen,
+  check that the worktree was created successfully.
 
-## Result Collection
+## Constraints
 
-- **Opencode sessions:** Poll for an idle prompt or check for triage entries
-  in `$AGENT_VAULT/_misc/activity/`. The spawned agent writes triage entries
-  on completion.
-- **Copilot sessions:** Poll the session output for a PR URL. Copilot
-  creates a PR on GitHub when delegation completes successfully.
+- **MUST NOT dispatch without user approval.** Phase 2 (Approve) is mandatory.
+  Never skip directly from compose to dispatch.
+- **MUST write prompts to vault before dispatch.** Prompts must exist as
+  reviewable files, not as inline strings passed directly to tools.
+- **MUST wait for explicit user confirmation.** "Looks good", "proceed",
+  "dispatch" — any affirmative. Do not infer approval from silence or
+  ambiguous responses.
+- **MUST NOT modify prompt files after user approval.** If changes are
+  needed, re-enter Phase 2 (Approve) for a new review cycle.
+- **Fleet dispatch is copilot-only.** `delegate_fleet()` only handles
+  copilot sessions. Opencode sessions always dispatch individually.
+- **Fleet dispatch is single-repo.** One `delegate_fleet()` call per repo.
+  Multi-repo fleets dispatch as separate calls.
