@@ -14,12 +14,30 @@ delegate_session() {
   # Build aoe add command
   local cmd=(aoe add "$repo" -t "$title" -c "$tool")
   [[ -n "$group" ]] && cmd+=(-g "$group")
-  [[ -n "$branch" ]] && cmd+=(-w "$branch")
-  [[ "$new_branch" == "true" && -n "$branch" ]] && cmd+=(-b)
+  if [[ -n "$branch" && "$tool" != "copilot" ]]; then
+    cmd+=(-w "$branch")
+    [[ "$new_branch" == "true" ]] && cmd+=(-b)
+  fi
 
   # Opencode gets sandbox; copilot does not
   [[ "$tool" == "opencode" ]] && cmd+=(-s)
   cmd+=(-y)
+
+  # For copilot sessions, create an isolated worktree to avoid index.lock conflicts
+  local worktree_path=""
+  if [[ "$tool" == "copilot" ]]; then
+    local short_id
+    short_id=$(head -c 8 /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N | sha256sum | head -c 8)
+    worktree_path="/tmp/delegate-${short_id}"
+    if [[ -n "$branch" ]]; then
+      git -C "$repo" worktree add "$worktree_path" "$branch" --detach 2>/dev/null || \
+        git -C "$repo" worktree add "$worktree_path" --detach
+    else
+      git -C "$repo" worktree add "$worktree_path" --detach
+    fi
+    # Point the aoe session at the isolated worktree instead of the shared repo
+    cmd[2]="$worktree_path"
+  fi
 
   # Create session, parse ID from output
   local add_output
@@ -40,6 +58,11 @@ delegate_session() {
     _delegate_opencode "$session_id" "$prompt"
   else
     _delegate_copilot "$session_id" "$prompt" "$title"
+  fi
+
+  # Clean up temporary copilot worktree (no longer needed after delegation handoff)
+  if [[ -n "$worktree_path" && -d "$worktree_path" ]]; then
+    git -C "$repo" worktree remove "$worktree_path" --force 2>/dev/null || true
   fi
 
   echo "$session_id"
@@ -98,4 +121,151 @@ $prompt"
 
   # Step 4: Confirm "Send to GitHub?" dialog
   tmux send-keys -t "$tmux_session" Enter
+}
+
+delegate_fleet() {
+  # Usage: delegate_fleet <repo> <group> <json_sessions>
+  # json_sessions: [{"title":"...","prompt":"...","branch":"..."},...]
+  # Copilot-only. Creates isolated worktrees, batches the confirmation protocol.
+  local repo="$1"
+  local group="${2:-}"
+  local sessions_json="$3"
+
+  local session_count
+  session_count=$(echo "$sessions_json" | jq 'length')
+
+  if [[ "$session_count" -eq 0 ]]; then
+    echo "ERROR: No sessions provided" >&2
+    return 1
+  fi
+
+  local session_ids=()
+  local worktree_paths=()
+  local tmux_sessions=()
+
+  # Phase 1: Create worktrees and aoe sessions
+  for i in $(seq 0 $((session_count - 1))); do
+    local title prompt branch
+    title=$(echo "$sessions_json" | jq -r ".[$i].title")
+    prompt=$(echo "$sessions_json" | jq -r ".[$i].prompt")
+    branch=$(echo "$sessions_json" | jq -r ".[$i].branch // empty")
+
+    # Create isolated worktree
+    local short_id
+    short_id=$(head -c 8 /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N | sha256sum | head -c 8)
+    local wt_path="/tmp/delegate-${short_id}"
+    if [[ -n "$branch" ]]; then
+      git -C "$repo" worktree add "$wt_path" "$branch" --detach 2>/dev/null || \
+        git -C "$repo" worktree add "$wt_path" --detach
+    else
+      git -C "$repo" worktree add "$wt_path" --detach
+    fi
+    worktree_paths+=("$wt_path")
+
+    # Create aoe session pointing to isolated worktree
+    local cmd=(aoe add "$wt_path" -t "$title" -c copilot)
+    [[ -n "$group" ]] && cmd+=(-g "$group")
+    cmd+=(-y)
+
+    local add_output
+    add_output=$("${cmd[@]}" 2>&1)
+    local sid
+    sid=$(echo "$add_output" | grep -oP '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
+    if [[ -z "$sid" ]]; then
+      echo "ERROR: Failed to create session for $title: $add_output" >&2
+      continue
+    fi
+    session_ids+=("$sid")
+  done
+
+  if [[ ${#session_ids[@]} -eq 0 ]]; then
+    echo "ERROR: No sessions were created successfully" >&2
+    for wt in "${worktree_paths[@]}"; do
+      git -C "$repo" worktree remove "$wt" --force 2>/dev/null || true
+    done
+    return 1
+  fi
+
+  # Phase 2: Start all sessions
+  for sid in "${session_ids[@]}"; do
+    aoe session start "$sid"
+  done
+
+  # Phase 3: Single shared init wait
+  sleep 15
+
+  # Phase 4: Send prompts with 1s stagger
+  for i in "${!session_ids[@]}"; do
+    local sid="${session_ids[$i]}"
+    local prompt
+    prompt=$(echo "$sessions_json" | jq -r ".[$i].prompt")
+
+    aoe send "$sid" "Read this task. Do NOT execute. Confirm understanding, then I will send /delegate.
+
+$prompt"
+    sleep 1
+  done
+
+  # Phase 5: Press Enter in each tmux session (paste confirmation)
+  for sid in "${session_ids[@]}"; do
+    local tmux_sess
+    tmux_sess=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | \
+      grep "^aoe_.*${sid:0:8}" | head -1)
+    if [[ -n "$tmux_sess" ]]; then
+      tmux send-keys -t "$tmux_sess" Enter
+      tmux_sessions+=("$tmux_sess")
+    else
+      echo "WARNING: Could not find tmux session for $sid" >&2
+      tmux_sessions+=("")
+    fi
+  done
+
+  # Phase 6: Shared confirmation poll (up to 90s)
+  local confirmed=()
+  for _ in "${session_ids[@]}"; do confirmed+=(false); done
+
+  for _ in $(seq 1 18); do
+    sleep 5
+    local all_done=true
+    for i in "${!session_ids[@]}"; do
+      if [[ "${confirmed[$i]}" == "true" ]]; then continue; fi
+      local capture
+      capture=$(aoe session capture "${session_ids[$i]}" --strip-ansi -n 50 2>/dev/null || true)
+      if echo "$capture" | grep -qiE '(ready|understood|confirm|will wait)'; then
+        confirmed[$i]=true
+      else
+        all_done=false
+      fi
+    done
+    if [[ "$all_done" == "true" ]]; then break; fi
+  done
+
+  # Phase 7: Send /delegate to all
+  for sid in "${session_ids[@]}"; do
+    aoe send "$sid" "/delegate"
+  done
+
+  # Phase 8: Shared dialog wait
+  sleep 8
+
+  # Phase 9: Confirm dialog in all sessions
+  for i in "${!session_ids[@]}"; do
+    if [[ -n "${tmux_sessions[$i]}" ]]; then
+      tmux send-keys -t "${tmux_sessions[$i]}" Enter
+    fi
+  done
+
+  # Phase 10: Clean up worktrees (best-effort)
+  sleep 5
+  for wt in "${worktree_paths[@]}"; do
+    git -C "$repo" worktree remove "$wt" --force 2>/dev/null || true
+  done
+
+  # Return session IDs as JSON array
+  printf '['
+  for i in "${!session_ids[@]}"; do
+    [[ $i -gt 0 ]] && printf ','
+    printf '"%s"' "${session_ids[$i]}"
+  done
+  printf ']\n'
 }
