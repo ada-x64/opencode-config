@@ -27,7 +27,7 @@ delegate_session() {
   local worktree_path=""
   if [[ "$tool" == "copilot" ]]; then
     local short_id
-    short_id=$(head -c 8 /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N | sha256sum | head -c 8)
+    short_id=$(cat /proc/sys/kernel/random/uuid 2>/dev/null | grep -oP '^[0-9a-f]{8}' || date +%s%N | sha256sum | head -c 8)
     worktree_path="/tmp/delegate-${short_id}"
     if [[ -n "$branch" ]]; then
       git -C "$repo" worktree add "$worktree_path" "$branch" --detach 2>/dev/null || \
@@ -64,7 +64,8 @@ delegate_session() {
     _delegate_copilot "$session_id" "$prompt" "$title" || true
   fi
 
-  # Clean up temporary copilot worktree (no longer needed after delegation handoff)
+  # Clean up temporary copilot worktree after dispatch protocol completes
+  # Note: copilot may still be running; worktree is only needed for initial checkout
   if [[ -n "$worktree_path" && -d "$worktree_path" ]]; then
     git -C "$repo" worktree remove "$worktree_path" --force 2>/dev/null || true
   fi
@@ -145,19 +146,21 @@ delegate_fleet() {
 
   local session_ids=()
   local worktree_paths=()
-  local tmux_sessions=()
+  declare -A tmux_by_sid
   local json_indices=()  # Track original indices for prompt–session alignment
 
   # Phase 1: Create worktrees and aoe sessions
   for i in $(seq 0 $((session_count - 1))); do
     local title prompt branch
-    title=$(echo "$sessions_json" | jq -r ".[$i].title")
+    {
+      read -r title
+      read -r branch
+    } < <(echo "$sessions_json" | jq -r ".[$i] | .title, (.branch // empty)")
     prompt=$(echo "$sessions_json" | jq -r ".[$i].prompt")
-    branch=$(echo "$sessions_json" | jq -r ".[$i].branch // empty")
 
     # Create isolated worktree
     local short_id
-    short_id=$(head -c 8 /proc/sys/kernel/random/uuid 2>/dev/null || date +%s%N | sha256sum | head -c 8)
+    short_id=$(cat /proc/sys/kernel/random/uuid 2>/dev/null | grep -oP '^[0-9a-f]{8}' || date +%s%N | sha256sum | head -c 8)
     local wt_path="/tmp/delegate-${short_id}"
     if [[ -n "$branch" ]]; then
       if ! git -C "$repo" worktree add "$wt_path" "$branch" --detach 2>/dev/null && \
@@ -171,7 +174,6 @@ delegate_fleet() {
         continue
       fi
     fi
-    worktree_paths+=("$wt_path")
 
     # Create aoe session pointing to isolated worktree
     local cmd=(aoe add "$wt_path" -t "$title" -c copilot)
@@ -184,8 +186,10 @@ delegate_fleet() {
     sid=$(echo "$add_output" | grep -oP '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | head -1)
     if [[ -z "$sid" ]]; then
       echo "ERROR: Failed to create session for $title: $add_output" >&2
+      git -C "$repo" worktree remove "$wt_path" --force 2>/dev/null || true
       continue
     fi
+    worktree_paths+=("$wt_path")  # Only track on success
     session_ids+=("$sid")
     json_indices+=("$i")  # Remember which JSON index this session came from
   done
@@ -226,10 +230,9 @@ $prompt"
       grep "^aoe_.*${sid:0:8}" | head -1)
     if [[ -n "$tmux_sess" ]]; then
       tmux send-keys -t "$tmux_sess" Enter
-      tmux_sessions+=("$tmux_sess")
+      tmux_by_sid["$sid"]="$tmux_sess"
     else
       echo "WARNING: Could not find tmux session for $sid" >&2
-      tmux_sessions+=("")
     fi
   done
 
@@ -262,14 +265,14 @@ $prompt"
   sleep 8
 
   # Phase 9: Confirm dialog in all sessions
-  for i in "${!session_ids[@]}"; do
-    if [[ -n "${tmux_sessions[$i]}" ]]; then
-      tmux send-keys -t "${tmux_sessions[$i]}" Enter
+  for sid in "${session_ids[@]}"; do
+    if [[ -n "${tmux_by_sid[$sid]:-}" ]]; then
+      tmux send-keys -t "${tmux_by_sid[$sid]}" Enter
     fi
   done
 
-  # Phase 10: Clean up worktrees (best-effort)
-  sleep 5
+  # Phase 10: Clean up worktrees (best-effort, after protocol completes)
+  sleep 30
   for wt in "${worktree_paths[@]}"; do
     git -C "$repo" worktree remove "$wt" --force 2>/dev/null || true
   done
