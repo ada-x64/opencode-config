@@ -3,10 +3,10 @@ import { mkdtemp, rm, mkdir, writeFile } from "fs/promises";
 import { existsSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
-import wt_detect from "../../src/tools/wt_detect";
-import wt_owner_repo from "../../src/tools/wt_owner_repo";
-import wt_switch_branch from "../../src/tools/wt_switch_branch";
-import wt_cleanup from "../../src/tools/wt_cleanup";
+import wt_detect from "../../src/tools/wt/detect";
+import wt_owner_repo from "../../src/tools/wt/owner_repo";
+import wt_switch_branch from "../../src/tools/wt/switch_branch";
+import wt_cleanup from "../../src/tools/wt/cleanup";
 import { execute_tool } from "./_lib";
 
 let tmp: string;

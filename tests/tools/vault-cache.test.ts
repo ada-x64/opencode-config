@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import vault_cache from "../../src/tools/vault_cache";
+import vault_cache from "../../src/tools/vault/cache";
 
 // refresh.sh requires GitHub auth and live network — shape-only tests.
 

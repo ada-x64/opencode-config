@@ -1,7 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
 import { readdir, readFile, rename, mkdir, cp, rm } from "node:fs/promises";
 import path from "node:path";
-import { fmRead } from "./_frontmatter";
+import { fmRead } from "../fm/_lib";
 
 export default tool({
   description:

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import session_notify from "../../src/tools/session_notify";
+import session_notify from "../../src/tools/notify/session";
 import { execute_tool } from "./_lib";
 
 describe("session_notify", () => {

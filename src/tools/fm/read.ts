@@ -1,6 +1,6 @@
 import { tool } from "@opencode-ai/plugin";
 import { readFile } from "node:fs/promises";
-import { fmRead } from "./_frontmatter";
+import { fmRead } from "./_lib";
 
 export default tool({
   description:

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import triage_write from "../../src/tools/triage_write";
+import triage_write from "../../src/tools/triage/write";
 import { execute_tool } from "./_lib";
 import path from "path";
 

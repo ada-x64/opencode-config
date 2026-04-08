@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import { notifyTriage } from "./_notify";
+import { notifyTriage } from "./_lib";
 
 export default tool({
   description:

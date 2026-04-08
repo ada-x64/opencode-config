@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "fs/promises";
 import { tmpdir } from "os";
 import path from "path";
-import triage_dashboard from "../../src/tools/triage_dashboard";
+import triage_dashboard from "../../src/tools/triage/dashboard";
 import { execute_tool } from "./_lib";
 
 let tmp: string;

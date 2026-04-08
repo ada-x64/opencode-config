@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { mkdtemp, mkdir, writeFile, rm } from "fs/promises";
 import { tmpdir } from "os";
 import path from "path";
-import vault_gc from "../../src/tools/vault_gc";
+import vault_gc from "../../src/tools/vault/gc";
 import { execute_tool } from "./_lib";
 
 let tmp: string;

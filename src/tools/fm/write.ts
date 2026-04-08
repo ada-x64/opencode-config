@@ -1,6 +1,6 @@
 import { tool } from "@opencode-ai/plugin";
 import { readFile, writeFile } from "node:fs/promises";
-import { fmWrite } from "./_frontmatter";
+import { fmWrite } from "./_lib";
 
 export default tool({
   description:

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import vault_find from "../../src/tools/vault_find";
+import vault_find from "../../src/tools/vault/find";
 import type { ToolContext } from "@opencode-ai/plugin";
 
 describe("vault_find", () => {

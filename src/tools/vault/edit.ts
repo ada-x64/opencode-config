@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import { resolveVaultPath } from "./_vault";
+import { resolveVaultPath } from "./_lib";
 
 export default tool({
   description:

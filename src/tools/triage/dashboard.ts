@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import { fmRead } from "./_frontmatter";
+import { fmRead } from "../fm/_lib";
 import fs from "fs/promises";
 import path from "path";
 

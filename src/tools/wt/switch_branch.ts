@@ -1,7 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { wtBareRoot, wtDetect } from "./_worktree";
+import { wtBareRoot, wtDetect } from "./_lib";
 
 export default tool({
   description:

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { mkdtemp, mkdir, writeFile, rm } from "fs/promises";
 import { tmpdir } from "os";
 import path from "path";
-import vault_lint from "../../src/tools/vault_lint";
+import vault_lint from "../../src/tools/vault/lint";
 import { execute_tool } from "./_lib";
 
 // Each test file owns its own isolated vault so it never touches the real

@@ -1,7 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
 import fs from "fs/promises";
 import path from "path";
-import { resolveVaultPath } from "./_vault";
+import { resolveVaultPath } from "./_lib";
 
 export default tool({
   description:

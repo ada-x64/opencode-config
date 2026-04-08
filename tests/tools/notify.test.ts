@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
-import notify_triage from "../../src/tools/notify_triage";
-import triage_dashboard from "../../src/tools/triage_dashboard";
+import notify_triage from "../../src/tools/notify/triage";
+import triage_dashboard from "../../src/tools/triage/dashboard";
 import type { ToolContext } from "@opencode-ai/plugin";
 
 describe("notify_triage", () => {

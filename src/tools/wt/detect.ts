@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import { wtDetect } from "./_worktree";
+import { wtDetect } from "./_lib";
 
 export default tool({
   description:
