@@ -23,7 +23,7 @@ export default tool({
     const archiveRoot = path.join(vault, "_misc/archive");
     const dryRun = args.dry_run ?? false;
 
-    // Walk tasks/ recursively, collect schema.md files, skip /_fleet/
+    // Walk tasks/ recursively, collect schema.md files
     let schemaFiles: string[] = [];
     try {
       const entries = await readdir(tasksRoot, { recursive: true });
@@ -31,8 +31,7 @@ export default tool({
         .map((e) => path.join(tasksRoot, String(e)))
         .filter(
           (fullPath) =>
-            path.basename(fullPath) === "schema.md" &&
-            !fullPath.includes("/_fleet/"),
+            path.basename(fullPath) === "schema.md",
         );
     } catch {
       return "Error: could not read tasks/ directory (does it exist?).";
@@ -102,7 +101,7 @@ export default tool({
 
     for (const taskDir of toArchive) {
       const taskRel = taskDir.slice(vault.length).replace(/^\//, "");
-      // Strip leading "tasks/" to get owner/repo/task
+      // Strip leading "tasks/" to get task
       const innerRel = taskRel.replace(/^tasks\//, "");
       const dest = path.join(archiveRoot, innerRel);
       const destRel = dest.slice(vault.length).replace(/^\//, "");

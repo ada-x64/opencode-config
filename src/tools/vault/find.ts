@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import { readdir, readFile, access } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 // Parse all key: value pairs from the YAML frontmatter block
@@ -45,7 +45,7 @@ interface FindResult {
 export default tool({
   description:
     "Search the agent vault for schemas, reviews, notes, archive, " +
-    "fleet-schemas, triage, design docs, or all sections. Returns a JSON " +
+    "triage, design docs, or all sections. Returns a JSON " +
     "array of { path, title, frontmatter } objects.",
   args: {
     section: tool.schema
@@ -54,7 +54,6 @@ export default tool({
         "reviews",
         "notes",
         "archive",
-        "fleet-schemas",
         "triage",
         "design",
         "all",
@@ -92,7 +91,7 @@ export default tool({
           return {
             roots: [path.join(vault!, "tasks")],
             filter: (rel) =>
-              path.basename(rel) === "schema.md" && !rel.includes("/_fleet/"),
+              path.basename(rel) === "schema.md",
           };
 
         case "reviews":
@@ -100,10 +99,11 @@ export default tool({
             roots: [path.join(vault!, "tasks")],
             filter: (rel) => {
               const base = path.basename(rel);
+              const parentDir = path.basename(path.dirname(rel));
               return (
                 base.startsWith("review") &&
                 base.endsWith(".md") &&
-                !rel.includes("/_fleet/")
+                parentDir === "reviews"
               );
             },
           };
@@ -120,28 +120,11 @@ export default tool({
             filter: () => true,
           };
 
-        case "fleet-schemas":
+        case "triage": {
           return {
-            roots: [path.join(vault!, "tasks/_fleet")],
+            roots: [path.join(vault!, "_misc/activity")],
             filter: () => true,
           };
-
-        case "triage": {
-          const candidates = [
-            path.join(vault!, "_misc/triage"),
-            path.join(vault!, "_misc/activity"),
-            path.join(vault!, "_misc/handoffs"),
-          ];
-          const existing: string[] = [];
-          for (const dir of candidates) {
-            try {
-              await access(dir);
-              existing.push(dir);
-            } catch {
-              // directory absent — skip
-            }
-          }
-          return { roots: existing, filter: () => true };
         }
 
         case "design":
@@ -191,10 +174,20 @@ export default tool({
       filtered = filtered.filter((f) => glob.match(path.basename(f)));
     }
 
-    // Apply optional repo filter — path must contain /{repo}/
+    // Apply optional repo filter — read frontmatter and check repo field
     if (args.repo) {
-      const segment = `/${args.repo}/`;
-      filtered = filtered.filter((f) => f.includes(segment));
+      const matches = await Promise.all(
+        filtered.map(async (f) => {
+          try {
+            const content = await readFile(f, "utf-8");
+            const fm = parseFrontmatter(content);
+            return fm["repo"] === args.repo ? f : null;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      filtered = matches.filter((f): f is string => f !== null);
     }
 
     // Apply optional content_grep filter

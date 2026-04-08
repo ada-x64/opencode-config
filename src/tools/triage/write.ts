@@ -5,7 +5,7 @@ import path from "path";
 export default tool({
   description:
     "Write a triage entry to the vault. Handles directory resolution " +
-    "(_misc/triage/, _misc/activity/, _misc/handoffs/), UTC timestamp " +
+    "_misc/activity/, UTC timestamp " +
     "filename generation, and frontmatter construction. " +
     "Returns { path, filename } for use with notify_triage.",
   args: {
@@ -41,24 +41,8 @@ export default tool({
     const vault = process.env.AGENT_VAULT;
     if (!vault) return "Error: AGENT_VAULT is not set";
 
-    // Map type to subdirectory
-    let subdir: string;
-    switch (args.type) {
-      case "escalation":
-      case "design-question":
-      case "permissions-request":
-        subdir = "_misc/triage";
-        break;
-      case "activity":
-        subdir = "_misc/activity";
-        break;
-      case "handoff":
-      case "run-summary":
-        subdir = "_misc/handoffs";
-        break;
-      default:
-        return `Error: Unknown type: ${args.type}`;
-    }
+    // All types route to _misc/activity
+    const subdir = "_misc/activity";
 
     const dir = path.join(vault, subdir);
     await fs.mkdir(dir, { recursive: true });

@@ -19,11 +19,9 @@ export default tool({
     const vault = process.env.AGENT_VAULT;
     if (!vault) return "AGENT_VAULT is not set";
 
-    // Directories to scan (new layout)
+    // Directories to scan
     const triageDirs = [
-      path.join(vault, "_misc/triage"),
       path.join(vault, "_misc/activity"),
-      path.join(vault, "_misc/handoffs"),
     ];
 
     interface Row {

@@ -21,31 +21,37 @@ export default tool({
     const vault = process.env.AGENT_VAULT;
     if (!vault) throw new Error("AGENT_VAULT is not set");
 
-    // Discover owner/repo pairs across vault sections
+    // Discover owner/repo pairs by scanning tasks/ for schema.md files
     const repos = new Set<string>();
-    for (const section of ["tasks", "notes"]) {
-      const sectionDir = join(vault, section);
-      let ownerEntries;
+    const tasksDir = join(vault, "tasks");
+    let schemaEntries: string[];
+    try {
+      const all = await readdir(tasksDir, { recursive: true });
+      schemaEntries = all
+        .map((e) => String(e))
+        .filter((e) => e.endsWith("schema.md"));
+    } catch {
+      schemaEntries = [];
+    }
+    for (const entry of schemaEntries) {
+      const fullPath = join(tasksDir, entry);
       try {
-        ownerEntries = await readdir(sectionDir, { withFileTypes: true });
+        const content = await readFile(fullPath, "utf-8");
+        // Parse frontmatter repo: field
+        const lines = content.split("\n");
+        if (lines[0]?.trim() === "---") {
+          for (let i = 1; i < lines.length; i++) {
+            if (lines[i]?.trim() === "---") break;
+            const match = lines[i]?.match(/^repo:\s*(.+)$/);
+            if (match) {
+              const repoVal = match[1]!.trim().replace(/^['"]|['"]$/g, "");
+              if (repoVal) repos.add(repoVal);
+              break;
+            }
+          }
+        }
       } catch {
-        continue;
-      }
-      for (const ownerEntry of ownerEntries) {
-        if (!ownerEntry.isDirectory()) continue;
-        const owner = ownerEntry.name;
-        if (owner === "_fleet" || owner === "_activity") continue;
-        const ownerDir = join(sectionDir, owner);
-        let repoEntries;
-        try {
-          repoEntries = await readdir(ownerDir, { withFileTypes: true });
-        } catch {
-          continue;
-        }
-        for (const repoEntry of repoEntries) {
-          if (!repoEntry.isDirectory()) continue;
-          repos.add(`${owner}/${repoEntry.name}`);
-        }
+        // skip unreadable files
       }
     }
 

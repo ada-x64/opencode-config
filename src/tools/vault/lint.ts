@@ -190,7 +190,6 @@ export default tool({
         path.join(vault, "tasks"),
         (rel) =>
           path.basename(rel) === "schema.md" &&
-          !rel.includes("/_fleet/") &&
           (!filter ||
             rel.startsWith(filter + "/") ||
             rel.includes("/" + filter + "/")),
@@ -211,12 +210,18 @@ export default tool({
     if (lintReviews) {
       const reviewFiles = await findFiles(
         path.join(vault, "tasks"),
-        (rel) =>
-          path.basename(rel).startsWith("review") &&
-          rel.endsWith(".md") &&
-          (!filter ||
-            rel.startsWith(filter + "/") ||
-            rel.includes("/" + filter + "/")),
+        (rel) => {
+          const base = path.basename(rel);
+          const parentDir = path.basename(path.dirname(rel));
+          return (
+            base.startsWith("review") &&
+            rel.endsWith(".md") &&
+            parentDir === "reviews" &&
+            (!filter ||
+              rel.startsWith(filter + "/") ||
+              rel.includes("/" + filter + "/"))
+          );
+        },
       );
 
       if (reviewFiles.length === 0) {

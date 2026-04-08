@@ -95,7 +95,7 @@ export async function notifyTriage(opts: {
     const vaultName = path.basename(agentVault);
     let clickUrl = "";
     if (vaultName) {
-      const filePath = opts.file ?? `tasks/${opts.task}/triage`;
+      const filePath = opts.file ?? `_misc/activity`;
       const fileNoExt = filePath.replace(/\.md$/, "");
       clickUrl = `obsidian://open?vault=${vaultName}&file=${fileNoExt}`;
     }
