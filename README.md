@@ -104,15 +104,15 @@ not baked into agent prompts -- an agent calls `skill("vault-triage")` when it
 needs triage capabilities, for example. Each skill lives in `src/skills/<name>/`
 with a `SKILL.md` descriptor and optional helper scripts.
 
-There are 13 skills covering vault operations (search, init, lint, gc, triage,
-cache), work product lookup (schemas, reviews, notes, archive), and development
-tooling (local-ci).
+There are 5 loadable skills covering autonomous execution (auto-impl),
+delegation (delegate), research freshness checks (research-check), vault
+initialization (vault-init), and triage workflows (vault-triage).
 
 ### Permissions
 
 All agents use a deny-override permission model: every agent's bash permission
 block starts with `"*": deny` and then explicitly allows only the commands it
-needs. This makes each agent's capabilities independently auditable. Two agents
+needs. This makes each agent's capabilities independently auditable. One agent
 (`@planner`) can dispatch subagents; the rest are leaf
 agents with no `task:` permission. The `auto-impl` skill gives build mode
 autonomous orchestration capabilities when loaded.
