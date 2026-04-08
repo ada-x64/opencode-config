@@ -61,8 +61,8 @@ describe("vault_init", () => {
       "_misc/templates/audit.md",
       "_misc/templates/design.md",
       "_misc/templates/repo-notes.md",
-      "_misc/templates/fleet-schema.md",
-      "_misc/templates/fleet-schema-issue.md",
+      "_misc/templates/parent-task-schema.md",
+      "_misc/templates/parent-task-issue.md",
       "_misc/templates/project-status.md",
     ]) {
       expect(existsSync(path.join(vault, tmpl))).toBe(true);

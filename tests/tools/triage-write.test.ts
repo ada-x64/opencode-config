@@ -17,9 +17,7 @@ describe("triage_write", () => {
   });
 
   it("description mentions key directories", () => {
-    expect(triage_write.description).toContain("_misc/triage");
     expect(triage_write.description).toContain("_misc/activity");
-    expect(triage_write.description).toContain("_misc/handoffs");
   });
 
   it("description mentions return value", () => {
@@ -48,7 +46,7 @@ describe("triage_write", () => {
     );
   });
 
-  it("writes an escalation entry to _misc/triage/", async () => {
+  it("writes an escalation entry to _misc/activity/", async () => {
     const raw = await execute_tool(triage_write, {
       type: "escalation",
       task: "ada-x64/opencode-config/escalation-task",
@@ -58,13 +56,13 @@ describe("triage_write", () => {
     });
 
     const parsed = JSON.parse(raw);
-    expect(parsed.path).toContain("_misc/triage");
+    expect(parsed.path).toContain("_misc/activity");
     expect(parsed.filename).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.md$/,
     );
   });
 
-  it("writes a handoff entry to _misc/handoffs/", async () => {
+  it("writes a handoff entry to _misc/activity/", async () => {
     const raw = await execute_tool(triage_write, {
       type: "handoff",
       task: "ada-x64/opencode-config/handoff-task",
@@ -74,7 +72,7 @@ describe("triage_write", () => {
     });
 
     const parsed = JSON.parse(raw);
-    expect(parsed.path).toContain("_misc/handoffs");
+    expect(parsed.path).toContain("_misc/activity");
     expect(parsed.filename).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.md$/,
     );
@@ -146,7 +144,7 @@ describe("triage_write", () => {
     });
 
     const parsed = JSON.parse(raw);
-    expect(parsed.path).toContain("_misc/triage");
+    expect(parsed.path).toContain("_misc/activity");
 
     const fullPath = path.join(process.env.AGENT_VAULT!, parsed.path);
     const content = await Bun.file(fullPath).text();
