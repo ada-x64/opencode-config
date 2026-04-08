@@ -313,13 +313,13 @@ detailed instructions and references to bundled scripts.
 
 ### Available skills
 
-| Skill            | Directory                    | Purpose                                                                               |
-| ---------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
-| `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                   |
+| Skill            | Directory                    | Purpose                                                                                    |
+| ---------------- | ---------------------------- | ------------------------------------------------------------------------------------------ |
+| `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                        |
 | `delegate`       | `src/skills/delegate/`       | Fleet orchestration — compose/approve/dispatch workflow with opencode and copilot backends |
-| `research-check` | `src/skills/research-check/` | Check notes freshness against current repo state; outputs structured staleness report |
-| `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool         |
-| `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                   |
+| `research-check` | `src/skills/research-check/` | Check notes freshness against current repo state; outputs structured staleness report      |
+| `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool              |
+| `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                        |
 
 Six lookup skills (`archive`, `notes`, `reviews`, `schemas`,
 `vault`) have been replaced by the `vault_find` tool. Five tool-only skills

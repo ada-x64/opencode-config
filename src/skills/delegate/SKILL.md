@@ -84,9 +84,9 @@ Task directory: $AGENT_VAULT/tasks/<task>/
 
 Write prompt files to the staging directory in the vault:
 
-| Context    | Staging path                                        |
-| ---------- | --------------------------------------------------- |
-| Any task   | `$AGENT_VAULT/tasks/<task>/prompts/<name>.md`       |
+| Context  | Staging path                                  |
+| -------- | --------------------------------------------- |
+| Any task | `$AGENT_VAULT/tasks/<task>/prompts/<name>.md` |
 
 ### Generation guidance
 
