@@ -207,7 +207,7 @@ _fleet_run_protocol() {
 			parsing_sids=false
 			continue
 		fi
-		if $parsing_sids; then
+		if [[ "$parsing_sids" == "true" ]]; then
 			session_ids+=("$arg")
 		else
 			json_indices+=("$arg")
@@ -250,9 +250,10 @@ _fleet_run_protocol() {
 	local confirmed=()
 	for _ in "${session_ids[@]}"; do confirmed+=(false); done
 
+	local all_done
 	for _ in $(seq 1 18); do
 		sleep 5
-		local all_done=true
+		all_done=true
 		for i in "${!session_ids[@]}"; do
 			if [[ "${confirmed[$i]}" == "true" ]]; then continue; fi
 			if _copilot_check_confirmed "${session_ids[$i]}"; then
@@ -307,9 +308,9 @@ delegate_fleet() {
 		return 1
 	fi
 
-	local session_ids=()
-	local worktree_paths=()
-	local json_indices=()
+	local -a session_ids=()
+	local -a worktree_paths=()
+	local -a json_indices=()
 
 	_fleet_create_sessions "$repo" "$group" "$sessions_json" \
 		session_ids worktree_paths json_indices
