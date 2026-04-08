@@ -184,7 +184,7 @@ delegate_fleet({
 | `title`      | `string`                    | Yes      | —            | AoE session title                                                                          |
 | `tool`       | `"opencode"` \| `"copilot"` | No       | `"opencode"` | Backend to use                                                                             |
 | `branch`     | `string`                    | No       | —            | Branch name (opencode: creates worktree with `-b` flag; copilot: determines worktree HEAD) |
-| `new_branch` | `boolean`                   | No       | `true`       | Create a new branch (only applies when branch is set)                                      |
+| `new_branch` | `boolean`                   | No       | `true`       | Create a new branch (ignored if `branch` is not set or `backend` is `copilot`)             |
 | `group`      | `string`                    | No       | —            | AoE group for organizing sessions                                                          |
 
 Returns the **session ID** (UUID string).
