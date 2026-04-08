@@ -146,7 +146,7 @@ delegate_fleet() {
 
   local session_ids=()
   local worktree_paths=()
-  declare -A tmux_by_sid
+  local -A tmux_by_sid
   local json_indices=()  # Track original indices for prompt–session alignment
 
   # Phase 1: Create worktrees and aoe sessions
@@ -154,7 +154,7 @@ delegate_fleet() {
     local title prompt branch
     {
       read -r title
-      read -r branch
+      read -r branch || true
     } < <(echo "$sessions_json" | jq -r ".[$i] | .title, (.branch // empty)")
     prompt=$(echo "$sessions_json" | jq -r ".[$i].prompt")
 
