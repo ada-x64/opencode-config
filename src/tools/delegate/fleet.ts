@@ -1,9 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import path from "path";
-
-const configDir =
-  process.env.OPENCODE_CONFIG_SRC ||
-  path.join(process.env.HOME || "~", ".config/opencode");
+import { scriptPath } from "./_lib";
 
 export default tool({
   description:
@@ -39,13 +35,12 @@ export default tool({
         "sessions array must not be empty — provide at least one {title, prompt} session spec",
       );
     }
-    const script = path.join(configDir, "skills/delegate/delegate.sh");
     const sessionsJson = JSON.stringify(args.sessions);
     // Safety: Bun.$`` passes each ${} interpolation as a separate argv entry
     // (shell word), not through shell expansion. sessionsJson arrives as a
     // literal $4 in the -c script — never interpreted by the shell.
     const result =
-      await Bun.$`bash -euo pipefail -c ${'source "$1" && delegate_fleet "$2" "$3" "$4"'} _ ${script} ${args.repo} ${args.group ?? ""} ${sessionsJson}`.text();
+      await Bun.$`bash -euo pipefail -c ${'source "$1" && delegate_fleet "$2" "$3" "$4"'} _ ${scriptPath} ${args.repo} ${args.group ?? ""} ${sessionsJson}`.text();
     return result.trim();
   },
 });

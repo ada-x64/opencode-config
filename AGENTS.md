@@ -81,8 +81,11 @@ opencode-config/
 │   │   ├── vault.ts           #     Barrel export for vault/ tools
 │   │   ├── create_issue.ts    #     GitHub issue creation from schema
 │   │   ├── create_pr.ts       #     PR creation from commit log
-│   │   ├── delegate.ts        #     AoE delegation tool
-│   │   ├── delegate_fleet.ts  #     Batch copilot fleet dispatch
+│   │   ├── delegate/          #     Delegation tools
+│   │   │   ├── _lib.ts        #       Shared delegate helpers
+│   │   │   ├── session.ts     #       delegate tool (single session)
+│   │   │   └── fleet.ts       #       delegate_fleet tool (batch copilot)
+│   │   ├── delegate.ts        #     Barrel export for delegate/ tools
 │   │   └── local_ci.ts        #     Run GitHub Actions locally via gh act
 │   ├── skills/                #   Loadable skill instruction sets
 │   │   ├── auto-impl/        #     Autonomous schema execution skill
