@@ -36,7 +36,7 @@ bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/setup.sh"
 This will:
 
 - Detect your platform (Linux / macOS / WSL)
-- Generate a random ntfy topic and save it to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt`
+- Generate a random ntfy topic and save it to `$AGENT_VAULT/_misc/ntfy-topic.txt`
 - Write an ntfy client config to `~/.config/ntfy/client.yml`
 - Install a scheduled timer (systemd / launchd / schtasks) for daily digests at
   9am and 5pm
@@ -47,7 +47,7 @@ No `sudo` required.
 
 - **Android / iOS:** search "ntfy" in your app store, or go to <https://ntfy.sh>
 - Open the app → **Subscribe to topic** → paste the topic printed by `setup.sh`
-  (also in `$AGENT_VAULT/_misc/cache/ntfy-topic.txt`)
+  (also in `$AGENT_VAULT/_misc/ntfy-topic.txt`)
 
 ### 3. Install the ntfy CLI (for desktop notifications)
 
@@ -120,7 +120,7 @@ bash "$OPENCODE_CONFIG_SRC/tools/triage-dashboard.sh" --notify-summary
 | Variable      | Required | Description                                                              |
 | ------------- | -------- | ------------------------------------------------------------------------ |
 | `AGENT_VAULT` | Yes      | Path to the vault (e.g. `~/obsidian/agent.obs`)                          |
-| `NTFY_TOPIC`  | No       | ntfy topic name; falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
+| `NTFY_TOPIC`  | No       | ntfy topic name; falls back to `$AGENT_VAULT/_misc/ntfy-topic.txt` |
 
 ## Re-running setup
 

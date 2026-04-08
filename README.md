@@ -42,7 +42,7 @@ orchestrator when needed.
 Plan ----------> Implement ----------> Review
   @planner        @implementor           @reviewer
   @project-manager                       @designer
-                                         @auto-auditor
+                                         @auditor
 ```
 
 **Planning.** `@planner` explores a codebase, discusses design, and writes an
@@ -59,7 +59,7 @@ rounds per commit) and escalating persistent problems via triage.
 
 **Review and analysis.** `@reviewer` writes structured findings with severity
 and category tags. `@designer` produces reference notes and design documents.
-`@auto-auditor` runs static analysis tools and writes audit reports.
+`@auditor` runs static analysis tools and writes audit reports.
 
 Agents are split into two model tiers (`design` and `execute`), each assigned
 any opencode-compatible model via `build.json`. The design tier handles
@@ -81,12 +81,11 @@ $AGENT_VAULT/
     review.md                  Code review findings
     triage.md                  Escalation / triage entries
   audits/<owner>/<repo>/       Audit reports
-  repo-notes/<owner>/<repo>/   Reference documentation per repo
-  design/                      Cross-cutting design documents
+  notes/<owner>/<repo>/        Reference documentation per repo
+  designs/                     Cross-cutting design documents
   projects/                    Per-repo project status documents
   _misc/
-    archive/tasks/             Completed work
-    cache/                     GitHub metadata cache
+    archive/                   Completed work
     templates/                 Format templates
 ```
 
@@ -105,7 +104,7 @@ needs triage capabilities, for example. Each skill lives in `src/skills/<name>/`
 with a `SKILL.md` descriptor and optional helper scripts.
 
 There are 13 skills covering vault operations (search, init, lint, gc, triage,
-cache), work product lookup (schemas, reviews, repo-notes, archive,
+cache), work product lookup (schemas, reviews, notes, archive,
 fleet-schemas), and development tooling (local-ci).
 
 ### Permissions

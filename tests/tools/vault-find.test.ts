@@ -14,7 +14,7 @@ describe("vault_find", () => {
   it("description mentions all sections", () => {
     expect(vault_find.description).toContain("schemas");
     expect(vault_find.description).toContain("reviews");
-    expect(vault_find.description).toContain("repo-notes");
+    expect(vault_find.description).toContain("notes");
     expect(vault_find.description).toContain("triage");
   });
 

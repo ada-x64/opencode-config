@@ -81,7 +81,7 @@ export async function notifyTriage(opts: {
       try {
         const topicFile = path.join(
           process.env.AGENT_VAULT,
-          "_misc/cache/ntfy-topic.txt",
+          "_misc/ntfy-topic.txt",
         );
         topic = (await fs.readFile(topicFile, "utf8")).trim();
       } catch {

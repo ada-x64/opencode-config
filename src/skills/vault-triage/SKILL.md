@@ -42,7 +42,7 @@ from the opencode-config repo.
 | ------------------ | ------------------ |
 | `@implementor`     | `implementor`      |
 | `auto-impl` skill  | `auto-implementor` |
-| `@auto-auditor`    | `auto-auditor`     |
+| `@auditor`          | `auditor`          |
 | Audit mode         | `auditor`          |
 | `@reviewer`        | `reviewer`         |
 | `@planner`         | `planner`          |
@@ -173,7 +173,7 @@ context to continue.
 | `auto-impl` skill  | Design ambiguity resolved                                | `design-question` |
 | `auto-impl` skill  | Run complete                                             | `run-summary`     |
 | `auto-impl` skill  | Commit group completed                                   | `activity`        |
-| `@auto-auditor`    | Audit report completed (include critical/high counts)    | `activity`        |
+| `@auditor`         | Audit report completed (include critical/high counts)    | `activity`        |
 | `@project-manager` | Bulk operations completed; Vault cleanup; Project sync   | `activity`        |
 
 ---
@@ -215,7 +215,7 @@ To read triage files and generate a summary of pending items:
 | Variable      | Required | Source                                                  |
 | ------------- | -------- | ------------------------------------------------------- |
 | `AGENT_VAULT` | Yes      | Agent environment                                       |
-| `NTFY_TOPIC`  | No       | Falls back to `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
+| `NTFY_TOPIC`  | No       | Falls back to `$AGENT_VAULT/_misc/ntfy-topic.txt` |
 
 ## Dashboard output
 

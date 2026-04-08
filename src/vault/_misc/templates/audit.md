@@ -7,7 +7,7 @@ tools_run: []
 tools_unavailable: []
 coverage_source: none
 status: complete
-agent: auto-auditor
+agent: auditor
 ---
 
 # Audit: <owner>/<repo> — <label> (<date>)
@@ -123,4 +123,4 @@ The `coverage_source` frontmatter field records where coverage data was obtained
 | `tools_unavailable` | list   | Tools detected as absent (probed but not found)                                              |
 | `coverage_source`   | string | Where coverage data was obtained (see Coverage Source Values above)                          |
 | `status`            | string | Always `complete` — audit reports are point-in-time, immutable records                       |
-| `agent`             | string | Always `auto-auditor`                                                                        |
+| `agent`             | string | Always `auditor`                                                                             |

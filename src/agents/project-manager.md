@@ -42,7 +42,7 @@ worktrees — each one represents an active branch in the bare repo setup.
 
 ## Vault Scope
 
-PM must refuse to operate on repos not tracked in the vault. Check at the start of any repo-specific operation that `tasks/<owner>/<repo>/` or `repo-notes/<owner>/<repo>/` exists using `vault_ls`. When operating across "all vault repos", discover them by walking both directories — the guard is implicit.
+PM must refuse to operate on repos not tracked in the vault. Check at the start of any repo-specific operation that `tasks/<owner>/<repo>/` or `notes/<owner>/<repo>/` exists using `vault_ls`. When operating across "all vault repos", discover them by walking both directories — the guard is implicit.
 
 ## Interactive Mode
 
@@ -181,7 +181,7 @@ follow its **Write Mode** instructions. The three post-work steps are
 - Merge or close PRs (`gh pr merge`, `gh pr close`)
 - Create PRs (`gh pr create`)
 - Create or delete repositories (`gh repo create`, `gh repo delete`)
-- Operate on any repo not present in `$vault/tasks/` or `$vault/repo-notes/`
+- Operate on any repo not present in `$vault/tasks/` or `$vault/notes/`
 - Execute bulk operations without presenting a summary and receiving explicit user confirmation
 - Write project status documents outside `$vault/projects/`
 - Apply `in-progress` or `review-ready` labels — that is the implementors' job; PM creates the labels, implementors apply them

@@ -49,7 +49,7 @@ you looked at, what you found, and how it informed the design.
 ## Research
 
 Explored the tag resolution system in zutils. The current implementation
-walks all tags linearly — see [[repo-notes/nanvix/zutils/internals]] for
+walks all tags linearly — see [[notes/nanvix/zutils/internals]] for
 the full architecture. The sysroot layout constrains where tag metadata
 can live.
 
@@ -94,7 +94,7 @@ works in Obsidian navigation and in rendered markdown:
     `NodeVisitor` pattern for tree traversal.
 
 [^3]:
-    [[repo-notes/nanvix/zutils/internals]] — Sysroot layout and
+    [[notes/nanvix/zutils/internals]] — Sysroot layout and
     cross-compilation constraints.
 ```
 

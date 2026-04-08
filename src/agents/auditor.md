@@ -181,7 +181,7 @@ Return a one-paragraph summary to the caller: path written, overall health
 After writing the audit report, load the `vault-triage` skill and follow its
 **Write Mode** instructions. The three post-work steps are **mandatory**:
 
-<!-- triage_icon: auto-auditor -->
+<!-- triage_icon: auditor -->
 <!-- triage_events:
 - Audit report completed (type: `activity` — include critical/high finding counts and top recommendation)
 -->
@@ -189,7 +189,7 @@ After writing the audit report, load the `vault-triage` skill and follow its
 {{include:agents/_shared/triage.md}}
 
 > **For audits:** If no task directory exists for the audited repo, write to
-> `$AGENT_VAULT/tasks/_activity/auto-auditor/` instead.
+> `$AGENT_VAULT/tasks/_activity/auditor/` instead.
 
 ## Severity Reference
 
@@ -204,14 +204,14 @@ After writing the audit report, load the `vault-triage` skill and follow its
 Severity uses **roadmap-priority semantics** — a critical audit finding means
 "urgent engineering attention", not "blocks this PR".
 
-**Icon selection:** When calling `notify_triage`, pass `auto-auditor` as the icon (the `auto-` prefix triggers ⚙️ prepending automatically) and use the base semantic key:
+**Icon selection:** When calling `notify_triage`, pass `auditor` as the icon and use the base semantic key:
 
 - 0 high+ findings → semantic key `clean` (resolves to ⚙️🟢)
 - Medium findings only → semantic key `warn` (resolves to ⚙️🟡)
 - Any high/critical findings → semantic key `reject` (resolves to ⚙️🔴)
 
 ```
-notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Audit Complete", body: "• 0 high findings\n• 2 medium warnings", icon: "auto-auditor", emoji: "clean" })
+notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Audit Complete", body: "• 0 high findings\n• 2 medium warnings", icon: "auditor", emoji: "clean" })
 ```
 
 ## What you MUST NOT do

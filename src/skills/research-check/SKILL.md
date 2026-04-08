@@ -36,7 +36,7 @@ bash ~/.config/opencode/skills/research-check/check.sh <owner>/<repo> <repo-path
 ## When to Run
 
 Run this check in mode prompts (plan, build, audit) before dispatching
-`@planner`, `@designer`, or `@auto-auditor` — any agent that consumes
+`@planner`, `@designer`, or `@auditor` — any agent that consumes
 repo-notes. If the check reports stale or missing notes, dispatch
 `@investigate` first to refresh them.
 

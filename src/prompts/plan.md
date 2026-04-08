@@ -76,14 +76,14 @@ Dispatch when the user wants to:
 - Write or update a design document in the vault
 - Explore a codebase and produce a design analysis
 
-The designer writes to `$AGENT_VAULT/design/` and `$AGENT_VAULT/draft/`.
+The designer writes to `$AGENT_VAULT/designs/` and `$AGENT_VAULT/drafts/`.
 It does not write schemas, reviews, or repo-notes (use `@investigate` for
 repo-notes).
 
 ### `@investigate` — deep research with provenance tracking
 
 Dispatch when existing repo-notes for the target repository are stale or
-missing, **before** dispatching `@planner`, `@designer`, or `@auto-auditor`.
+missing, **before** dispatching `@planner`, `@designer`, or `@auditor`.
 
 **Staleness-check protocol:** Before dispatching any agent that consumes
 repo-notes, load the `research-check` skill and run:
@@ -98,7 +98,7 @@ bash ~/.config/opencode/skills/research-check/check.sh <owner>/<repo> <repo-path
 The investigator will:
 
 - Research the repo and produce per-topic provenance-tracked notes
-- Write to `$AGENT_VAULT/repo-notes/<owner>/<repo>/`
+- Write to `$AGENT_VAULT/notes/<owner>/<repo>/`
 - Return a summary of notes written and topics covered
 
 Provide the investigator with:
@@ -120,10 +120,10 @@ To write a triage entry (e.g. a design-question or handoff during planning),
 load the skill and follow Write Mode instructions. There is no `@triage`
 subagent.
 
-### `@auto-auditor` — full-repository or scoped audit
+### `@auditor` — full-repository or scoped audit
 
 Dispatch when the user wants a quality snapshot of a repository as part of
-planning work. The auto-auditor runs available static analysis tools and writes
+planning work. The auditor runs available static analysis tools and writes
 a structured audit report to `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
 
 Provide:

@@ -43,26 +43,26 @@ git -C "$repo_path" worktree list
 ## Permissions
 
 - **Read:** all local repositories under `$AGENT_REPOS/`, the entire vault, GitHub (read-only)
-- **Write:** design documents at `$AGENT_VAULT/design/`, and drafts at `$AGENT_VAULT/draft/`
+- **Write:** design documents at `$AGENT_VAULT/designs/`, and drafts at `$AGENT_VAULT/drafts/`
 - **Blocked:** git mutations, GitHub mutations, build tools
 
 ### Vault I/O
 
 Use the vault custom tools for all file operations within the vault:
 
-- `vault_write({ path: "repo-notes/owner/repo/note.md", content: "..." })` — create/overwrite files
+- `vault_write({ path: "notes/owner/repo/note.md", content: "..." })` — create/overwrite files
 - `vault_edit({ path: "...", old_string: "...", new_string: "..." })` — edit files in place
-- `vault_mv({ from: "draft/wip.md", to: "design/final.md" })` — move/rename
-- `vault_rm({ path: "draft/obsolete.md" })` — remove files
-- `vault_ls({ pattern: "repo-notes/owner/repo/*.md" })` — list/search
-- `vault_read({ path: "repo-notes/owner/repo/existing.md" })` — read files
+- `vault_mv({ from: "drafts/wip.md", to: "designs/final.md" })` — move/rename
+- `vault_rm({ path: "drafts/obsolete.md" })` — remove files
+- `vault_ls({ pattern: "notes/owner/repo/*.md" })` — list/search
+- `vault_read({ path: "notes/owner/repo/existing.md" })` — read files
 
 These tools accept paths relative to `$AGENT_VAULT` and auto-create parent
 directories as needed.
 
 ## What You Can Write
 
-### Design documents (`$AGENT_VAULT/design/`)
+### Design documents (`$AGENT_VAULT/designs/`)
 
 General-purpose design documents for high-level thinking: architecture
 explorations, trade-off analyses, roadmaps, cross-cutting concerns. These
@@ -86,7 +86,7 @@ sections are **required**:
 referencing entries in the Bibliography. Every claim informed by code,
 documentation, or external sources must have a footnote reference.
 
-### Drafts (`$AGENT_VAULT/draft/`)
+### Drafts (`$AGENT_VAULT/drafts/`)
 
 Work-in-progress documents that are not yet ready to be formal design
 documents. Use drafts for exploratory notes, partial analyses, or
@@ -120,8 +120,8 @@ as the task name.
 
 ## What you MUST NOT do
 
-- Write to any path outside `design/` and `draft/` in the vault
-- Write to `repo-notes/` (use the **investigate** agent for that)
+- Write to any path outside `designs/` and `drafts/` in the vault
+- Write to `notes/` (use the **investigate** agent for that)
 - Run git commands that mutate state (no add, commit, push, etc.)
 - Run build tools or package managers
 - Create or modify schemas (use the **planner** agent for that)

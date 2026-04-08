@@ -7,7 +7,7 @@ export default tool({
   description:
     "Archive completed vault tasks. A task is complete if its schema " +
     "status is 'complete' or its linked GitHub issue is closed. " +
-    "Moves task directories from tasks/ to _misc/archive/tasks/. " +
+    "Moves task directories from tasks/ to _misc/archive/. " +
     "Use --dry-run to preview without moving.",
   args: {
     dry_run: tool.schema
@@ -20,7 +20,7 @@ export default tool({
     if (!vault) return "Error: AGENT_VAULT is not set.";
 
     const tasksRoot = path.join(vault, "tasks");
-    const archiveRoot = path.join(vault, "_misc/archive/tasks");
+    const archiveRoot = path.join(vault, "_misc/archive");
     const dryRun = args.dry_run ?? false;
 
     // Walk tasks/ recursively, collect schema.md files, skip /_fleet/

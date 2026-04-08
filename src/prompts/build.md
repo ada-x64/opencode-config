@@ -109,7 +109,7 @@ Dispatch when the user wants to:
 - Run `vault_gc` and `vault_lint` as part of a project cleanup
 
 PM operates only on repos that are vault-managed (`tasks/<owner>/<repo>/` or
-`repo-notes/<owner>/<repo>/` must exist). It never touches source files or
+`notes/<owner>/<repo>/` must exist). It never touches source files or
 merges PRs.
 
 Provide the project manager with:
@@ -120,13 +120,13 @@ Provide the project manager with:
 ### `@designer` — design documents
 
 Dispatch when the user wants to write a design document or produce a design
-analysis. The designer writes to `$AGENT_VAULT/design/` and
-`$AGENT_VAULT/draft/`. For repo-notes, use `@investigate` instead.
+analysis. The designer writes to `$AGENT_VAULT/designs/` and
+`$AGENT_VAULT/drafts/`. For repo-notes, use `@investigate` instead.
 
 ### `@investigate` — deep research with provenance tracking
 
 Dispatch when existing repo-notes for the target repository are stale or
-missing, **before** dispatching `@planner`, `@designer`, or `@auto-auditor`.
+missing, **before** dispatching `@planner`, `@designer`, or `@auditor`.
 
 **Staleness-check protocol:** Before dispatching any agent that consumes
 repo-notes, load the `research-check` skill and run:
@@ -141,7 +141,7 @@ bash ~/.config/opencode/skills/research-check/check.sh <owner>/<repo> <repo-path
 The investigator will:
 
 - Research the repo and produce per-topic provenance-tracked notes
-- Write to `$AGENT_VAULT/repo-notes/<owner>/<repo>/`
+- Write to `$AGENT_VAULT/notes/<owner>/<repo>/`
 - Return a summary of notes written and topics covered
 
 Provide the investigator with:
@@ -150,10 +150,10 @@ Provide the investigator with:
 - Specific topics to investigate (or "survey the repo and propose topics")
 - Whether to update existing notes or create new ones
 
-### `@auto-auditor` — full-repository or scoped audit
+### `@auditor` — full-repository or scoped audit
 
 Dispatch when the user wants a quality analysis of a repository without
-switching to audit mode. The auto-auditor runs static analysis tools, collects
+switching to audit mode. The auditor runs static analysis tools, collects
 coverage data, and writes a structured audit report to
 `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
 

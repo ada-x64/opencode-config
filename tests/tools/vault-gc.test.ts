@@ -41,7 +41,7 @@ beforeAll(async () => {
   vault = path.join(tmp, "vault");
 
   const base = path.join(vault, "tasks", "gc-owner", "gc-repo");
-  await mkdir(path.join(vault, "_misc", "archive", "tasks"), {
+  await mkdir(path.join(vault, "_misc", "archive"), {
     recursive: true,
   });
   await mkdir(path.join(base, "task-complete"), { recursive: true });
@@ -102,7 +102,6 @@ describe("vault_gc", () => {
         vault,
         "_misc",
         "archive",
-        "tasks",
         "gc-owner",
         "gc-repo",
         "task-complete",

@@ -44,7 +44,7 @@ interface FindResult {
 
 export default tool({
   description:
-    "Search the agent vault for schemas, reviews, repo-notes, archive, " +
+    "Search the agent vault for schemas, reviews, notes, archive, " +
     "fleet-schemas, triage, design docs, or all sections. Returns a JSON " +
     "array of { path, title, frontmatter } objects.",
   args: {
@@ -52,7 +52,7 @@ export default tool({
       .enum([
         "schemas",
         "reviews",
-        "repo-notes",
+        "notes",
         "archive",
         "fleet-schemas",
         "triage",
@@ -108,15 +108,15 @@ export default tool({
             },
           };
 
-        case "repo-notes":
+        case "notes":
           return {
-            roots: [path.join(vault!, "repo-notes")],
+            roots: [path.join(vault!, "notes")],
             filter: () => true,
           };
 
         case "archive":
           return {
-            roots: [path.join(vault!, "_misc/archive/tasks")],
+            roots: [path.join(vault!, "_misc/archive")],
             filter: () => true,
           };
 
@@ -146,7 +146,7 @@ export default tool({
 
         case "design":
           return {
-            roots: [path.join(vault!, "design")],
+            roots: [path.join(vault!, "designs")],
             filter: () => true,
           };
 

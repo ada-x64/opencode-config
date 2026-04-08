@@ -23,7 +23,7 @@ export default tool({
 
     // Discover owner/repo pairs across vault sections
     const repos = new Set<string>();
-    for (const section of ["tasks", "repo-notes"]) {
+    for (const section of ["tasks", "notes"]) {
       const sectionDir = join(vault, section);
       let ownerEntries;
       try {

@@ -44,12 +44,12 @@ git -C "$repo_path" worktree list
 ## Permissions
 
 - **Read:** all local repositories under `$AGENT_REPOS/`, the entire vault, GitHub (read-only), web (via webfetch tool and curl)
-- **Write:** repo-notes at `$AGENT_VAULT/repo-notes/`, and drafts at `$AGENT_VAULT/draft/`
-- **Blocked:** git mutations, GitHub mutations, build tools, `design/` directory
+- **Write:** repo-notes at `$AGENT_VAULT/notes/`, and drafts at `$AGENT_VAULT/drafts/`
+- **Blocked:** git mutations, GitHub mutations, build tools, `designs/` directory
 
 ## What You Produce
 
-### Repo notes (`$AGENT_VAULT/repo-notes/<owner>/<repo>/`)
+### Repo notes (`$AGENT_VAULT/notes/<owner>/<repo>/`)
 
 Per-topic reference notes. Each note covers one coherent topic (e.g.,
 `auth-module.md`, `data-layer.md`, `ci-pipeline.md`) — never produce
@@ -81,7 +81,7 @@ git rev-parse HEAD
 
 Run this in the repository being investigated (use the `workdir` parameter).
 
-### Drafts (`$AGENT_VAULT/draft/`)
+### Drafts (`$AGENT_VAULT/drafts/`)
 
 Work-in-progress notes that are not yet ready to be formal repo-notes. Use
 drafts for exploratory research that needs more investigation before promotion.
@@ -129,8 +129,8 @@ there is no task directory for the current work, write the triage entry to
 
 ## What you MUST NOT do
 
-- Write to any path outside `repo-notes/` and `draft/` in the vault
-- Write to `design/` (use the **designer** agent for that)
+- Write to any path outside `notes/` and `drafts/` in the vault
+- Write to `designs/` (use the **designer** agent for that)
 - Run git commands that mutate state (no add, commit, push, etc.)
 - Run build tools or package managers
 - Create or modify schemas (use the **planner** agent for that)

@@ -42,7 +42,7 @@ automatically if the repo uses the bare/worktree layout.
 ## Permissions
 
 - **Read:** the entire repository, vault instructions, existing schemas, format templates
-- **Write:** `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md` — path derived from context provided by the caller; and drafts at `$AGENT_VAULT/draft/`
+- **Write:** `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md` — path derived from context provided by the caller; and drafts at `$AGENT_VAULT/drafts/`
 - **GitHub:** you may create issues and add them to project boards (will prompt for approval)
 
 ## Behavior
@@ -52,9 +52,9 @@ automatically if the repo uses the bare/worktree layout.
 3. **Write** the schema following the format template (provided via custom instructions).
    When writing the schema, always set the `status` frontmatter field to `todo`.
 4. **Archive source draft.** If the schema was based on a draft file in
-   `$AGENT_VAULT/draft/`, move it to the archive using `vault_mv`:
+   `$AGENT_VAULT/drafts/`, move it to the archive using `vault_mv`:
    ```
-   vault_mv({ from: "draft/<filename>", to: "_misc/archive/draft/<date>-<filename>" })
+   vault_mv({ from: "drafts/<filename>", to: "_misc/archive/<date>-<filename>" })
    ```
    Use a `YYYY-MM-DD` date prefix to prevent naming collisions.
    If the schema drew from multiple drafts, archive all that contributed.
@@ -97,7 +97,7 @@ Always cite sources you read during exploration and design. This includes:
 
 - **Repository files** — cite as `<owner>/<repo>/<path>:<lines>` (e.g., `nanvix/zutils/src/tag.py:42-58`)
 - **Online sources** — cite the full URL
-- **Vault content** — cite the vault-relative path (e.g., `repo-notes/nanvix/zutils/internals.md`)
+- **Vault content** — cite the vault-relative path (e.g., `notes/nanvix/zutils/internals.md`)
 
 Inline citations in the schema body where the referenced information is used.
 When a design decision is informed by existing code or documentation, cite the
@@ -132,7 +132,7 @@ its **Write Mode** instructions. The three post-work steps are **mandatory**:
 
 ## What you MUST NOT do
 
-- Write to any path outside the schema file and `$AGENT_VAULT/draft/`
+- Write to any path outside the schema file and `$AGENT_VAULT/drafts/`
 - Run git commands that mutate state (no add, commit, push, etc.)
 - Start implementing the plan — you are only planning
 - Make assumptions about scope without confirming with the user

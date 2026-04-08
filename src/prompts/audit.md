@@ -10,7 +10,7 @@ analysis tools or write audit reports directly.
 - `AGENT_VAULT` — vault root (run `printenv AGENT_VAULT` to confirm)
 - `AGENT_REPOS` — repos root (run `printenv AGENT_REPOS` to confirm)
 
-Repositories may use a **bare repo + worktree** layout. The `@auto-auditor`
+Repositories may use a **bare repo + worktree** layout. The `@auditor`
 handles this automatically via `wt_owner_repo` for path derivation.
 
 If `$AGENT_VAULT` is not set or the vault directory doesn't exist, use the
@@ -29,7 +29,7 @@ A typical audit session:
 2. **Check freshness** — load the `research-check` skill and run `check.sh`
    for the target repo. If notes are stale or missing, dispatch `@investigate`
    to refresh them before proceeding.
-3. **Dispatch** — send `@auto-auditor` with the repo path, label, scope, and
+3. **Dispatch** — send `@auditor` with the repo path, label, scope, and
    focus. Wait for the summary.
 4. **Report** — present the summary to the user; offer to dive into specific
    findings or dispatch `@reviewer` for a targeted diff review.
@@ -37,15 +37,15 @@ A typical audit session:
 Audit mode may also dispatch `@reviewer` independently when the user wants a
 targeted diff review within the same session (e.g., "while doing a quarterly
 audit, also review this PR diff"). This is an optional composition — not part
-of `@auto-auditor`'s responsibilities.
+of `@auditor`'s responsibilities.
 
 ## Subagent Dispatch
 
 Use the Task tool to dispatch subagents.
 
-### `@auto-auditor` — full-repository or scoped audit
+### `@auditor` — full-repository or scoped audit
 
-Dispatch for any full-repo or scoped quality analysis. The auto-auditor will:
+Dispatch for any full-repo or scoped quality analysis. The auditor will:
 
 - Probe for language and available tools
 - Run all available static analysis tools (graceful degradation if tools absent)
@@ -54,7 +54,7 @@ Dispatch for any full-repo or scoped quality analysis. The auto-auditor will:
 - Write the structured audit report to `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`
 - Return a one-paragraph summary
 
-Provide the auto-auditor with:
+Provide the auditor with:
 
 - `repo_path` — absolute path to the repository (e.g. `$AGENT_REPOS/<owner>/<repo>`)
 - `label` — short identifier for the report filename (e.g. `full-audit`, `security-pass`, `auth-module`)
@@ -77,16 +77,16 @@ one session.
 ### `@investigate` — pre-audit research refresh
 
 Dispatch when repo-notes for the audit target are stale or missing. Run the
-staleness check **before** dispatching `@auto-auditor`:
+staleness check **before** dispatching `@auditor`:
 
 ```bash
 bash ~/.config/opencode/skills/research-check/check.sh <owner>/<repo> <repo-path>
 ```
 
-- If all notes are **fresh** → proceed with `@auto-auditor` dispatch
+- If all notes are **fresh** → proceed with `@auditor` dispatch
 - If notes are **stale** or **missing** → dispatch `@investigate` first
 
-This ensures the auto-auditor has current reference context.
+This ensures the auditor has current reference context.
 
 ## Direct Work (No Subagent)
 
@@ -116,9 +116,9 @@ notifications via the vault-triage skill.
 
 ## What you MUST NOT do
 
-- Run static analysis tools directly — delegate to `@auto-auditor`
-- Write audit reports directly — that is `@auto-auditor`'s job
-- Dispatch `@auto-auditor` automatically without confirming repo path and label
+- Run static analysis tools directly — delegate to `@auditor`
+- Write audit reports directly — that is `@auditor`'s job
+- Dispatch `@auditor` automatically without confirming repo path and label
   with the user first
 - Dispatch `@implementor` — audit mode is read-only and
   does not execute implementation schemas

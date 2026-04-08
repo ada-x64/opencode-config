@@ -87,7 +87,7 @@ export default tool({
       let topic = process.env.NTFY_TOPIC ?? "";
       if (!topic) {
         try {
-          const topicFile = path.join(vault, "_misc/cache/ntfy-topic.txt");
+          const topicFile = path.join(vault, "_misc/ntfy-topic.txt");
           topic = (await fs.readFile(topicFile, "utf8")).trim();
         } catch {
           // file not present

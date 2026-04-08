@@ -28,10 +28,10 @@ opencode-config/
 │   │   ├── reviewer.md
 │   │   ├── designer.md
 │   │   ├── investigate.md
-│   │   └── auto-auditor.md
+│   │   └── auditor.md
 │   ├── permissions/           #   Per-agent bash permission blocks
 │   │   ├── host/              #     Per-agent YAML files for host variant
-│   │   │   ├── auto-auditor.yaml
+│   │   │   ├── auditor.yaml
 │   │   │   ├── designer.yaml
 │   │   │   ├── implementor.yaml
 │   │   │   ├── investigate.yaml
@@ -43,56 +43,58 @@ opencode-config/
 │   │   ├── build.md
 │   │   ├── plan.md
 │   │   └── audit.md
-│   ├── tools/                 #   Custom tools (TypeScript + shell scripts)
-│   │   ├── _lib.ts
-│   │   ├── _vault.ts
-│   │   ├── fm_read.ts
-│   │   ├── fm_write.ts
-│   │   ├── wt_detect.ts
-│   │   ├── wt_owner_repo.ts
-│   │   ├── wt_switch_branch.ts
-│   │   ├── wt_cleanup.ts
-│   │   ├── notify_triage.ts
-│   │   ├── triage_dashboard.ts
-│   │   ├── triage_write.ts
-│   │   ├── vault_find.ts
-│   │   ├── vault_gc.ts
-│   │   ├── vault_lint.ts
-│   │   ├── vault_cache.ts
-│   │   ├── vault_init.ts
-│   │   ├── local_ci.ts
-│   │   ├── session_notify.ts
-│   │   ├── create_issue.ts
-│   │   ├── create_pr.ts
-│   │   ├── vault_read.ts
-│   │   ├── vault_write.ts
-│   │   ├── vault_edit.ts
-│   │   ├── vault_ls.ts
-│   │   ├── vault_mv.ts
-│   │   ├── vault_rm.ts
-│   │   ├── frontmatter.sh      #     YAML frontmatter helpers (sourced by gc.sh, triage-dashboard.sh)
-│   │   ├── worktree.sh         #     Bare-repo worktree helpers
-│   │   ├── create-issue.sh     #     GitHub issue creation from schema
-│   │   ├── create-pr.sh        #     PR creation from commit log
-│   │   ├── vault-find.sh       #     Vault section search (JSON output)
-│   │   ├── gc.sh               #     Archive completed tasks
-│   │   ├── lint.sh             #     Validate vault files against templates
-│   │   ├── baseline-commands.txt #   Agent permission baseline commands
-│   │   ├── notify.sh           #     Push notifications via ntfy
-│   │   ├── triage-dashboard.sh #     Regenerate triage-inbox.md
-│   │   ├── triage-write.sh     #     Write triage entries to vault
-│   │   ├── refresh.sh          #     Refresh GitHub metadata cache
-│   │   ├── init.sh             #     Initialize vault directory structure
-│   │   └── act.sh              #     Run GitHub Actions locally via gh act
+│   ├── tools/                 #   Custom tools (TypeScript, organized by domain)
+│   │   ├── fm/                #     Frontmatter tools
+│   │   │   ├── _lib.ts        #       Shared frontmatter helpers
+│   │   │   ├── read.ts        #       fm_read tool
+│   │   │   └── write.ts       #       fm_write tool
+│   │   ├── fm.ts              #     Barrel export for fm/ tools
+│   │   ├── wt/                #     Worktree tools
+│   │   │   ├── _lib.ts        #       Shared worktree helpers
+│   │   │   ├── detect.ts      #       wt_detect tool
+│   │   │   ├── owner_repo.ts  #       wt_owner_repo tool
+│   │   │   ├── switch_branch.ts #     wt_switch_branch tool
+│   │   │   └── cleanup.ts     #       wt_cleanup tool
+│   │   ├── wt.ts              #     Barrel export for wt/ tools
+│   │   ├── notify/            #     Notification tools
+│   │   │   ├── _lib.ts        #       Shared notification helpers
+│   │   │   ├── triage.ts      #       notify_triage tool
+│   │   │   └── session.ts     #       session_notify tool
+│   │   ├── notify.ts          #     Barrel export for notify/ tools
+│   │   ├── triage/            #     Triage tools
+│   │   │   ├── dashboard.ts   #       triage_dashboard tool
+│   │   │   └── write.ts       #       triage_write tool
+│   │   ├── triage.ts          #     Barrel export for triage/ tools
+│   │   ├── vault/             #     Vault tools
+│   │   │   ├── _lib.ts        #       Shared vault helpers
+│   │   │   ├── cache.ts       #       vault_cache tool
+│   │   │   ├── edit.ts        #       vault_edit tool
+│   │   │   ├── find.ts        #       vault_find tool
+│   │   │   ├── gc.ts          #       vault_gc tool
+│   │   │   ├── init.ts        #       vault_init tool
+│   │   │   ├── lint.ts        #       vault_lint tool
+│   │   │   ├── ls.ts          #       vault_ls tool
+│   │   │   ├── mv.ts          #       vault_mv tool
+│   │   │   ├── read.ts        #       vault_read tool
+│   │   │   ├── rm.ts          #       vault_rm tool
+│   │   │   └── write.ts       #       vault_write tool
+│   │   ├── vault.ts           #     Barrel export for vault/ tools
+│   │   ├── create_issue.ts    #     GitHub issue creation from schema
+│   │   ├── create_pr.ts       #     PR creation from commit log
+│   │   ├── delegate.ts        #     AoE delegation tool
+│   │   └── local_ci.ts        #     Run GitHub Actions locally via gh act
 │   ├── skills/                #   Loadable skill instruction sets
-│   │   ├── local-ci/          #     SKILL.md only (script moved to tools/)
-│   │   ├── research-check/    #     SKILL.md + check.sh (repo-notes freshness)
-│   │   ├── vault-cache/       #     SKILL.md only (script moved to tools/)
-│   │   ├── vault-init/        #     SKILL.md + templates/
-│   │   └── vault-triage/      #     SKILL.md + setup.sh + toast-handler.sh
+│   │   ├── auto-impl/        #     Autonomous schema execution skill
+│   │   ├── delegate/         #     AoE delegation skill
+│   │   ├── research-check/   #     SKILL.md + check.sh (notes freshness)
+│   │   ├── vault-init/       #     SKILL.md (vault directory init)
+│   │   └── vault-triage/     #     SKILL.md + setup.sh + toast-handler.sh
 │   ├── profiles/              #   Deployment profiles (excluded from out/)
 │   │   └── host.env           #     Standard Linux/WSL workstation
-│   └── images/                #   Notification icons (64x64 PNG)
+│   └── vault/                 #   Vault source (directory structure for vault_init)
+│       ├── AGENTS.md          #     Vault conventions document
+│       ├── _misc/             #     Infrastructure (templates, images, etc.)
+│       └── ...                #     Other vault directories (tasks, designs, etc.)
 ├── scripts/                   # Build and install tooling (Bun/TypeScript)
 │   ├── build.ts               #   src/ → out/host/ + out/sandbox/ copy + stamping
 │   ├── install.ts             #   out/host/ → CONFIG_DIR + out/sandbox/ → SANDBOX_CONFIG_DIR rsync + AoE deploy
@@ -128,7 +130,7 @@ of permitted actions.
 | --------- | ------------------ | ------------------------------------------------------------------------- |
 | **build** | `prompts/build.md` | Full tool access — file edits, commands, subagent dispatch                |
 | **plan**  | `prompts/plan.md`  | Read-only exploration and schema authoring; no direct file edits          |
-| **audit** | `prompts/audit.md` | Read-only quality analysis — orchestrates `@auto-auditor` and `@reviewer` |
+| **audit** | `prompts/audit.md` | Read-only quality analysis — orchestrates `@auditor` and `@reviewer` |
 
 ### build mode
 
@@ -147,8 +149,8 @@ to implement, the user switches to build mode (Tab).
 ### audit mode
 
 Orchestrator for quality analysis. Does not run static analysis tools itself —
-that is `@auto-auditor`'s job. Clarifies scope with the user, dispatches
-`@auto-auditor`, and may additionally dispatch `@reviewer` for targeted diff
+that is `@auditor`'s job. Clarifies scope with the user, dispatches
+`@auditor`, and may additionally dispatch `@reviewer` for targeted diff
 reviews. Does not modify repositories or create commits.
 
 ---
@@ -167,7 +169,7 @@ The eight agents map to distinct phases of the development workflow:
 Research ──► Plan ──────► Implement ──────► Review
   @investigate @planner    @implementor       @reviewer
                @project-manager               @designer  (design docs)
-                                              @auto-auditor (quality audits)
+                                              @auditor (quality audits)
 ```
 
 ### Agent reference
@@ -181,7 +183,7 @@ Research ──► Plan ──────► Implement ──────► Re
 - **Write access:** Full vault mutations (schemas and drafts); GitHub issue
   creation and project board adds (both require user approval via `ask`);
   `gh pr comment*` (ask — to cross-reference PRs when creating a related issue).
-- **Post-schema:** Archives source drafts from `$AGENT_VAULT/draft/` to `$AGENT_VAULT/_misc/archive/draft/` with a date prefix.
+- **Post-schema:** Archives source drafts from `$AGENT_VAULT/drafts/` to `$AGENT_VAULT/_misc/archive/` with a date prefix.
 - **Does not:** Implement anything; write outside the vault.
 
 #### `@project-manager` — issue lifecycle and project board
@@ -239,14 +241,14 @@ Research ──► Plan ──────► Implement ──────► Re
 
 - **File:** `src/agents/designer.md`
 - **Role:** Explores repositories and produces design documents:
-  - Design documents at `$AGENT_VAULT/design/`
-  - Work-in-progress drafts at `$AGENT_VAULT/draft/`
+  - Design documents at `$AGENT_VAULT/designs/`
+  - Work-in-progress drafts at `$AGENT_VAULT/drafts/`
 - **Write access:** Full vault mutations (`vault_write`, `vault_edit`, `vault_mv`, `vault_rm`).
-- **Does not:** Write to `repo-notes/` (use `@investigate`); write schemas or reviews; run build tools; mutate git state.
+- **Does not:** Write to `notes/` (use `@investigate`); write schemas or reviews; run build tools; mutate git state.
 
-#### `@auto-auditor` — headless quality audit
+#### `@auditor` — headless quality audit
 
-- **File:** `src/agents/auto-auditor.md`
+- **File:** `src/agents/auditor.md`
 - **Role:** Detects project language, runs all available static analysis tools
   (degrading gracefully when tools are absent), synthesises findings across
   Security/Testing/Architecture/Performance/Maintenance, and writes a structured
@@ -259,12 +261,12 @@ Research ──► Plan ──────► Implement ──────► Re
 
 - **File:** `src/agents/investigate.md`
 - **Role:** Conducts deep research on a repository and produces per-topic
-  provenance-tracked reference notes at `$AGENT_VAULT/repo-notes/<owner>/<repo>/`.
+  provenance-tracked reference notes at `$AGENT_VAULT/notes/<owner>/<repo>/`.
   Each note includes a `commit` SHA, `date`, and `sources` list in frontmatter
   for staleness detection. Can fetch online documentation via `webfetch` and `curl`.
 - **Write access:** Write/Edit tools (for repo-notes and drafts), `mv`, `rm`, `mkdir`
   (vault filesystem), `curl` (for web research and triage notifications).
-- **Does not:** Write to `design/`; write schemas or reviews; run build tools;
+- **Does not:** Write to `designs/`; write schemas or reviews; run build tools;
   mutate git state; dispatch subagents (leaf agent).
 
 ### Permission model
@@ -277,7 +279,7 @@ independently auditable without cross-referencing the global config.
 
 **Orchestrators vs. leaf agents:** `@planner` carries `task: allow` and may
 dispatch subagents. All other agents (`@implementor`, `@project-manager`,
-`@reviewer`, `@designer`, `@investigate`, `@auto-auditor`) are **leaf agents** —
+`@reviewer`, `@designer`, `@investigate`, `@auditor`) are **leaf agents** —
 they have no `task:` permission and cannot spawn further subagents. The `auto-impl`
 skill gives build mode autonomous orchestration capabilities (dispatching
 `@implementor` and `@reviewer`) when loaded.
@@ -286,7 +288,7 @@ For full details — including the complete read-only baseline, the per-agent
 write permission table, file-system scope restrictions, and instructions for
 adding a new agent — see the vault note:
 
-> `repo-notes/ada-x64/opencode-config/agent-permissions.md`
+> `notes/ada-x64/opencode-config/agent-permissions.md`
 
 ---
 
@@ -313,40 +315,33 @@ detailed instructions and references to bundled scripts.
 | Skill            | Directory                    | Purpose                                                                                      |
 | ---------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                          |
-| `local-ci`       | `src/skills/local-ci/`       | Run and debug GitHub Actions workflows locally via `gh act`; use the `local_ci` tool         |
-| `research-check` | `src/skills/research-check/` | Check repo-notes freshness against current repo state; outputs structured staleness report   |
-| `vault-cache`    | `src/skills/vault-cache/`    | Refresh the GitHub metadata cache (projects, milestones, labels); use the `vault_cache` tool |
+| `delegate`       | `src/skills/delegate/`       | Spawn AoE sessions for parallel agent work                                                   |
+| `research-check` | `src/skills/research-check/` | Check notes freshness against current repo state; outputs structured staleness report         |
 | `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool                |
 | `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                          |
 
-Six lookup skills (`archive`, `fleet-schemas`, `repo-notes`, `reviews`, `schemas`,
-`vault`) have been replaced by the `vault_find` tool. Three tool-only skills
-(`gh-helpers`, `vault-gc`, `vault-lint`) have been removed — their tools
-(`create_issue`, `create_pr`, `vault_gc`, `vault_lint`) are used directly.
+Six lookup skills (`archive`, `fleet-schemas`, `notes`, `reviews`, `schemas`,
+`vault`) have been replaced by the `vault_find` tool. Five tool-only skills
+(`gh-helpers`, `local-ci`, `vault-cache`, `vault-gc`, `vault-lint`) have been
+removed — their tools (`create_issue`, `create_pr`, `local_ci`, `vault_cache`,
+`vault_gc`, `vault_lint`) are used directly.
 
-### Scripts bundled with tools
+### Tools
 
-All agent-facing scripts live in `src/tools/` alongside the TypeScript tool
-wrappers. Agents call the tool directly instead of constructing bash commands.
-The tools shell out to the scripts via `Bun.$`.
+All custom tools are TypeScript files in `src/tools/`, organized by domain
+into subdirectories (`fm/`, `wt/`, `notify/`, `triage/`, `vault/`). Each
+subdirectory has a barrel export and a `_lib.ts` for shared helpers. Agents
+call tools directly — there are no shell scripts to invoke.
 
-| Script                          | Custom tool                                                                   | Purpose                                              |
-| ------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `src/tools/frontmatter.sh`      | `fm_read`, `fm_write`                                                         | YAML frontmatter read/write                          |
-| `src/tools/worktree.sh`         | `wt_detect`, `wt_owner_repo`, `wt_switch_branch`, `wt_cleanup`                | Bare-repo worktree operations                        |
-| `src/tools/create-issue.sh`     | `create_issue`                                                                | Create GitHub issue from schema                      |
-| `src/tools/create-pr.sh`        | `create_pr`                                                                   | Create PR from commit log                            |
-| `src/tools/vault-find.sh`       | `vault_find`                                                                  | Search vault sections (JSON output)                  |
-| `src/tools/gc.sh`               | `vault_gc`                                                                    | Archive completed schemas/reviews                    |
-| `src/tools/lint.sh`             | `vault_lint`                                                                  | Validate vault files against templates               |
-| `src/tools/notify.sh`           | `notify_triage`                                                               | Push notifications via ntfy                          |
-| `src/tools/triage-dashboard.sh` | `triage_dashboard`                                                            | Regenerate `triage-inbox.md`                         |
-| `src/tools/triage-write.sh`     | `triage_write`                                                                | Write triage entries to vault                        |
-| `src/tools/refresh.sh`          | `vault_cache`                                                                 | Refresh GitHub metadata cache                        |
-| `src/tools/init.sh`             | `vault_init`                                                                  | Initialize vault directory structure                 |
-| `src/tools/act.sh`              | `local_ci`                                                                    | Run GitHub Actions workflows locally                 |
-| _(no script — standalone tool)_ | `session_notify`                                                              | Send session-completion notification                 |
-| _(no script — standalone tool)_ | `vault_read`, `vault_write`, `vault_edit`, `vault_ls`, `vault_mv`, `vault_rm` | Vault file I/O (path-safe, scoped to `$AGENT_VAULT`) |
+| Domain     | Tools                                                                                        |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| Frontmatter | `fm_read`, `fm_write`                                                                       |
+| Worktree   | `wt_detect`, `wt_owner_repo`, `wt_switch_branch`, `wt_cleanup`                              |
+| Notify     | `notify_triage`, `session_notify`                                                            |
+| Triage     | `triage_dashboard`, `triage_write`                                                           |
+| Vault      | `vault_cache`, `vault_edit`, `vault_find`, `vault_gc`, `vault_init`, `vault_lint`, `vault_ls`, `vault_mv`, `vault_read`, `vault_rm`, `vault_write` |
+| GitHub     | `create_issue`, `create_pr`                                                                  |
+| Other      | `delegate`, `local_ci`                                                                       |
 
 ---
 
@@ -366,18 +361,16 @@ $AGENT_VAULT/
 │       ├── review.md         # Code review (review-2.md, etc.)
 │       └── triage.md         # Triage entry (triage-2.md, etc.)
 ├── _misc/
-│   ├── archive/
-│   │   └── tasks/            # Completed/closed tasks
-│   ├── cache/                # GitHub metadata cache
+│   ├── archive/              # Completed/closed tasks
 │   ├── templates/            # Format templates (schema, review, triage, audit, ...)
 │   └── images/               # Notification icons and image assets
 ├── audits/
 │   └── <owner>/<repo>/
 │       └── <date>-<label>.md # Audit reports
-├── repo-notes/
+├── notes/
 │   └── <owner>/<repo>/       # Reference documentation per repo
-├── design/                   # Cross-cutting design documents
-├── draft/                    # Work-in-progress staging area
+├── designs/                  # Cross-cutting design documents
+├── drafts/                   # Work-in-progress staging area
 ├── projects/                 # Per-repo project status documents
 ├── triage-inbox.md           # Generated triage dashboard
 └── AGENTS.md                 # Vault conventions document
@@ -393,7 +386,6 @@ access it through dedicated vault I/O tools that accept paths relative to
 - **List/search:** `vault_ls` tool (directory listing and glob matching)
 - **Create/modify:** `vault_write` (create/overwrite) and `vault_edit` (find-and-replace)
 - **Frontmatter:** `fm_read` / `fm_write` custom tools
-  (thin wrappers around `tools/frontmatter.sh`)
 - **Move/rename:** `vault_mv` tool
 - **Delete:** `vault_rm` tool (files only; use `vault_gc` for bulk cleanup)
 - **Specialized:** `vault_gc`, `vault_lint`, `triage_dashboard`, etc. (unchanged)
@@ -483,11 +475,10 @@ Agents detect repo type by checking `.git`:
 | **Absent** (but `HEAD` + `refs/` present) | `bare`     | Bare repository root                     |
 | **Absent**                                | `unknown`  | Not a git repository                     |
 
-### Worktree library: `tools/worktree.sh`
+### Worktree tools
 
-A shell library (parallel to `frontmatter.sh`) that provides four functions.
-Each function is also available as a **custom tool** — agents call the tool
-instead of sourcing the script and running bash commands.
+Four custom tools handle all worktree operations. Agents call the tools
+directly — there is no shell library to source.
 
 | Function           | Custom tool        | Behaviour                                                                                        |
 | ------------------ | ------------------ | ------------------------------------------------------------------------------------------------ |
@@ -572,13 +563,13 @@ gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 ## Notifications
 
 Push notifications to phone/desktop are sent via ntfy.sh. The `notify_triage`
-custom tool wraps `tools/notify.sh`. The `icon` parameter is the agent or
-skill icon name (e.g. `"implementor"`, `"reviewer"`, `"auto-implementor"`)
-and the optional `emoji` parameter resolves to an emoji prefix (e.g. `"clean"`
-→ 🟢, `"escalation"` → ❗). When the icon starts with `auto-` (e.g.
-`"auto-implementor"`), the script strips the prefix for the PNG URL and
-prepends ⚙️ to the emoji automatically. Full key table in
-`src/skills/vault-triage/SKILL.md`.
+custom tool handles icon URL construction, emoji resolution, and topic
+fallback. The `icon` parameter is the agent or skill icon name (e.g.
+`"implementor"`, `"reviewer"`, `"auto-implementor"`) and the optional `emoji`
+parameter resolves to an emoji prefix (e.g. `"clean"` → 🟢, `"escalation"`
+→ ❗). When the icon starts with `auto-` (e.g. `"auto-implementor"`), the tool
+strips the prefix for the PNG URL and prepends ⚙️ to the emoji automatically.
+Full key table in `src/skills/vault-triage/SKILL.md`.
 
 ```
 notify_triage({
@@ -617,7 +608,7 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 | -------------------- | ------------------- | ------------------------------------- | ----------------------------------------- |
 | `AGENT_VAULT`        | Yes (for vault ops) | Absolute path to the Obsidian vault   | None — must be set                        |
 | `AGENT_REPOS`        | Yes (for repo ops)  | Absolute path to local repo checkouts | None — must be set                        |
-| `NTFY_TOPIC`         | No                  | ntfy.sh topic for push notifications  | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
+| `NTFY_TOPIC`         | No                  | ntfy.sh topic for push notifications  | `$AGENT_VAULT/_misc/ntfy-topic.txt`       |
 | `SANDBOX_CONFIG_DIR` | No                  | Path where sandbox config is deployed | `$HOME/.config/opencode-sandbox`          |
 
 `AGENT_VAULT` and `AGENT_REPOS` are checked at the top of any agent session
