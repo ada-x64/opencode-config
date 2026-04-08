@@ -1,3 +1,4 @@
+/** Shared constants for delegate tools (session + fleet). */
 import path from "path";
 
 export const configDir =
