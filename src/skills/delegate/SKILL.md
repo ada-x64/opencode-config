@@ -46,20 +46,20 @@ phase: "<optional phase label>"
 
 ### Frontmatter fields
 
-| Field        | Type      | Required | Description                                    |
-| ------------ | --------- | -------- | ---------------------------------------------- |
-| `title`      | `string`  | Yes      | AoE session title                              |
-| `repo`       | `string`  | Yes      | `<owner>/<repo>` identifier                    |
-| `branch`     | `string`  | No       | Target branch name                             |
-| `backend`    | `string`  | Yes      | `"copilot"` or `"opencode"`                    |
-| `new_branch` | `boolean` | No       | Create a new branch (default: `true`)          |
-| `group`      | `string`  | No       | AoE group for session organization             |
-| `phase`      | `string`  | No       | Phase label for ordering in multi-phase fleets |
+| Field        | Type      | Required | Description                                                                                     |
+| ------------ | --------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `title`      | `string`  | Yes      | AoE session title                                                                               |
+| `repo`       | `string`  | Yes      | `<owner>/<repo>` identifier                                                                     |
+| `branch`     | `string`  | No       | Target branch name                                                                              |
+| `backend`    | `string`  | Yes      | `"copilot"` or `"opencode"`                                                                     |
+| `new_branch` | `boolean` | No       | Create a new branch (default: `true`; ignored if `branch` is not set or `backend` is `copilot`) |
+| `group`      | `string`  | No       | AoE group for session organization                                                              |
+| `phase`      | `string`  | No       | Phase label for ordering in multi-phase fleets                                                  |
 
 ### Body conventions
 
-- Flat text. No Markdown formatting that could confuse tmux.
-- Avoid `--` at line starts — tmux interprets these as flags.
+- Markdown headers (`##`) and formatting are safe. Avoid only `--` at line
+  starts — tmux interprets these as flags.
 - Opencode prompts: direct task instructions. The session starts in build
   mode; instruct the agent to switch modes if needed.
 - Copilot prompts: end with explicit push/PR instructions
@@ -177,15 +177,15 @@ delegate_fleet({
 
 ### `delegate()` Parameters
 
-| Parameter    | Type                        | Required | Default      | Description                                                     |
-| ------------ | --------------------------- | -------- | ------------ | --------------------------------------------------------------- |
-| `repo`       | `string`                    | Yes      | —            | Absolute path to the repository                                 |
-| `prompt`     | `string`                    | Yes      | —            | Task prompt text to send to the spawned agent                   |
-| `title`      | `string`                    | Yes      | —            | AoE session title                                               |
-| `tool`       | `"opencode"` \| `"copilot"` | No       | `"opencode"` | Backend to use                                                  |
-| `branch`     | `string`                    | No       | —            | Branch name (opencode: creates worktree; copilot: context only) |
-| `new_branch` | `boolean`                   | No       | `true`       | Create a new branch (only applies when branch is set)           |
-| `group`      | `string`                    | No       | —            | AoE group for organizing sessions                               |
+| Parameter    | Type                        | Required | Default      | Description                                                                                |
+| ------------ | --------------------------- | -------- | ------------ | ------------------------------------------------------------------------------------------ |
+| `repo`       | `string`                    | Yes      | —            | Absolute path to the repository                                                            |
+| `prompt`     | `string`                    | Yes      | —            | Task prompt text to send to the spawned agent                                              |
+| `title`      | `string`                    | Yes      | —            | AoE session title                                                                          |
+| `tool`       | `"opencode"` \| `"copilot"` | No       | `"opencode"` | Backend to use                                                                             |
+| `branch`     | `string`                    | No       | —            | Branch name (opencode: creates worktree with `-b` flag; copilot: determines worktree HEAD) |
+| `new_branch` | `boolean`                   | No       | `true`       | Create a new branch (only applies when branch is set)                                      |
+| `group`      | `string`                    | No       | —            | AoE group for organizing sessions                                                          |
 
 Returns the **session ID** (UUID string).
 

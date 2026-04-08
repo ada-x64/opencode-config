@@ -9,6 +9,7 @@ export default tool({
   description:
     "Spawn an AoE session for parallel agent work. " +
     "Supports opencode (sandbox) and copilot (cloud) backends. " +
+    "Copilot sessions use isolated worktrees to prevent index.lock conflicts. " +
     "Returns the session ID for monitoring.",
   args: {
     repo: tool.schema.string().describe("Absolute path to the repository"),
@@ -24,7 +25,7 @@ export default tool({
       .string()
       .optional()
       .describe(
-        "Branch name (opencode: creates worktree; copilot: context only)",
+        "Branch name (opencode: creates worktree with -b flag; copilot: determines worktree HEAD commit)",
       ),
     new_branch: tool.schema
       .boolean()
