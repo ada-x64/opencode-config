@@ -49,6 +49,32 @@ await run("oxlint", async () => {
   return proc.exitCode === 0;
 });
 
+await run("shellcheck", async () => {
+  // Check if shellcheck is available
+  const which = await $`which shellcheck`.nothrow().quiet();
+  if (which.exitCode !== 0) {
+    console.log("(shellcheck not installed, skipping)");
+    return true;
+  }
+
+  const files = (
+    await $`find . -name '*.sh' -not -path '*/node_modules/*' -not -path '*/out/*'`
+      .quiet()
+      .text()
+  )
+    .split("\n")
+    .map((f) => f.trim())
+    .filter(Boolean);
+
+  if (files.length === 0) {
+    console.log("(no .sh files found)");
+    return true;
+  }
+
+  const proc = await $`shellcheck ${files}`.nothrow();
+  return proc.exitCode === 0;
+});
+
 await run("bun test", async () => {
   const proc = await $`bun test`
     .env({ ...process.env, OPENCODE_CONFIG_SRC: `${root}/src` })

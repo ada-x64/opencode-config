@@ -257,7 +257,7 @@ _fleet_run_protocol() {
 		for i in "${!session_ids[@]}"; do
 			if [[ "${confirmed[$i]}" == "true" ]]; then continue; fi
 			if _copilot_check_confirmed "${session_ids[$i]}"; then
-				confirmed[$i]=true
+				confirmed[i]=true
 			else
 				all_done=false
 			fi

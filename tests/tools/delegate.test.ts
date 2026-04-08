@@ -46,9 +46,9 @@ describe("delegate fleet tool", () => {
   });
 
   it("rejects empty sessions array", async () => {
-    await expect(
-      fleet.execute({ repo: "/tmp", sessions: [] }),
-    ).rejects.toThrow("sessions array must not be empty");
+    await expect(fleet.execute({ repo: "/tmp", sessions: [] })).rejects.toThrow(
+      "sessions array must not be empty",
+    );
   });
 });
 
