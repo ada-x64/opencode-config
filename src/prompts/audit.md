@@ -68,7 +68,7 @@ specific branch diff, within the same audit session. The reviewer:
 
 - Checks staged changes or latest commit
 - Tags findings with severity and category
-- Writes to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`
+- Writes to `$AGENT_VAULT/tasks/<task>/reviews/review.md`
 
 Note: `@reviewer` is not part of the core audit workflow. It is available for
 composition when the user wants both a full-repo audit and a diff review in

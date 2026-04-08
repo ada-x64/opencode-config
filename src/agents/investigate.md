@@ -124,7 +124,7 @@ After writing repo notes, load the `vault-triage` skill and follow its
 
 **Note:** The investigator does not always operate within a task context. If
 there is no task directory for the current work, write the triage entry to
-`$AGENT_VAULT/tasks/_activity/investigate/` (create if absent) and use
+`$AGENT_VAULT/_misc/activity/` (create if absent) and use
 `investigate` as the task name.
 
 ## What you MUST NOT do

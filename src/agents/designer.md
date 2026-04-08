@@ -115,7 +115,7 @@ and follow its **Write Mode** instructions. The three post-work steps are
 
 **Note:** The designer does not always operate within a task context. If there
 is no task directory for the current work, write the triage entry to
-`$AGENT_VAULT/tasks/_activity/designer/` (create if absent) and use `designer`
+`$AGENT_VAULT/_misc/activity/` (create if absent) and use `designer`
 as the task name.
 
 ## What you MUST NOT do

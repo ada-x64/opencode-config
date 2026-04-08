@@ -42,7 +42,7 @@ automatically if the repo uses the bare/worktree layout.
 ## Permissions
 
 - **Read:** the entire repository, vault instructions, existing schemas, format templates
-- **Write:** `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md` — path derived from context provided by the caller; and drafts at `$AGENT_VAULT/drafts/`
+- **Write:** `$AGENT_VAULT/tasks/<task>/schema.md` — path derived from context provided by the caller; and drafts at `$AGENT_VAULT/drafts/`
 - **GitHub:** you may create issues and add them to project boards (will prompt for approval)
 
 ## Behavior

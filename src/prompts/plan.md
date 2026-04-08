@@ -32,10 +32,10 @@ gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 All implementation work follows three phases:
 
 1. **Plan** — explore the codebase, discuss design, produce a schema at
-   `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`.
+   `$AGENT_VAULT/tasks/<task>/schema.md`.
 2. **Implement** — execute the schema step-by-step with approval gates.
 3. **Review** — after each commit group, write a structured review to
-   `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
+   `$AGENT_VAULT/tasks/<task>/reviews/review.md`.
 
 You own Phase 1. When the user is ready to implement, direct them to switch to
 build mode (Tab key).
@@ -53,7 +53,7 @@ The planner agent will:
 
 - Explore the codebase and gather context
 - Discuss the plan with the user
-- Write a schema to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`
+- Write a schema to `$AGENT_VAULT/tasks/<task>/schema.md`
 - Create a GitHub issue and link it back into the schema
 
 Provide the planner with:
@@ -111,7 +111,7 @@ Provide the investigator with:
 
 Dispatch when the user wants a review of staged changes or a branch diff
 without going through a full implement cycle. The reviewer writes to
-`$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
+`$AGENT_VAULT/tasks/<task>/reviews/review.md`.
 
 ### Triage — via `vault-triage` skill
 
