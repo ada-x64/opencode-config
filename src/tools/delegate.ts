@@ -37,8 +37,10 @@ export default tool({
   },
   async execute(args) {
     const script = path.join(configDir, "skills/delegate/delegate.sh");
+    // Safety: Bun.$`` passes each ${} interpolation as a separate argv entry.
+    // Prompt text, repo paths, and other args are never shell-expanded.
     const result =
-      await Bun.$`bash -c ${'source "$1" && delegate_session "$2" "$3" "$4" "$5" "$6" "$7" "$8"'} _ ${script} ${args.repo} ${args.prompt} ${args.title} ${args.tool ?? "opencode"} ${args.branch ?? ""} ${String(args.new_branch ?? true)} ${args.group ?? ""}`.text();
+      await Bun.$`bash -euo pipefail -c ${'source "$1" && delegate_session "$2" "$3" "$4" "$5" "$6" "$7" "$8"'} _ ${script} ${args.repo} ${args.prompt} ${args.title} ${args.tool ?? "opencode"} ${args.branch ?? ""} ${String(args.new_branch ?? true)} ${args.group ?? ""}`.text();
     return result.trim();
   },
 });

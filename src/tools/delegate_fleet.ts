@@ -34,10 +34,16 @@ export default tool({
       .describe("AoE group for organizing sessions"),
   },
   async execute(args) {
+    if (args.sessions.length === 0) {
+      throw new Error("sessions array must not be empty");
+    }
     const script = path.join(configDir, "skills/delegate/delegate.sh");
     const sessionsJson = JSON.stringify(args.sessions);
+    // Safety: Bun.$`` passes each ${} interpolation as a separate argv entry
+    // (shell word), not through shell expansion. sessionsJson arrives as a
+    // literal $4 in the -c script — never interpreted by the shell.
     const result =
-      await Bun.$`bash -c ${'source "$1" && delegate_fleet "$2" "$3" "$4"'} _ ${script} ${args.repo} ${args.group ?? ""} ${sessionsJson}`.text();
+      await Bun.$`bash -euo pipefail -c ${'source "$1" && delegate_fleet "$2" "$3" "$4"'} _ ${script} ${args.repo} ${args.group ?? ""} ${sessionsJson}`.text();
     return result.trim();
   },
 });
