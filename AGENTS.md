@@ -178,7 +178,7 @@ Research ──► Plan ──────► Implement ──────► Re
 
 - **File:** `src/agents/planner.md`
 - **Role:** Explores a codebase, discusses design with the user, writes an
-  implementation schema to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`,
+  implementation schema to `$AGENT_VAULT/tasks/<task>/schema.md`,
   creates a GitHub issue, and links it into the schema.
 - **Write access:** Full vault mutations (schemas and drafts); GitHub issue
   creation and project board adds (both require user approval via `ask`);
@@ -232,7 +232,7 @@ Research ──► Plan ──────► Implement ──────► Re
   (`git show HEAD`). Every finding is tagged with severity
   (`nit/low/medium/high/critical`) and category
   (`bug/performance/design/types/maintenance/security/docs/testing/style`).
-  Writes the structured review to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
+  Writes the structured review to `$AGENT_VAULT/tasks/<task>/reviews/review.md`.
 - **Write access:** Write tool (for review file); `fm_read`/`fm_write`; can run
   the test/lint suite for verification.
 - **Does not:** Run build tools; create PRs or issues; write outside the review file.
@@ -320,7 +320,7 @@ detailed instructions and references to bundled scripts.
 | `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool                |
 | `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                          |
 
-Six lookup skills (`archive`, `fleet-schemas`, `notes`, `reviews`, `schemas`,
+Six lookup skills (`archive`, `notes`, `reviews`, `schemas`,
 `vault`) have been replaced by the `vault_find` tool. Five tool-only skills
 (`gh-helpers`, `local-ci`, `vault-cache`, `vault-gc`, `vault-lint`) have been
 removed — their tools (`create_issue`, `create_pr`, `local_ci`, `vault_cache`,
@@ -356,12 +356,13 @@ repo. The vault is a git-tracked directory managed with Obsidian.
 ```
 $AGENT_VAULT/
 ├── tasks/
-│   └── <owner>/<repo>/<task>/
+│   └── <task>/
 │       ├── schema.md         # Implementation spec
-│       ├── review.md         # Code review (review-2.md, etc.)
-│       └── triage.md         # Triage entry (triage-2.md, etc.)
+│       └── reviews/
+│           └── review.md     # Code review (review-2.md, etc.)
 ├── _misc/
 │   ├── archive/              # Completed/closed tasks
+│   ├── activity/             # Triage entries (all types — timestamped files)
 │   ├── templates/            # Format templates (schema, review, triage, audit, ...)
 │   └── images/               # Notification icons and image assets
 ├── audits/
@@ -411,7 +412,7 @@ All non-trivial implementation work follows three sequential phases:
 
 **Mode:** plan (or build mode via `@planner`)
 **Agent:** `@planner`
-**Output:** `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`, GitHub issue
+**Output:** `$AGENT_VAULT/tasks/<task>/schema.md`, GitHub issue
 
 The planner explores the codebase, discusses design with the user, and writes
 a schema. The schema is a fully self-contained actionable spec organized into

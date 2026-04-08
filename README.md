@@ -76,16 +76,17 @@ Everything agents produce goes here:
 
 ```
 $AGENT_VAULT/
-  tasks/<owner>/<repo>/<task>/
+  tasks/<task>/
     schema.md                  Implementation spec
-    review.md                  Code review findings
-    triage.md                  Escalation / triage entries
+    reviews/
+      review.md                Code review findings
   audits/<owner>/<repo>/       Audit reports
   notes/<owner>/<repo>/        Reference documentation per repo
   designs/                     Cross-cutting design documents
   projects/                    Per-repo project status documents
   _misc/
     archive/                   Completed work
+    activity/                  Triage entries (all types)
     templates/                 Format templates
 ```
 
@@ -104,8 +105,8 @@ needs triage capabilities, for example. Each skill lives in `src/skills/<name>/`
 with a `SKILL.md` descriptor and optional helper scripts.
 
 There are 13 skills covering vault operations (search, init, lint, gc, triage,
-cache), work product lookup (schemas, reviews, notes, archive,
-fleet-schemas), and development tooling (local-ci).
+cache), work product lookup (schemas, reviews, notes, archive), and development
+tooling (local-ci).
 
 ### Permissions
 
