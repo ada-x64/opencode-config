@@ -1,6 +1,6 @@
 import { tool } from "@opencode-ai/plugin";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
 export default tool({
   description:
@@ -21,15 +21,17 @@ export default tool({
     const vault = process.env.AGENT_VAULT;
     if (!vault) throw new Error("AGENT_VAULT is not set");
 
-    // Discover owner/repo pairs by scanning tasks/ for schema.md files
+    // Discover owner/repo pairs from tasks/ (schema frontmatter) and notes/ (directory structure)
     const repos = new Set<string>();
+
+    // Scan tasks/ for schema.md files and extract repo: from frontmatter
     const tasksDir = join(vault, "tasks");
     let schemaEntries: string[];
     try {
       const all = await readdir(tasksDir, { recursive: true });
       schemaEntries = all
         .map((e) => String(e))
-        .filter((e) => e.endsWith("schema.md"));
+        .filter((e) => basename(e) === "schema.md");
     } catch {
       schemaEntries = [];
     }
@@ -53,6 +55,23 @@ export default tool({
       } catch {
         // skip unreadable files
       }
+    }
+
+    // Scan notes/<owner>/<repo>/ directory structure for additional repos
+    const notesDir = join(vault, "notes");
+    try {
+      const owners = await readdir(notesDir, { withFileTypes: true });
+      for (const ownerEnt of owners) {
+        if (!ownerEnt.isDirectory() || ownerEnt.name.startsWith(".")) continue;
+        const ownerPath = join(notesDir, ownerEnt.name);
+        const repoEnts = await readdir(ownerPath, { withFileTypes: true });
+        for (const repoEnt of repoEnts) {
+          if (!repoEnt.isDirectory() || repoEnt.name.startsWith(".")) continue;
+          repos.add(`${ownerEnt.name}/${repoEnt.name}`);
+        }
+      }
+    } catch {
+      // notes dir may not exist
     }
 
     // Apply filter
