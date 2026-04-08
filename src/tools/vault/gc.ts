@@ -29,10 +29,7 @@ export default tool({
       const entries = await readdir(tasksRoot, { recursive: true });
       schemaFiles = entries
         .map((e) => path.join(tasksRoot, String(e)))
-        .filter(
-          (fullPath) =>
-            path.basename(fullPath) === "schema.md",
-        );
+        .filter((fullPath) => path.basename(fullPath) === "schema.md");
     } catch {
       return "Error: could not read tasks/ directory (does it exist?).";
     }

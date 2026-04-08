@@ -12,7 +12,14 @@ const { default: vault_init } = await import("../../src/tools/vault/init");
 describe("vault_init", () => {
   it("creates the top-level directories", () => {
     const vault = process.env.AGENT_VAULT!;
-    for (const dir of ["tasks", "audits", "designs", "drafts", "notes", "projects"]) {
+    for (const dir of [
+      "tasks",
+      "audits",
+      "designs",
+      "drafts",
+      "notes",
+      "projects",
+    ]) {
       expect(existsSync(path.join(vault, dir))).toBe(true);
     }
   });

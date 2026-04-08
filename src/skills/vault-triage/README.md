@@ -117,9 +117,9 @@ bash "$OPENCODE_CONFIG_SRC/tools/triage-dashboard.sh" --notify-summary
 
 ## Environment variables
 
-| Variable      | Required | Description                                                              |
-| ------------- | -------- | ------------------------------------------------------------------------ |
-| `AGENT_VAULT` | Yes      | Path to the vault (e.g. `~/obsidian/agent.obs`)                          |
+| Variable      | Required | Description                                                        |
+| ------------- | -------- | ------------------------------------------------------------------ |
+| `AGENT_VAULT` | Yes      | Path to the vault (e.g. `~/obsidian/agent.obs`)                    |
 | `NTFY_TOPIC`  | No       | ntfy topic name; falls back to `$AGENT_VAULT/_misc/ntfy-topic.txt` |
 
 ## Re-running setup

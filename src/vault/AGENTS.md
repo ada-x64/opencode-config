@@ -106,14 +106,14 @@ Any mode is capable of managing the vault through the vault skills. Typical acti
 
 ## Agent Roles
 
-| Agent | Role |
-| ----- | ----- |
-| `@planner` | Schema authoring, GitHub issue creation |
-| `@project-manager` | Issue lifecycle, project board ops, milestone management, vault project status |
-| `@implementor` | Single commit-group schema executor. |
-| `@reviewer` | Structured code review |
-| `@designer` | Repo notes, design documents, drafts |
-| `@auditor` | Structured audit agent, analogous to @planner. Tool detection, static analysis, vault report |
+| Agent              | Role                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------- |
+| `@planner`         | Schema authoring, GitHub issue creation                                                      |
+| `@project-manager` | Issue lifecycle, project board ops, milestone management, vault project status               |
+| `@implementor`     | Single commit-group schema executor.                                                         |
+| `@reviewer`        | Structured code review                                                                       |
+| `@designer`        | Repo notes, design documents, drafts                                                         |
+| `@auditor`         | Structured audit agent, analogous to @planner. Tool detection, static analysis, vault report |
 
 ## Environment
 

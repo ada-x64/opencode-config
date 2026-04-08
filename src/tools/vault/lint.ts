@@ -208,21 +208,18 @@ export default tool({
 
     // ── Reviews ──────────────────────────────────────────────────────────────
     if (lintReviews) {
-      const reviewFiles = await findFiles(
-        path.join(vault, "tasks"),
-        (rel) => {
-          const base = path.basename(rel);
-          const parentDir = path.basename(path.dirname(rel));
-          return (
-            base.startsWith("review") &&
-            rel.endsWith(".md") &&
-            parentDir === "reviews" &&
-            (!filter ||
-              rel.startsWith(filter + "/") ||
-              rel.includes("/" + filter + "/"))
-          );
-        },
-      );
+      const reviewFiles = await findFiles(path.join(vault, "tasks"), (rel) => {
+        const base = path.basename(rel);
+        const parentDir = path.basename(path.dirname(rel));
+        return (
+          base.startsWith("review") &&
+          rel.endsWith(".md") &&
+          parentDir === "reviews" &&
+          (!filter ||
+            rel.startsWith(filter + "/") ||
+            rel.includes("/" + filter + "/"))
+        );
+      });
 
       if (reviewFiles.length === 0) {
         allErrors.push("(no review files found)");

@@ -126,10 +126,10 @@ Modes are interactive session contexts. Switch between them with the **Tab key**
 in the opencode TUI. Each mode has its own system prompt and a distinct scope
 of permitted actions.
 
-| Mode      | Prompt file        | Purpose                                                                   |
-| --------- | ------------------ | ------------------------------------------------------------------------- |
-| **build** | `prompts/build.md` | Full tool access — file edits, commands, subagent dispatch                |
-| **plan**  | `prompts/plan.md`  | Read-only exploration and schema authoring; no direct file edits          |
+| Mode      | Prompt file        | Purpose                                                              |
+| --------- | ------------------ | -------------------------------------------------------------------- |
+| **build** | `prompts/build.md` | Full tool access — file edits, commands, subagent dispatch           |
+| **plan**  | `prompts/plan.md`  | Read-only exploration and schema authoring; no direct file edits     |
 | **audit** | `prompts/audit.md` | Read-only quality analysis — orchestrates `@auditor` and `@reviewer` |
 
 ### build mode
@@ -312,13 +312,13 @@ detailed instructions and references to bundled scripts.
 
 ### Available skills
 
-| Skill            | Directory                    | Purpose                                                                                      |
-| ---------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
-| `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                          |
-| `delegate`       | `src/skills/delegate/`       | Spawn AoE sessions for parallel agent work                                                   |
-| `research-check` | `src/skills/research-check/` | Check notes freshness against current repo state; outputs structured staleness report         |
-| `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool                |
-| `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                          |
+| Skill            | Directory                    | Purpose                                                                               |
+| ---------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
+| `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                   |
+| `delegate`       | `src/skills/delegate/`       | Spawn AoE sessions for parallel agent work                                            |
+| `research-check` | `src/skills/research-check/` | Check notes freshness against current repo state; outputs structured staleness report |
+| `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool         |
+| `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                   |
 
 Six lookup skills (`archive`, `notes`, `reviews`, `schemas`,
 `vault`) have been replaced by the `vault_find` tool. Five tool-only skills
@@ -333,15 +333,15 @@ into subdirectories (`fm/`, `wt/`, `notify/`, `triage/`, `vault/`). Each
 subdirectory has a barrel export and a `_lib.ts` for shared helpers. Agents
 call tools directly — there are no shell scripts to invoke.
 
-| Domain     | Tools                                                                                        |
-| ---------- | -------------------------------------------------------------------------------------------- |
-| Frontmatter | `fm_read`, `fm_write`                                                                       |
-| Worktree   | `wt_detect`, `wt_owner_repo`, `wt_switch_branch`, `wt_cleanup`                              |
-| Notify     | `notify_triage`, `session_notify`                                                            |
-| Triage     | `triage_dashboard`, `triage_write`                                                           |
-| Vault      | `vault_cache`, `vault_edit`, `vault_find`, `vault_gc`, `vault_init`, `vault_lint`, `vault_ls`, `vault_mv`, `vault_read`, `vault_rm`, `vault_write` |
-| GitHub     | `create_issue`, `create_pr`                                                                  |
-| Other      | `delegate`, `local_ci`                                                                       |
+| Domain      | Tools                                                                                                                                              |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontmatter | `fm_read`, `fm_write`                                                                                                                              |
+| Worktree    | `wt_detect`, `wt_owner_repo`, `wt_switch_branch`, `wt_cleanup`                                                                                     |
+| Notify      | `notify_triage`, `session_notify`                                                                                                                  |
+| Triage      | `triage_dashboard`, `triage_write`                                                                                                                 |
+| Vault       | `vault_cache`, `vault_edit`, `vault_find`, `vault_gc`, `vault_init`, `vault_lint`, `vault_ls`, `vault_mv`, `vault_read`, `vault_rm`, `vault_write` |
+| GitHub      | `create_issue`, `create_pr`                                                                                                                        |
+| Other       | `delegate`, `local_ci`                                                                                                                             |
 
 ---
 
@@ -605,12 +605,12 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 
 ## Environment Variable Reference
 
-| Variable             | Required            | Description                           | Fallback                                  |
-| -------------------- | ------------------- | ------------------------------------- | ----------------------------------------- |
-| `AGENT_VAULT`        | Yes (for vault ops) | Absolute path to the Obsidian vault   | None — must be set                        |
-| `AGENT_REPOS`        | Yes (for repo ops)  | Absolute path to local repo checkouts | None — must be set                        |
-| `NTFY_TOPIC`         | No                  | ntfy.sh topic for push notifications  | `$AGENT_VAULT/_misc/ntfy-topic.txt`       |
-| `SANDBOX_CONFIG_DIR` | No                  | Path where sandbox config is deployed | `$HOME/.config/opencode-sandbox`          |
+| Variable             | Required            | Description                           | Fallback                            |
+| -------------------- | ------------------- | ------------------------------------- | ----------------------------------- |
+| `AGENT_VAULT`        | Yes (for vault ops) | Absolute path to the Obsidian vault   | None — must be set                  |
+| `AGENT_REPOS`        | Yes (for repo ops)  | Absolute path to local repo checkouts | None — must be set                  |
+| `NTFY_TOPIC`         | No                  | ntfy.sh topic for push notifications  | `$AGENT_VAULT/_misc/ntfy-topic.txt` |
+| `SANDBOX_CONFIG_DIR` | No                  | Path where sandbox config is deployed | `$HOME/.config/opencode-sandbox`    |
 
 `AGENT_VAULT` and `AGENT_REPOS` are checked at the top of any agent session
 that uses the vault or operates on a repository. The `vault-init` skill can

@@ -20,9 +20,7 @@ export default tool({
     if (!vault) return "AGENT_VAULT is not set";
 
     // Directories to scan
-    const triageDirs = [
-      path.join(vault, "_misc/activity"),
-    ];
+    const triageDirs = [path.join(vault, "_misc/activity")];
 
     interface Row {
       link: string;

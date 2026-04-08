@@ -90,8 +90,7 @@ export default tool({
         case "schemas":
           return {
             roots: [path.join(vault!, "tasks")],
-            filter: (rel) =>
-              path.basename(rel) === "schema.md",
+            filter: (rel) => path.basename(rel) === "schema.md",
           };
 
         case "reviews":

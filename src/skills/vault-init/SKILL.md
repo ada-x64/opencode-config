@@ -8,7 +8,7 @@ description: >
 
 ## When to use
 
-Use this skill at the start of every session. 
+Use this skill at the start of every session.
 
 ## Usage
 

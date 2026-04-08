@@ -79,12 +79,7 @@ describe("vault_gc", () => {
 
     // Original must still be in place
     const schema = Bun.file(
-      path.join(
-        vault,
-        "tasks",
-        "task-complete",
-        "schema.md",
-      ),
+      path.join(vault, "tasks", "task-complete", "schema.md"),
     );
     expect(await schema.exists()).toBe(true);
   });
@@ -96,36 +91,20 @@ describe("vault_gc", () => {
 
     // Must appear in archive
     const archived = Bun.file(
-      path.join(
-        vault,
-        "_misc",
-        "archive",
-        "task-complete",
-        "schema.md",
-      ),
+      path.join(vault, "_misc", "archive", "task-complete", "schema.md"),
     );
     expect(await archived.exists()).toBe(true);
 
     // Must be gone from tasks/
     const original = Bun.file(
-      path.join(
-        vault,
-        "tasks",
-        "task-complete",
-        "schema.md",
-      ),
+      path.join(vault, "tasks", "task-complete", "schema.md"),
     );
     expect(await original.exists()).toBe(false);
   });
 
   it("leaves a task with status: todo in place", async () => {
     const schema = Bun.file(
-      path.join(
-        vault,
-        "tasks",
-        "task-todo",
-        "schema.md",
-      ),
+      path.join(vault, "tasks", "task-todo", "schema.md"),
     );
     expect(await schema.exists()).toBe(true);
   });

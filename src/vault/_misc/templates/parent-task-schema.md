@@ -48,8 +48,8 @@ which repos are involved — the parent task implementor parses it to discover r
 ```markdown
 ## Repos
 
-| Repo             | Path                     | schema                          |
-| ---------------- | ------------------------ | ------------------------------- |
+| Repo             | Path                     | schema                             |
+| ---------------- | ------------------------ | ---------------------------------- |
 | `<owner>/<repo>` | `~/repos/<owner>/<repo>` | `tasks/<task>/<subtask>/schema.md` |
 ```
 

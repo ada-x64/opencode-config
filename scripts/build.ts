@@ -113,13 +113,16 @@ const BINARY_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".ico"]);
  *
  * Called before copySrcToOut so the generated file travels with src/tools/.
  */
-export function generateVaultManifest(vaultSrcDir: string, outPath: string): void {
+export function generateVaultManifest(
+  vaultSrcDir: string,
+  outPath: string,
+): void {
   const entries: VaultEntry[] = [];
 
   function walk(dir: string): void {
-    const items = fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
+    const items = fs
+      .readdirSync(dir, { withFileTypes: true })
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     for (const item of items) {
       const full = path.join(dir, item.name);
@@ -744,7 +747,12 @@ export function build(
 
   // --- Generate vault manifest (before copy, so it travels with src/tools/) ---
   const vaultSrcDir = path.join(SRC_DIR, "vault");
-  const manifestOut = path.join(SRC_DIR, "tools", "vault", "_vault_manifest.ts");
+  const manifestOut = path.join(
+    SRC_DIR,
+    "tools",
+    "vault",
+    "_vault_manifest.ts",
+  );
   generateVaultManifest(vaultSrcDir, manifestOut);
 
   // --- Build host variant ---

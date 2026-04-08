@@ -6,7 +6,13 @@ import { generateVaultManifest } from "../../scripts/build";
 // Generate the vault manifest before importing vault_init (which depends on it)
 const repoRoot = path.resolve(import.meta.dir, "../..");
 const vaultSrc = path.join(repoRoot, "src", "vault");
-const manifestOut = path.join(repoRoot, "src", "tools", "vault", "_vault_manifest.ts");
+const manifestOut = path.join(
+  repoRoot,
+  "src",
+  "tools",
+  "vault",
+  "_vault_manifest.ts",
+);
 generateVaultManifest(vaultSrc, manifestOut);
 
 const { default: vault_init } = await import("../../src/tools/vault/init");
