@@ -152,7 +152,7 @@ understands the task before delegation:
 ## Result Collection
 
 - **Opencode sessions:** Poll for an idle prompt or check for triage entries
-  in `$AGENT_VAULT/_misc/triage/`. The spawned agent writes triage entries
+  in `$AGENT_VAULT/_misc/activity/`. The spawned agent writes triage entries
   on completion.
 - **Copilot sessions:** Poll the session output for a PR URL. Copilot
   creates a PR on GitHub when delegation completes successfully.

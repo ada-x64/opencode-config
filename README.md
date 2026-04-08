@@ -42,7 +42,7 @@ orchestrator when needed.
 Plan ----------> Implement ----------> Review
   @planner        @implementor           @reviewer
   @project-manager                       @designer
-                                         @auto-auditor
+                                         @auditor
 ```
 
 **Planning.** `@planner` explores a codebase, discusses design, and writes an
@@ -59,7 +59,7 @@ rounds per commit) and escalating persistent problems via triage.
 
 **Review and analysis.** `@reviewer` writes structured findings with severity
 and category tags. `@designer` produces reference notes and design documents.
-`@auto-auditor` runs static analysis tools and writes audit reports.
+`@auditor` runs static analysis tools and writes audit reports.
 
 Agents are split into two model tiers (`design` and `execute`), each assigned
 any opencode-compatible model via `build.json`. The design tier handles
@@ -76,17 +76,17 @@ Everything agents produce goes here:
 
 ```
 $AGENT_VAULT/
-  tasks/<owner>/<repo>/<task>/
+  tasks/<task>/
     schema.md                  Implementation spec
-    review.md                  Code review findings
-    triage.md                  Escalation / triage entries
+    reviews/
+      review.md                Code review findings
   audits/<owner>/<repo>/       Audit reports
-  repo-notes/<owner>/<repo>/   Reference documentation per repo
-  design/                      Cross-cutting design documents
+  notes/<owner>/<repo>/        Reference documentation per repo
+  designs/                     Cross-cutting design documents
   projects/                    Per-repo project status documents
   _misc/
-    archive/tasks/             Completed work
-    cache/                     GitHub metadata cache
+    archive/                   Completed work
+    activity/                  Triage entries (all types)
     templates/                 Format templates
 ```
 
@@ -104,15 +104,15 @@ not baked into agent prompts -- an agent calls `skill("vault-triage")` when it
 needs triage capabilities, for example. Each skill lives in `src/skills/<name>/`
 with a `SKILL.md` descriptor and optional helper scripts.
 
-There are 13 skills covering vault operations (search, init, lint, gc, triage,
-cache), work product lookup (schemas, reviews, repo-notes, archive,
-fleet-schemas), and development tooling (local-ci).
+There are 5 loadable skills covering autonomous execution (auto-impl),
+delegation (delegate), research freshness checks (research-check), vault
+initialization (vault-init), and triage workflows (vault-triage).
 
 ### Permissions
 
 All agents use a deny-override permission model: every agent's bash permission
 block starts with `"*": deny` and then explicitly allows only the commands it
-needs. This makes each agent's capabilities independently auditable. Two agents
+needs. This makes each agent's capabilities independently auditable. One agent
 (`@planner`) can dispatch subagents; the rest are leaf
 agents with no `task:` permission. The `auto-impl` skill gives build mode
 autonomous orchestration capabilities when loaded.

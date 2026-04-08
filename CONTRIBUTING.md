@@ -41,13 +41,13 @@ for model configuration and writes the file. Use `--reconfigure` to re-prompt.
 
 ### Tier assignments
 
-| Agent           | Tier      |
-| --------------- | --------- |
-| `@planner`      | `design`  |
-| `@designer`     | `design`  |
-| `@auto-auditor` | `design`  |
-| `@implementor`  | `execute` |
-| `@reviewer`     | `execute` |
+| Agent          | Tier      |
+| -------------- | --------- |
+| `@planner`     | `design`  |
+| `@designer`    | `design`  |
+| `@auditor`     | `design`  |
+| `@implementor` | `execute` |
+| `@reviewer`    | `execute` |
 
 ### `scripts/build.ts`
 
@@ -215,7 +215,7 @@ sandbox-by-default, custom image, vault bind-mount (RW), credential passthrough
 5. Run `bun run build` to propagate `external_directory`, model,
    and bash permission stamps to the new agent.
 6. Add the agent to the permission table in
-   `repo-notes/ada-x64/opencode-config/agent-permissions.md` in the vault.
+   `notes/ada-x64/opencode-config/agent-permissions.md` in the vault.
 7. Update [AGENTS.md](AGENTS.md) and `README.md`.
 
 ### Updating the global read-only baseline
@@ -239,7 +239,7 @@ agent-specific additions.
 
 The vault and this repo evolve together. When you add or rename an agent:
 
-- Update the vault note at `repo-notes/ada-x64/opencode-config/agent-permissions.md`
+- Update the vault note at `notes/ada-x64/opencode-config/agent-permissions.md`
 - The vault's `AGENTS.md` (at `$AGENT_VAULT/AGENTS.md`) documents vault
   conventions independently — it is not the same document as `AGENTS.md` in
   this repo.

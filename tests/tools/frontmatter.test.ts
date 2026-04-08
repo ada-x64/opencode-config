@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { mkdtemp, rm, writeFile, readFile } from "fs/promises";
 import { tmpdir } from "os";
 import path from "path";
-import fm_read from "../../src/tools/fm_read";
-import fm_write from "../../src/tools/fm_write";
+import fm_read from "../../src/tools/fm/read";
+import fm_write from "../../src/tools/fm/write";
 import { execute_tool } from "./_lib";
 
 const SAMPLE_DOC = `---

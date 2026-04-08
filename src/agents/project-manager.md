@@ -42,7 +42,7 @@ worktrees — each one represents an active branch in the bare repo setup.
 
 ## Vault Scope
 
-PM must refuse to operate on repos not tracked in the vault. Check at the start of any repo-specific operation that `tasks/<owner>/<repo>/` or `repo-notes/<owner>/<repo>/` exists using `vault_ls`. When operating across "all vault repos", discover them by walking both directories — the guard is implicit.
+PM must refuse to operate on repos not tracked in the vault. Check at the start of any repo-specific operation that `tasks/` (flat) or `notes/<owner>/<repo>/` exists using `vault_ls`. When operating across "all vault repos", discover them by walking both directories — the guard is implicit.
 
 ## Interactive Mode
 
@@ -116,14 +116,14 @@ PRs in Review tables. Set `last_synced` via `fm_write({ file: "<path>", key: "la
 
 **PR–schema cross-reference:** For each open PR, check if its `headRefName`
 matches the `branch:` frontmatter of any active schema in
-`$vault/tasks/<owner>/<repo>/*/schema.md`. Also check if the PR title or
+`$vault/tasks/*/schema.md`. Also check if the PR title or
 body references an issue number and compare it against the number embedded in
 each schema's `issue:` frontmatter (which stores a Markdown link like
 `[#5](https://…)` — extract the numeric part before comparing). When a
 match is found, annotate the PR row with the schema name and status.
 
 **For `backend: local` repos:**
-Walk `$vault/tasks/<owner>/<repo>/` and read each schema's `status` and `issue` frontmatter fields. Build the Open Issues table from schemas with `status: todo` or `status: in progress`. Build the Closed Issues table from `status: complete` schemas. Set `last_synced`.
+Walk `$vault/tasks/` and read each schema's `status` and `issue` frontmatter fields. Build the Open Issues table from schemas with `status: todo` or `status: in progress`. Build the Closed Issues table from `status: complete` schemas. Set `last_synced`.
 
 **Creating a new status document:** If `$vault/projects/<owner>/<repo>.md` does not exist, create it using `vault_write` from the template at `$vault/_misc/templates/project-status.md`. Ask the user which `backend` to use if it is not obvious from context — do not auto-detect.
 
@@ -172,7 +172,7 @@ follow its **Write Mode** instructions. The three post-work steps are
 {{include:agents/_shared/triage.md}}
 
 > **For cross-repo operations:** If no per-task directory exists, write to
-> `$AGENT_VAULT/tasks/_activity/project-manager/` instead.
+> `$AGENT_VAULT/_misc/activity/` instead.
 
 ## What you MUST NOT do
 
@@ -181,7 +181,7 @@ follow its **Write Mode** instructions. The three post-work steps are
 - Merge or close PRs (`gh pr merge`, `gh pr close`)
 - Create PRs (`gh pr create`)
 - Create or delete repositories (`gh repo create`, `gh repo delete`)
-- Operate on any repo not present in `$vault/tasks/` or `$vault/repo-notes/`
+- Operate on any repo not present in `$vault/tasks/` or `$vault/notes/`
 - Execute bulk operations without presenting a summary and receiving explicit user confirmation
 - Write project status documents outside `$vault/projects/`
 - Apply `in-progress` or `review-ready` labels — that is the implementors' job; PM creates the labels, implementors apply them

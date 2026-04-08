@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "fs/promises";
 import { tmpdir } from "os";
 import path from "path";
-import triage_dashboard from "../../src/tools/triage_dashboard";
+import triage_dashboard from "../../src/tools/triage/dashboard";
 import { execute_tool } from "./_lib";
 
 let tmp: string;
@@ -26,17 +26,13 @@ beforeAll(async () => {
   tmp = await mkdtemp(path.join(tmpdir(), "vault-dashboard-test-"));
   vault = path.join(tmp, "vault");
 
-  const triageDir = path.join(vault, "_misc/triage");
   const activityDir = path.join(vault, "_misc/activity");
-  const handoffsDir = path.join(vault, "_misc/handoffs");
 
-  await mkdir(triageDir, { recursive: true });
   await mkdir(activityDir, { recursive: true });
-  await mkdir(handoffsDir, { recursive: true });
 
-  // pending escalation in _misc/triage
+  // pending escalation in _misc/activity
   await writeFile(
-    path.join(triageDir, "2026-01-01T00-00-00.md"),
+    path.join(activityDir, "2026-01-01T00-00-00.md"),
     mkTriage("pending", "escalation", "planner", "2026-01-01"),
   );
 
@@ -46,9 +42,9 @@ beforeAll(async () => {
     mkTriage("addressed", "activity", "auto-implementor", "2026-01-02"),
   );
 
-  // dismissed handoff in _misc/handoffs
+  // dismissed handoff in _misc/activity
   await writeFile(
-    path.join(handoffsDir, "2026-01-03T00-00-00.md"),
+    path.join(activityDir, "2026-01-03T00-00-00.md"),
     mkTriage("dismissed", "handoff", "reviewer", "2026-01-03"),
   );
 

@@ -32,10 +32,10 @@ gh api repos/<owner>/<repo>/contents/<path> -q .content | base64 -d
 All implementation work follows three phases:
 
 1. **Plan** — explore the codebase, discuss design, produce a schema at
-   `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`.
+   `$AGENT_VAULT/tasks/<task>/schema.md`.
 2. **Implement** — execute the schema step-by-step with approval gates.
 3. **Review** — after each commit group, write a structured review to
-   `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
+   `$AGENT_VAULT/tasks/<task>/reviews/review.md`.
 
 You own Phase 1. When the user is ready to implement, direct them to switch to
 build mode (Tab key).
@@ -53,7 +53,7 @@ The planner agent will:
 
 - Explore the codebase and gather context
 - Discuss the plan with the user
-- Write a schema to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`
+- Write a schema to `$AGENT_VAULT/tasks/<task>/schema.md`
 - Create a GitHub issue and link it back into the schema
 
 Provide the planner with:
@@ -76,14 +76,14 @@ Dispatch when the user wants to:
 - Write or update a design document in the vault
 - Explore a codebase and produce a design analysis
 
-The designer writes to `$AGENT_VAULT/design/` and `$AGENT_VAULT/draft/`.
+The designer writes to `$AGENT_VAULT/designs/` and `$AGENT_VAULT/drafts/`.
 It does not write schemas, reviews, or repo-notes (use `@investigate` for
 repo-notes).
 
 ### `@investigate` — deep research with provenance tracking
 
 Dispatch when existing repo-notes for the target repository are stale or
-missing, **before** dispatching `@planner`, `@designer`, or `@auto-auditor`.
+missing, **before** dispatching `@planner`, `@designer`, or `@auditor`.
 
 **Staleness-check protocol:** Before dispatching any agent that consumes
 repo-notes, load the `research-check` skill and run:
@@ -98,7 +98,7 @@ bash ~/.config/opencode/skills/research-check/check.sh <owner>/<repo> <repo-path
 The investigator will:
 
 - Research the repo and produce per-topic provenance-tracked notes
-- Write to `$AGENT_VAULT/repo-notes/<owner>/<repo>/`
+- Write to `$AGENT_VAULT/notes/<owner>/<repo>/`
 - Return a summary of notes written and topics covered
 
 Provide the investigator with:
@@ -111,7 +111,7 @@ Provide the investigator with:
 
 Dispatch when the user wants a review of staged changes or a branch diff
 without going through a full implement cycle. The reviewer writes to
-`$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`.
+`$AGENT_VAULT/tasks/<task>/reviews/review.md`.
 
 ### Triage — via `vault-triage` skill
 
@@ -120,10 +120,10 @@ To write a triage entry (e.g. a design-question or handoff during planning),
 load the skill and follow Write Mode instructions. There is no `@triage`
 subagent.
 
-### `@auto-auditor` — full-repository or scoped audit
+### `@auditor` — full-repository or scoped audit
 
 Dispatch when the user wants a quality snapshot of a repository as part of
-planning work. The auto-auditor runs available static analysis tools and writes
+planning work. The auditor runs available static analysis tools and writes
 a structured audit report to `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
 
 Provide:

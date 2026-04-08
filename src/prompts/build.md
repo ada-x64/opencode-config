@@ -19,9 +19,9 @@ To check pending triage items or regenerate the triage dashboard, use the
 
 All non-trivial implementation work follows three phases:
 
-1. **Plan** — schema at `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/schema.md`
+1. **Plan** — schema at `$AGENT_VAULT/tasks/<task>/schema.md`
 2. **Implement** — execute schema step-by-step with approval gates
-3. **Review** — structured review at `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`
+3. **Review** — structured review at `$AGENT_VAULT/tasks/<task>/reviews/review.md`
 
 ## Subagent Dispatch
 
@@ -41,7 +41,7 @@ vault. The implementor will:
 Provide the implementor with:
 
 - The repository path (e.g. `$AGENT_REPOS/<owner>/<repo>`)
-- The task directory (e.g. `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/`)
+- The task directory (e.g. `$AGENT_VAULT/tasks/<task>/`)
 
 If no schema exists yet, dispatch `@planner` first or switch to plan mode
 (Tab key) to design one before implementing.
@@ -63,7 +63,7 @@ Load with: `skill("auto-impl")`
 Provide:
 
 - The repository path (e.g. `$AGENT_REPOS/<owner>/<repo>`)
-- The task directory (e.g. `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/`)
+- The task directory (e.g. `$AGENT_VAULT/tasks/<task>/`)
 
 Use the `auto-impl` skill for well-specified schemas on repos with good test
 coverage. Use `@implementor` directly when the user wants to review each commit
@@ -77,7 +77,7 @@ implementor commit group. The reviewer:
 - Checks staged changes (`git diff --cached`) or latest commit (`git show HEAD`)
 - Tags every finding with severity (nit/low/medium/high/critical) and
   category (bug/performance/design/types/maintenance/security/docs/testing/style)
-- Writes the structured review to `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md`
+- Writes the structured review to `$AGENT_VAULT/tasks/<task>/reviews/review.md`
 
 ### Triage — via `vault-triage` skill
 
@@ -108,8 +108,8 @@ Dispatch when the user wants to:
 - Refresh `$AGENT_VAULT/projects/<owner>/<repo>.md` status documents
 - Run `vault_gc` and `vault_lint` as part of a project cleanup
 
-PM operates only on repos that are vault-managed (`tasks/<owner>/<repo>/` or
-`repo-notes/<owner>/<repo>/` must exist). It never touches source files or
+PM operates only on repos that are vault-managed (`tasks/` or
+`notes/<owner>/<repo>/` must exist). It never touches source files or
 merges PRs.
 
 Provide the project manager with:
@@ -120,13 +120,13 @@ Provide the project manager with:
 ### `@designer` — design documents
 
 Dispatch when the user wants to write a design document or produce a design
-analysis. The designer writes to `$AGENT_VAULT/design/` and
-`$AGENT_VAULT/draft/`. For repo-notes, use `@investigate` instead.
+analysis. The designer writes to `$AGENT_VAULT/designs/` and
+`$AGENT_VAULT/drafts/`. For repo-notes, use `@investigate` instead.
 
 ### `@investigate` — deep research with provenance tracking
 
 Dispatch when existing repo-notes for the target repository are stale or
-missing, **before** dispatching `@planner`, `@designer`, or `@auto-auditor`.
+missing, **before** dispatching `@planner`, `@designer`, or `@auditor`.
 
 **Staleness-check protocol:** Before dispatching any agent that consumes
 repo-notes, load the `research-check` skill and run:
@@ -141,7 +141,7 @@ bash ~/.config/opencode/skills/research-check/check.sh <owner>/<repo> <repo-path
 The investigator will:
 
 - Research the repo and produce per-topic provenance-tracked notes
-- Write to `$AGENT_VAULT/repo-notes/<owner>/<repo>/`
+- Write to `$AGENT_VAULT/notes/<owner>/<repo>/`
 - Return a summary of notes written and topics covered
 
 Provide the investigator with:
@@ -150,10 +150,10 @@ Provide the investigator with:
 - Specific topics to investigate (or "survey the repo and propose topics")
 - Whether to update existing notes or create new ones
 
-### `@auto-auditor` — full-repository or scoped audit
+### `@auditor` — full-repository or scoped audit
 
 Dispatch when the user wants a quality analysis of a repository without
-switching to audit mode. The auto-auditor runs static analysis tools, collects
+switching to audit mode. The auditor runs static analysis tools, collects
 coverage data, and writes a structured audit report to
 `$AGENT_VAULT/audits/<owner>/<repo>/<date>-<label>.md`.
 
@@ -180,13 +180,13 @@ requires vault writes, prefer a subagent.
 ## Schema Sync (Ad-Hoc Changes)
 
 When making ad-hoc changes to a repository that has an active schema in the
-vault (`$AGENT_VAULT/tasks/<owner>/<repo>/*/schema.md` with `status: todo` or
+vault (`$AGENT_VAULT/tasks/*/schema.md` with `status: todo` or
 `status: in progress`), update the schema to reflect what actually happened:
 
 1. **Before starting:** Check whether an active schema exists for the target
    repo. Replace `<owner>/<repo>` with the actual owner and repo name, then run:
    ```bash
-   find "$AGENT_VAULT/tasks/<owner>/<repo>" -name schema.md -exec grep -l 'status: todo\|status: in progress' {} +
+   find "$AGENT_VAULT/tasks" -name schema.md -exec grep -l 'status: todo\|status: in progress' {} +
    ```
    (`status: in progress` in schema frontmatter — note the space, distinct from
    the `in-progress` GitHub label which uses a hyphen.)

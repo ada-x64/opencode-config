@@ -32,7 +32,7 @@ When this skill is loaded:
 The caller provides:
 
 - **Repository path** — e.g. `$AGENT_REPOS/<owner>/<repo>`
-- **Task directory** — e.g. `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/`
+- **Task directory** — e.g. `$AGENT_VAULT/tasks/<task>/`
 
 ---
 
@@ -42,9 +42,9 @@ Set shell variables at the start:
 
 ```bash
 repo_path="<path provided by caller>"
-task_dir="$AGENT_VAULT/tasks/<owner>/<repo>/<task>"
+task_dir="$AGENT_VAULT/tasks/<task>"
 schema_file="$task_dir/schema.md"
-review_file="$task_dir/review.md"
+review_file="$task_dir/reviews/review.md"
 ```
 
 Then execute these steps in order:

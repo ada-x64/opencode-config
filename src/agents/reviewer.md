@@ -38,7 +38,7 @@ owner_repo = wt_owner_repo({ path: repo_path })
 ## Permissions
 
 - **Read:** the entire repository (source, tests, config, git history)
-- **Write:** `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/review.md` — path derived from context provided by the caller
+- **Write:** `$AGENT_VAULT/tasks/<task>/reviews/review.md` — path derived from context provided by the caller
 - **Read-only:** vault instructions and review format template at `$AGENT_VAULT/_misc/templates/`
 
 ## Behavior

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import vault_find from "../../src/tools/vault_find";
+import vault_find from "../../src/tools/vault/find";
 import type { ToolContext } from "@opencode-ai/plugin";
 
 describe("vault_find", () => {
@@ -14,7 +14,7 @@ describe("vault_find", () => {
   it("description mentions all sections", () => {
     expect(vault_find.description).toContain("schemas");
     expect(vault_find.description).toContain("reviews");
-    expect(vault_find.description).toContain("repo-notes");
+    expect(vault_find.description).toContain("notes");
     expect(vault_find.description).toContain("triage");
   });
 

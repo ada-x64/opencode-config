@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { mkdtemp, mkdir, writeFile, rm } from "fs/promises";
 import { tmpdir } from "os";
 import path from "path";
-import vault_gc from "../../src/tools/vault_gc";
+import vault_gc from "../../src/tools/vault/gc";
 import { execute_tool } from "./_lib";
 
 let tmp: string;
@@ -40,21 +40,21 @@ beforeAll(async () => {
   tmp = await mkdtemp(path.join(tmpdir(), "vault-gc-test-"));
   vault = path.join(tmp, "vault");
 
-  const base = path.join(vault, "tasks", "gc-owner", "gc-repo");
-  await mkdir(path.join(vault, "_misc", "archive", "tasks"), {
+  const tasks = path.join(vault, "tasks");
+  await mkdir(path.join(vault, "_misc", "archive"), {
     recursive: true,
   });
-  await mkdir(path.join(base, "task-complete"), { recursive: true });
-  await mkdir(path.join(base, "task-todo"), { recursive: true });
-  await mkdir(path.join(base, "task-no-signal"), { recursive: true });
+  await mkdir(path.join(tasks, "task-complete"), { recursive: true });
+  await mkdir(path.join(tasks, "task-todo"), { recursive: true });
+  await mkdir(path.join(tasks, "task-no-signal"), { recursive: true });
 
   await writeFile(
-    path.join(base, "task-complete", "schema.md"),
+    path.join(tasks, "task-complete", "schema.md"),
     COMPLETE_SCHEMA,
   );
-  await writeFile(path.join(base, "task-todo", "schema.md"), TODO_SCHEMA);
+  await writeFile(path.join(tasks, "task-todo", "schema.md"), TODO_SCHEMA);
   await writeFile(
-    path.join(base, "task-no-signal", "schema.md"),
+    path.join(tasks, "task-no-signal", "schema.md"),
     NO_SIGNAL_SCHEMA,
   );
 
@@ -79,14 +79,7 @@ describe("vault_gc", () => {
 
     // Original must still be in place
     const schema = Bun.file(
-      path.join(
-        vault,
-        "tasks",
-        "gc-owner",
-        "gc-repo",
-        "task-complete",
-        "schema.md",
-      ),
+      path.join(vault, "tasks", "task-complete", "schema.md"),
     );
     expect(await schema.exists()).toBe(true);
   });
@@ -98,43 +91,20 @@ describe("vault_gc", () => {
 
     // Must appear in archive
     const archived = Bun.file(
-      path.join(
-        vault,
-        "_misc",
-        "archive",
-        "tasks",
-        "gc-owner",
-        "gc-repo",
-        "task-complete",
-        "schema.md",
-      ),
+      path.join(vault, "_misc", "archive", "task-complete", "schema.md"),
     );
     expect(await archived.exists()).toBe(true);
 
     // Must be gone from tasks/
     const original = Bun.file(
-      path.join(
-        vault,
-        "tasks",
-        "gc-owner",
-        "gc-repo",
-        "task-complete",
-        "schema.md",
-      ),
+      path.join(vault, "tasks", "task-complete", "schema.md"),
     );
     expect(await original.exists()).toBe(false);
   });
 
   it("leaves a task with status: todo in place", async () => {
     const schema = Bun.file(
-      path.join(
-        vault,
-        "tasks",
-        "gc-owner",
-        "gc-repo",
-        "task-todo",
-        "schema.md",
-      ),
+      path.join(vault, "tasks", "task-todo", "schema.md"),
     );
     expect(await schema.exists()).toBe(true);
   });

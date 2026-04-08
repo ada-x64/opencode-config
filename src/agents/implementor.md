@@ -26,14 +26,14 @@ step-by-step within a repository.
 The caller (primary agent or user) will provide:
 
 - The **repository path** to work in
-- The **task directory** at `$AGENT_VAULT/tasks/<owner>/<repo>/<task>/`
+- The **task directory** at `$AGENT_VAULT/tasks/<task>/`
 
 Set these as shell variables at the start of your session:
 
 ```bash
-task_dir="$AGENT_VAULT/tasks/<owner>/<repo>/<task>"
+task_dir="$AGENT_VAULT/tasks/<task>"
 schema_file="$task_dir/schema.md"
-review_file="$task_dir/review.md"
+review_file="$task_dir/reviews/review.md"
 ```
 
 ## Bare Repo / Worktree Awareness

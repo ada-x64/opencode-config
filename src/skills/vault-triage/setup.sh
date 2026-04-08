@@ -29,8 +29,8 @@ platform="$(detect_platform)"
 echo "Detected platform: $platform"
 
 # ── Topic generation ────────────────────────────────────────────────
-topic_file="$vault/_misc/cache/ntfy-topic.txt"
-mkdir -p "$vault/_misc/cache"
+topic_file="$vault/_misc/ntfy-topic.txt"
+mkdir -p "$vault/_misc"
 
 if [[ -f "$topic_file" ]]; then
 	topic="$(cat "$topic_file")"
