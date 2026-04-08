@@ -35,7 +35,9 @@ export default tool({
   },
   async execute(args) {
     if (args.sessions.length === 0) {
-      throw new Error("sessions array must not be empty");
+      throw new Error(
+        "sessions array must not be empty — provide at least one {title, prompt} session spec",
+      );
     }
     const script = path.join(configDir, "skills/delegate/delegate.sh");
     const sessionsJson = JSON.stringify(args.sessions);
