@@ -113,7 +113,7 @@ Any mode is capable of managing the vault through the vault skills. Typical acti
 | `@implementor` | Single commit-group schema executor. |
 | `@reviewer` | Structured code review |
 | `@designer` | Repo notes, design documents, drafts |
-| `@auditor` | Structured audit agent, analagous to @planner. Tool detection, static analysis, vault report |
+| `@auditor` | Structured audit agent, analogous to @planner. Tool detection, static analysis, vault report |
 
 ## Environment
 

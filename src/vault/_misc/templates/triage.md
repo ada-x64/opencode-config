@@ -33,7 +33,7 @@ status: pending | addressed | dismissed
 |          | `design-question`                                             | Agent encountered an ambiguous design decision             |
 |          | `run-summary`                                                 | Summary of an autonomous run (what was done, what remains) |
 | `agent`  | `auto-impl`, `implementor`, `planner`, `designer`, `reviewer` | Which agent wrote this                                     |
-| `task`   | string                                                        | Task name matching the parent directory                    |
+| `task`   | string                                                        | Name of the associated task                                |
 | `date`   | `YYYY-MM-DD`                                                  | When the triage was written                                |
 | `status` | `pending`                                                     | Awaiting human review                                      |
 |          | `addressed`                                                   | Human has reviewed and acted on this                       |
