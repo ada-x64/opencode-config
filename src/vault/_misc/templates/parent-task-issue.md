@@ -1,13 +1,13 @@
-# Issue Template for Fleet schemas
+# Issue Template for Parent Task Schemas
 
-When creating a GitHub issue for a fleet (cross-repo) schema, use this
+When creating a GitHub issue for a parent task (cross-repo) schema, use this
 template. Replace placeholders (`<...>`) with actual content.
 
 ## Template
 
 ```markdown
 <details>
-<summary>Full fleet schema</summary>
+<summary>Full parent task schema</summary>
 
 <Read the umbrella schema file and paste its entire content here verbatim.
 Do not summarize, truncate, or omit any section.>

@@ -1,13 +1,13 @@
-# Fleet schema Format
+# Parent Task Schema Format
 
-Fleet schemas are umbrella documents that coordinate work across multiple
+Parent task schemas are umbrella documents that coordinate work across multiple
 repositories. They define the cross-repo problem, list affected repos, and
 specify synchronized commit groups. Each repo also gets its own standard
 schema (see `schema.md`) that can be executed independently.
 
 ## Header
 
-Every fleet schema starts with YAML frontmatter followed by an H1 title:
+Every parent task schema starts with YAML frontmatter followed by an H1 title:
 
 ```markdown
 ---
@@ -43,19 +43,19 @@ coordinated changes across multiple repositories.
 ## Repos
 
 Table of all participating repositories. This table is the source of truth for
-which repos are involved — the fleet implementor parses it to discover repos.
+which repos are involved — the parent task implementor parses it to discover repos.
 
 ```markdown
 ## Repos
 
-| Repo             | Path                     | schema                                  |
-| ---------------- | ------------------------ | --------------------------------------- |
-| `<owner>/<repo>` | `~/repos/<owner>/<repo>` | `tasks/<owner>/<repo>/<task>/schema.md` |
+| Repo             | Path                     | schema                          |
+| ---------------- | ------------------------ | ------------------------------- |
+| `<owner>/<repo>` | `~/repos/<owner>/<repo>` | `tasks/<task>/<subtask>/schema.md` |
 ```
 
 - **Repo:** GitHub `owner/repo` identifier.
 - **Path:** Local checkout path.
-- **schema:** Vault-relative path to the per-repo schema (under `tasks/`).
+- **schema:** Vault-relative path to the per-repo subtask schema (under `tasks/<task>/`).
 
 ## Approach
 

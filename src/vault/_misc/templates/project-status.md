@@ -7,7 +7,7 @@ stale_after_hours: 24
 
 <!-- This document is managed by @project-manager. Do not edit manually.
      Run "sync project status for <owner>/<repo>" to refresh all tables.
-     Template: $AGENT_VAULT/templates/project-status.md -->
+     Template: $AGENT_VAULT/_misc/templates/project-status.md -->
 
 # Project Status: <owner>/<repo>
 

@@ -8,18 +8,21 @@ entries — not source code. There are no build systems, tests, or linters.
 
 ## Vault Structure
 
-### `tasks/<owner>/<repo>/<task>/` — Implementation tasks
+### `tasks/<task>/` — Implementation tasks
 
-Each task directory contains up to three files:
+Each task directory contains:
 
 - `schema.md` — Actionable implementation spec that an AI agent can execute step-by-step.
-- `review.md` — Structured code review for work done against the schema.
-- `triage.md` — Escalation notes, design questions, and run summaries.
+- `reviews/review-N.md` — Structured code reviews for work done against the schema.
 
-### `tasks/_fleet/<task>.md` — Fleet (cross-repo) schemas
+For cross-repo work, a parent task directory may contain subtask subdirectories:
 
-Umbrella documents coordinating work across multiple repositories. These are
-flat files (not directories) since they don't have per-task reviews or triage.
+```
+tasks/<parent-task>/
+├── schema.md           # Umbrella parent task schema
+└── <subtask>/
+    └── schema.md       # Per-repo subtask schema
+```
 
 ### `notes/<owner>/<repo>/` — Repository reference documentation
 
@@ -42,15 +45,22 @@ Umbrella directory for all vault infrastructure that is not user-facing content.
 Collapsed by default in the Obsidian file explorer. Contains:
 
 - `_misc/archive/` — Completed work
+- `_misc/activity/` — Triage entries (all types)
 - `_misc/templates/` — Format templates
 - `_misc/images/` — Notification icons and image assets
 
 #### `_misc/archive/` — Completed work
 
-Contains archived task directories (schema + review + triage) that have been
+Contains archived task directories (schema + reviews) that have been
 completed and moved out of `tasks/`.
 
 When asked to archive tasks, move them from `tasks/` into `_misc/archive/`.
+
+#### `_misc/activity/` — Triage entries
+
+All triage documents — escalations, handoffs, design questions, and run
+summaries — are written here as timestamped files. No triage entries live
+inside task directories.
 
 ### `audits/<owner>/<repo>/` — Audit reports
 
@@ -117,8 +127,6 @@ Any mode is capable of managing the vault through the vault skills. Typical acti
 - Documents are Markdown, authored for Obsidian (may use wiki-links, callouts).
 - Do not hard-wrap prose — Obsidian soft-wraps paragraphs.
 - Schemas and reviews use YAML frontmatter for metadata (`repo`, `status`, `date`, etc.).
-- Path convention: `tasks/<owner>/<repo>/` mirrors the local checkout path
-  convention `~/repos/<owner>/<repo>`.
 - Agents interact with the vault via the vault tools.
 - **Task and issue titles must not contain regex special characters** (`.`, `(`, `)`, `*`, `[`, `]`, `+`, `?`, `{`, `}`, `^`, `$`, `|`, `\\`).^[1]
 

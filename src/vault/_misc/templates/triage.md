@@ -1,13 +1,13 @@
 # Triage Document Format
 
-Triage documents capture autonomous agent output within a task directory. They are written by agents (especially via the `auto-impl` skill) to record decisions, escalations, and handoff notes for human review.
+Triage documents capture autonomous agent output. They are written by agents (especially via the `auto-impl` skill) to record decisions, escalations, and handoff notes for human review.
 
 ## Location
 
-Triage documents live inside task directories:
+Triage documents live in the activity directory:
 
 ```
-tasks/<owner>/<repo>/<task>/triage.md
+_misc/activity/<UTC-timestamp>.md
 ```
 
 ## Frontmatter
