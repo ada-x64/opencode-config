@@ -40,21 +40,21 @@ beforeAll(async () => {
   tmp = await mkdtemp(path.join(tmpdir(), "vault-gc-test-"));
   vault = path.join(tmp, "vault");
 
-  const base = path.join(vault, "tasks", "gc-owner", "gc-repo");
+  const tasks = path.join(vault, "tasks");
   await mkdir(path.join(vault, "_misc", "archive"), {
     recursive: true,
   });
-  await mkdir(path.join(base, "task-complete"), { recursive: true });
-  await mkdir(path.join(base, "task-todo"), { recursive: true });
-  await mkdir(path.join(base, "task-no-signal"), { recursive: true });
+  await mkdir(path.join(tasks, "task-complete"), { recursive: true });
+  await mkdir(path.join(tasks, "task-todo"), { recursive: true });
+  await mkdir(path.join(tasks, "task-no-signal"), { recursive: true });
 
   await writeFile(
-    path.join(base, "task-complete", "schema.md"),
+    path.join(tasks, "task-complete", "schema.md"),
     COMPLETE_SCHEMA,
   );
-  await writeFile(path.join(base, "task-todo", "schema.md"), TODO_SCHEMA);
+  await writeFile(path.join(tasks, "task-todo", "schema.md"), TODO_SCHEMA);
   await writeFile(
-    path.join(base, "task-no-signal", "schema.md"),
+    path.join(tasks, "task-no-signal", "schema.md"),
     NO_SIGNAL_SCHEMA,
   );
 
@@ -82,8 +82,6 @@ describe("vault_gc", () => {
       path.join(
         vault,
         "tasks",
-        "gc-owner",
-        "gc-repo",
         "task-complete",
         "schema.md",
       ),
@@ -102,8 +100,6 @@ describe("vault_gc", () => {
         vault,
         "_misc",
         "archive",
-        "gc-owner",
-        "gc-repo",
         "task-complete",
         "schema.md",
       ),
@@ -115,8 +111,6 @@ describe("vault_gc", () => {
       path.join(
         vault,
         "tasks",
-        "gc-owner",
-        "gc-repo",
         "task-complete",
         "schema.md",
       ),
@@ -129,8 +123,6 @@ describe("vault_gc", () => {
       path.join(
         vault,
         "tasks",
-        "gc-owner",
-        "gc-repo",
         "task-todo",
         "schema.md",
       ),
