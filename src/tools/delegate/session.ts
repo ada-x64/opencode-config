@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import { scriptPath } from "./_lib";
+import { delegateSession } from "./_lib";
 
 export default tool({
   description:
@@ -33,10 +33,15 @@ export default tool({
       .describe("AoE group for organizing sessions"),
   },
   async execute(args) {
-    // Safety: Bun.$`` passes each ${} interpolation as a separate argv entry.
-    // Prompt text, repo paths, and other args are never shell-expanded.
-    const result =
-      await Bun.$`bash -euo pipefail -c ${'source "$1" && delegate_session "$2" "$3" "$4" "$5" "$6" "$7" "$8"'} _ ${scriptPath} ${args.repo} ${args.prompt} ${args.title} ${args.tool ?? "opencode"} ${args.branch ?? ""} ${String(args.new_branch ?? true)} ${args.group ?? ""}`.text();
-    return result.trim();
+    const sessionId = await delegateSession({
+      repo: args.repo,
+      prompt: args.prompt,
+      title: args.title,
+      tool: args.tool ?? "opencode",
+      branch: args.branch,
+      newBranch: args.new_branch ?? true,
+      group: args.group,
+    });
+    return sessionId;
   },
 });
