@@ -10,6 +10,8 @@
  *                         names like "gh/username" — tries src/profiles/gh/username.env
  *                         first, then falls back to src/profiles/gh.env.
  *   --config-dir <path>  Override CONFIG_DIR from the profile.
+ *   --profiles-config <path>  Path to profiles.toml (default: ~/.config/opencode-config/profiles.toml,
+ *                              override with OCCONF_PROFILES env var).
  *   --help               Show this help message and exit.
  *
  * Prerequisites:
@@ -22,10 +24,15 @@
  *   3. Refuses to run if out/host/ == CONFIG_DIR (would be a no-op or destructive).
  *   4. rsyncs out/host/ contents to CONFIG_DIR.
  *   5. rsyncs out/sandbox/ contents to SANDBOX_CONFIG_DIR (if it exists).
- *   6. Deploys AoE config (resolving {{AGENT_VAULT}}, {{OPENCODE_CONFIG_SRC}},
- *      {{SANDBOX_CONFIG_DIR}}, and {{OPENCODE_DATA_DIR}}) — uses a profile-specific
- *      .aoe.toml if present, otherwise falls back to src/aoe-config.toml.
- *   7. Prints a deployment summary.
+ *   6. Deploys AoE global config from src/aoe-config.toml (resolving path
+ *      placeholders: {{AGENT_VAULT}}, {{SANDBOX_CONFIG_DIR}},
+ *      {{OPENCODE_DATA_DIR}}).
+ *   7. For non-host profiles, deploys an AoE per-profile config from
+ *      src/aoe-profile.toml (resolving path placeholders and per-profile
+ *      secrets from profiles.toml: {{GH_TOKEN}}, {{NTFY_TOPIC}},
+ *      {{SANDBOX_USER}}, {{SANDBOX_GROUP}}, {{SANDBOX_UID}}, {{SANDBOX_GID}},
+ *      {{MOUNT_SSH}}, {{GITCONFIG_VOLUME}}).
+ *   8. Prints a deployment summary.
  *
  * Separation of concerns:
  *   - build:     src/ → out/host/ and out/sandbox/ + all stamping
@@ -165,42 +172,248 @@ export function resolveProfileFile(
 }
 
 /**
- * Resolve an AoE config template using 3-level fallback:
- *   1. Exact:   profilesDir/<profileName>.aoe.toml
- *   2. Base:    profilesDir/<family>.aoe.toml (for "family/user" names)
- *   3. Default: defaultConfigPath
+ * Resolve the path to profiles.toml using 3-level fallback:
+ *   1. CLI flag (--profiles-config)
+ *   2. OCCONF_PROFILES env var
+ *   3. Default: ~/.config/opencode-config/profiles.toml
  *
- * The extra default level (vs. 2 for .env) ensures a valid AoE config is
- * always found, even for profiles that don't define a custom one. The .env
- * resolution intentionally stops at 2 levels because there is no meaningful
- * "default .env" — every profile must explicitly declare its directory paths.
- *
- * @param profileName - The profile name (e.g. "host", "gh/username")
- * @param profilesDir - The directory containing profile .aoe.toml files
- * @param defaultConfigPath - Fallback path (e.g. src/aoe-config.toml)
- * @returns The resolved file path, or null if not found at any level
+ * @returns Resolved absolute path (may not exist yet — caller should handle)
  */
-export function resolveAoeConfig(
-  profileName: string,
-  profilesDir: string,
-  defaultConfigPath: string,
-): string | null {
-  // Exact: profilesDir/gh/username.aoe.toml (or profilesDir/host.aoe.toml)
-  const exact = join(profilesDir, `${profileName}.aoe.toml`);
-  if (existsSync(exact)) return exact;
+export function resolveProfilesConfig(
+  cliFlag: string,
+  envVar: string | undefined,
+): string {
+  if (cliFlag) return resolve(cliFlag);
+  if (envVar) return resolve(envVar);
+  return join(homedir(), ".config", "opencode-config", "profiles.toml");
+}
 
-  // Base: "gh/username" → profilesDir/gh.aoe.toml
-  const slashIdx = profileName.indexOf("/");
-  if (slashIdx !== -1) {
-    const base = profileName.slice(0, slashIdx);
-    const basePath = join(profilesDir, `${base}.aoe.toml`);
-    if (existsSync(basePath)) return basePath;
+/**
+ * Profile data loaded from profiles.toml for a specific profile.
+ * undefined values mean "omit this key from deployed config".
+ */
+export interface ProfileData {
+  GH_TOKEN?: string;
+  NTFY_TOPIC?: string;
+  gitconfig?: string;
+  SANDBOX_USER?: string;
+  SANDBOX_GROUP?: string;
+  SANDBOX_UID?: string;
+  SANDBOX_GID?: string;
+}
+
+/**
+ * Load per-profile configuration from profiles.toml.
+ *
+ * Resolution order for each key:
+ *   1. profiles."<profileName>" section
+ *   2. [default] section
+ *   3. Key-specific fallback (NTFY_TOPIC → vault cache file)
+ *   4. undefined (caller should omit the line)
+ *
+ * Docker user fields are nested under profiles."<name>".docker and
+ * mapped to SANDBOX_USER, SANDBOX_GROUP, SANDBOX_UID, SANDBOX_GID.
+ *
+ * @param profileName - The profile name (e.g. "gh/alice", "host")
+ * @param profilesConfigPath - Absolute path to profiles.toml
+ * @param agentVault - Absolute path to the agent vault (for NTFY_TOPIC fallback)
+ * @returns Resolved ProfileData — undefined fields mean "omit"
+ */
+export function loadProfiles(
+  profileName: string,
+  profilesConfigPath: string,
+  agentVault: string,
+): ProfileData {
+  const result: ProfileData = {};
+
+  let parsed: Record<string, unknown> = {};
+  if (existsSync(profilesConfigPath)) {
+    const raw = readFileSync(profilesConfigPath, "utf-8");
+    parsed = Bun.TOML.parse(raw) as Record<string, unknown>;
   }
 
-  // Default
-  if (existsSync(defaultConfigPath)) return defaultConfigPath;
+  const defaults = (parsed["default"] ?? {}) as Record<string, unknown>;
+  const profiles = (parsed["profiles"] ?? {}) as Record<string, unknown>;
+  const profileSection = (profiles[profileName] ?? {}) as Record<
+    string,
+    unknown
+  >;
 
-  return null;
+  // Simple string keys
+  for (const key of ["GH_TOKEN", "NTFY_TOPIC", "gitconfig"] as const) {
+    const val = profileSection[key] ?? defaults[key];
+    if (typeof val === "string") {
+      (result as Record<string, string>)[key] = val;
+    }
+  }
+
+  // NTFY_TOPIC fallback: read from vault cache file
+  if (result.NTFY_TOPIC === undefined && agentVault) {
+    const cachePath = join(agentVault, "_misc", "cache", "ntfy-topic.txt");
+    if (existsSync(cachePath)) {
+      const topic = readFileSync(cachePath, "utf-8").trim();
+      if (topic) {
+        result.NTFY_TOPIC = topic;
+      }
+    }
+  }
+
+  // Docker user fields: profiles."<name>".docker → SANDBOX_*
+  const docker = (profileSection["docker"] ?? {}) as Record<string, unknown>;
+  const defaultDocker = (defaults["docker"] ?? {}) as Record<string, unknown>;
+
+  const dockerMap: [string, keyof ProfileData][] = [
+    ["username", "SANDBOX_USER"],
+    ["group", "SANDBOX_GROUP"],
+    ["uid", "SANDBOX_UID"],
+    ["gid", "SANDBOX_GID"],
+  ];
+
+  for (const [tomlKey, resultKey] of dockerMap) {
+    const val = docker[tomlKey] ?? defaultDocker[tomlKey];
+    if (val !== undefined && val !== null) {
+      result[resultKey] = String(val);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Resolve a single secret placeholder in AoE config content.
+ *
+ * If value is defined: replaces `{{KEY}}` with the value.
+ * If value is undefined: removes the entire line containing `{{KEY}}`,
+ * plus any immediately preceding comment line that mentions KEY.
+ */
+export function resolveSecretPlaceholder(
+  content: string,
+  key: string,
+  value: string | undefined,
+): string {
+  if (value !== undefined) {
+    return content.replaceAll(`{{${key}}}`, value);
+  }
+
+  // Remove the line containing the placeholder, and any preceding comment
+  // line that references the key name
+  const lines = content.split("\n");
+  const filtered: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (line.includes(`{{${key}}}`)) {
+      // Also remove a preceding comment line if it mentions the key
+      if (
+        filtered.length > 0 &&
+        filtered[filtered.length - 1]!.trimStart().startsWith("#") &&
+        filtered[filtered.length - 1]!.includes(key)
+      ) {
+        filtered.pop();
+      }
+      continue;
+    }
+    filtered.push(line);
+  }
+  return filtered.join("\n");
+}
+
+/**
+ * Deploy an AoE per-profile config from the profile template.
+ *
+ * Resolves all placeholders in the profile template using the provided
+ * ProfileData and path values, then writes the config.toml to the AoE
+ * profile directory. If a gitconfig path is specified, copies it into
+ * the profile directory and resolves the GITCONFIG_VOLUME placeholder.
+ *
+ * @param profileName - Original profile name (e.g. "gh/alice")
+ * @param profileData - Resolved profile data from loadProfiles()
+ * @param profileTemplatePath - Path to src/aoe-profile.toml
+ * @param aoeDir - AoE app directory (e.g. ~/.config/agent-of-empires)
+ * @param pathVars - Path placeholder values to resolve
+ */
+export function deployAoeProfile(
+  profileName: string,
+  profileData: ProfileData,
+  profileTemplatePath: string,
+  aoeDir: string,
+  pathVars: {
+    agentVault: string;
+    opencodeConfigSrc: string;
+    sandboxConfigDir: string;
+    opencodeDataDir: string;
+  },
+): void {
+  // Convert profile name for AoE directory: gh/alice → gh-alice
+  const aoeName = profileName.replace(/\//g, "-");
+  const aoeProfileDir = join(aoeDir, "profiles", aoeName);
+  mkdirSync(aoeProfileDir, { recursive: true });
+
+  let content = readFileSync(profileTemplatePath, "utf-8");
+
+  // Resolve path placeholders
+  content = content.replaceAll("{{AGENT_VAULT}}", pathVars.agentVault);
+  content = content.replaceAll(
+    "{{OPENCODE_CONFIG_SRC}}",
+    pathVars.opencodeConfigSrc,
+  );
+  content = content.replaceAll(
+    "{{SANDBOX_CONFIG_DIR}}",
+    pathVars.sandboxConfigDir,
+  );
+  content = content.replaceAll(
+    "{{OPENCODE_DATA_DIR}}",
+    pathVars.opencodeDataDir,
+  );
+
+  // Resolve mount_ssh: true for gh/* profiles, false otherwise
+  const isGhProfile = profileName.startsWith("gh/");
+  content = content.replaceAll(
+    "{{MOUNT_SSH}}",
+    isGhProfile ? "true" : "false",
+  );
+
+  // Resolve secret placeholders
+  const secretKeys: (keyof ProfileData)[] = [
+    "GH_TOKEN",
+    "NTFY_TOPIC",
+    "SANDBOX_USER",
+    "SANDBOX_GROUP",
+    "SANDBOX_UID",
+    "SANDBOX_GID",
+  ];
+  for (const key of secretKeys) {
+    content = resolveSecretPlaceholder(content, key, profileData[key]);
+  }
+
+  // Resolve gitconfig volume
+  if (profileData.gitconfig) {
+    // Copy gitconfig into the AoE profile directory
+    const destGitconfig = join(aoeProfileDir, "gitconfig");
+    copyFileSync(profileData.gitconfig, destGitconfig);
+    // chmod 644 — readable by container user
+    Bun.write(destGitconfig, readFileSync(destGitconfig));
+
+    content = resolveSecretPlaceholder(
+      content,
+      "GITCONFIG_VOLUME",
+      `${destGitconfig}:/etc/gitconfig:ro`,
+    );
+    console.log(
+      `  Copied gitconfig: ${profileData.gitconfig} → ${destGitconfig}`,
+    );
+  } else {
+    // No gitconfig — remove the volume line
+    content = resolveSecretPlaceholder(
+      content,
+      "GITCONFIG_VOLUME",
+      undefined,
+    );
+  }
+
+  // Write profile config with restricted permissions
+  const profileConfigPath = join(aoeProfileDir, "config.toml");
+  writeFileSync(profileConfigPath, content, { mode: 0o600 });
+  console.log(`  AoE profile config: ${profileConfigPath}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -216,9 +429,11 @@ Usage:
 
 Options:
   --profile <name>     Profile to use (default: host). Supports slash-separated
-                       names like "gh/username" — tries the exact .env first,
-                       then falls back to the base (e.g. gh.env for gh/*).
+                         names like "gh/username" — tries src/profiles/gh/username.env
+                         first, then falls back to src/profiles/gh.env.
   --config-dir <path>  Override CONFIG_DIR from the profile.
+  --profiles-config <path>  Path to profiles.toml (default: ~/.config/opencode-config/profiles.toml,
+                             override with OCCONF_PROFILES env var).
   --help               Show this help message and exit.
 `;
 
@@ -228,6 +443,7 @@ Options:
     options: {
       profile: { type: "string", default: "host" },
       "config-dir": { type: "string", default: "" },
+      "profiles-config": { type: "string", default: "" },
       help: { type: "boolean", default: false },
     },
     strict: true,
@@ -432,36 +648,64 @@ Options:
   }
 
   // --- Deploy AoE config ---
-  const aoeSrc = resolveAoeConfig(
-    profile,
-    profilesDir,
-    join(srcDir, "aoe-config.toml"),
-  );
-  const aoeDest = join(homedir(), ".config", "agent-of-empires", "config.toml");
+  const aoeDir = join(homedir(), ".config", "agent-of-empires");
 
-  if (aoeSrc) {
-    if (agentVault) {
-      console.log(`Ensuring opencode data directory: ${opencodeDataDir}`);
-      ensureOpencodeDataDir(opencodeDataDir);
-      mkdirSync(dirname(aoeDest), { recursive: true });
-      let content = readFileSync(aoeSrc, "utf-8");
-      content = content.replaceAll("{{AGENT_VAULT}}", agentVault);
-      content = content.replaceAll(
-        "{{OPENCODE_CONFIG_SRC}}",
-        opencodeConfigSrc,
-      );
-      content = content.replaceAll("{{SANDBOX_CONFIG_DIR}}", sandboxConfigDir);
-      content = content.replaceAll("{{OPENCODE_DATA_DIR}}", opencodeDataDir);
-      writeFileSync(aoeDest, content, "utf-8");
-      console.log(`AoE config deployed to: ${aoeDest}`);
-      console.log(`  Source: ${aoeSrc}`);
-    } else {
+  if (agentVault) {
+    console.log(`Ensuring opencode data directory: ${opencodeDataDir}`);
+    ensureOpencodeDataDir(opencodeDataDir);
+
+    // Load profiles.toml
+    const profilesConfigPath = resolveProfilesConfig(
+      args["profiles-config"]!,
+      Bun.env.OCCONF_PROFILES,
+    );
+    const profileData = loadProfiles(profile, profilesConfigPath, agentVault);
+
+    if (!profileData.GH_TOKEN) {
       console.error(
-        "Warning: AGENT_VAULT not set — skipping AoE config deployment.",
+        "Warning: GH_TOKEN not configured for this profile — sandbox will have no GitHub authentication.",
+      );
+      console.error(
+        `  Add GH_TOKEN to ${profilesConfigPath} and re-run install to fix this.`,
       );
     }
+
+    // Deploy global AoE config
+    const globalAoeSrc = join(srcDir, "aoe-config.toml");
+    const globalAoeDest = join(aoeDir, "config.toml");
+    mkdirSync(aoeDir, { recursive: true });
+
+    let globalContent = readFileSync(globalAoeSrc, "utf-8");
+    globalContent = globalContent.replaceAll("{{AGENT_VAULT}}", agentVault);
+    globalContent = globalContent.replaceAll(
+      "{{SANDBOX_CONFIG_DIR}}",
+      sandboxConfigDir,
+    );
+    globalContent = globalContent.replaceAll(
+      "{{OPENCODE_DATA_DIR}}",
+      opencodeDataDir,
+    );
+    writeFileSync(globalAoeDest, globalContent, "utf-8");
+    console.log(`AoE global config deployed to: ${globalAoeDest}`);
+
+    // Deploy per-profile AoE config (skip for "host" profile)
+    if (profile !== "host") {
+      const profileTemplatePath = join(srcDir, "aoe-profile.toml");
+      console.log(`Deploying AoE profile for: ${profile}`);
+
+      deployAoeProfile(profile, profileData, profileTemplatePath, aoeDir, {
+        agentVault,
+        opencodeConfigSrc,
+        sandboxConfigDir: sandboxConfigDir,
+        opencodeDataDir,
+      });
+    } else {
+      console.log("Host profile — skipping AoE profile deployment.");
+    }
   } else {
-    console.error("Warning: no AoE config template found — skipping.");
+    console.error(
+      "Warning: AGENT_VAULT not set — skipping AoE config deployment.",
+    );
   }
 
   // --- Deploy vault-sync cron script ---
