@@ -311,15 +311,21 @@ function copySrcToOut(srcDir: string, outDir: string): void {
     recursive: true,
     filter: (src) => {
       const rel = path.relative(srcDir, src);
-      return (
-        !rel.startsWith("profiles") &&
-        !rel.startsWith("permissions") &&
-        !rel.startsWith("vault")
-      );
+      // Skip build-only directories and include-fragment directories
+      if (
+        rel.startsWith("profiles") ||
+        rel.startsWith("permissions") ||
+        rel.startsWith("vault")
+      )
+        return false;
+      // Skip _shared/ directories (include fragments, not real agents)
+      if (rel.includes(`${path.sep}_shared`) || rel.endsWith("_shared"))
+        return false;
+      return true;
     },
   });
   console.log(
-    `Copied ${srcDir}/ → ${outDir}/ (excluding profiles/, permissions/, vault/)`,
+    `Copied ${srcDir}/ → ${outDir}/ (excluding profiles/, permissions/, vault/, _shared/)`,
   );
 }
 
