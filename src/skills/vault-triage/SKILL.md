@@ -207,16 +207,8 @@ To read triage files and generate a summary of pending items:
 
 ## Status String Safety
 
-**All status values written via `fm_write` MUST use the exact emoji-prefixed
-strings documented below. Never write bare status values like `todo`,
-`in progress`, `complete`, `pending`, etc.**
-
-- **Task:** `📋 todo` / `🔨 in-progress` / `🔍 in-review` / `✅ complete` / `🚫 closed`
-- **Review:** `📋 todo` / `🔨 in-progress` / `✅ complete`
-- **Triage:** `⏳ pending` / `✅ addressed` / `🚫 dismissed`
-- **Design:** `📝 draft` / `🟢 active` / `✅ complete` / `📦 archived`
-- **Draft:** `📝 draft` / `📤 promoted`
-- **Audit:** `🔨 in-progress` / `✅ complete`
+Status and priority values are validated by `fm_write` — the tool will reject
+bare strings like `todo` or `complete` and return the list of valid values.
 
 ---
 

@@ -1,6 +1,6 @@
 import { tool } from "@opencode-ai/plugin";
 import { readFile, writeFile } from "node:fs/promises";
-import { fmWrite } from "./_lib";
+import { fmWrite, validateFmValue } from "./_lib";
 
 export default tool({
   description:
@@ -17,6 +17,8 @@ export default tool({
       .describe("Value to set (e.g. 'in progress', 'complete')"),
   },
   async execute(args) {
+    const error = validateFmValue(args.file, args.key, args.value);
+    if (error) return `Error: ${error}`;
     const original = await readFile(args.file, "utf-8");
     const updated = fmWrite(original, args.key, args.value);
     if (updated !== original) {

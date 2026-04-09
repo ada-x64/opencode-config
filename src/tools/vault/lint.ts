@@ -2,6 +2,8 @@
 import { tool } from "@opencode-ai/plugin";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { PRIORITY_VALUES, REVIEW_STATUSES, STATUS_ENUMS } from "../fm/_lib";
+
 // ---------------------------------------------------------------------------
 // Frontmatter helpers
 // ---------------------------------------------------------------------------
@@ -42,17 +44,10 @@ function lintSchema(content: string, relPath: string): string[] {
     errors.push(`${relPath}: missing 'status' in frontmatter`);
   } else {
     const status = statusMatch[1]!.trim();
-    if (
-      ![
-        "📋 todo",
-        "🔨 in-progress",
-        "🔍 in-review",
-        "✅ complete",
-        "🚫 closed",
-      ].includes(status)
-    ) {
+    const taskStatuses = STATUS_ENUMS["tasks/"]!;
+    if (!taskStatuses.includes(status)) {
       errors.push(
-        `${relPath}: invalid status value: '${status}' (expected: 📋 todo, 🔨 in-progress, 🔍 in-review, ✅ complete, 🚫 closed)`,
+        `${relPath}: invalid status value: '${status}' (expected: ${taskStatuses.join(", ")})`,
       );
     }
   }
@@ -62,17 +57,9 @@ function lintSchema(content: string, relPath: string): string[] {
     errors.push(`${relPath}: warning: missing 'priority' in frontmatter`);
   } else {
     const priority = priorityMatch[1]!.trim();
-    if (
-      ![
-        "🔥 critical",
-        "🔴 high",
-        "🟡 medium",
-        "🟢 low",
-        "🟣 non-work",
-      ].includes(priority)
-    ) {
+    if (!PRIORITY_VALUES.includes(priority)) {
       errors.push(
-        `${relPath}: invalid priority value: '${priority}' (expected: 🔥 critical, 🔴 high, 🟡 medium, 🟢 low, 🟣 non-work)`,
+        `${relPath}: invalid priority value: '${priority}' (expected: ${PRIORITY_VALUES.join(", ")})`,
       );
     }
   }
@@ -118,9 +105,9 @@ function lintReview(content: string, relPath: string): string[] {
     errors.push(`${relPath}: missing 'status' in frontmatter`);
   } else {
     const status = statusMatch[1]!.trim();
-    if (!["📋 todo", "🔨 in-progress", "✅ complete"].includes(status)) {
+    if (!REVIEW_STATUSES.includes(status)) {
       errors.push(
-        `${relPath}: invalid status value: '${status}' (expected: 📋 todo, 🔨 in-progress, ✅ complete)`,
+        `${relPath}: invalid status value: '${status}' (expected: ${REVIEW_STATUSES.join(", ")})`,
       );
     }
   }
