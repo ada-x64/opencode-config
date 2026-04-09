@@ -1,5 +1,21 @@
 /** Shared helpers for delegate tools (session + fleet). */
 
+import { existsSync } from "node:fs";
+
+// --- Sandbox guard ---
+
+/**
+ * Throw if running inside a sandbox (Docker container).
+ * Delegate tools require host access to aoe/tmux.
+ */
+export function assertNotSandbox(): void {
+  if (existsSync("/.dockerenv")) {
+    throw new Error(
+      "delegate tools require host access — cannot run inside a sandbox container",
+    );
+  }
+}
+
 // --- Timing constants (ms) ---
 
 export const OPENCODE_INIT_DELAY_MS = 5000;

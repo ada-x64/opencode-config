@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import { delegateSession } from "./_lib";
+import { assertNotSandbox, delegateSession } from "./_lib";
 
 export default tool({
   description:
@@ -33,6 +33,7 @@ export default tool({
       .describe("AoE group for organizing sessions"),
   },
   async execute(args) {
+    assertNotSandbox();
     const sessionId = await delegateSession({
       repo: args.repo,
       prompt: args.prompt,

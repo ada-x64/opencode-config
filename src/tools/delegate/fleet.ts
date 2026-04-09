@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import { delegateFleet } from "./_lib";
+import { assertNotSandbox, delegateFleet } from "./_lib";
 
 export default tool({
   description:
@@ -30,6 +30,7 @@ export default tool({
       .describe("AoE group for organizing sessions"),
   },
   async execute(args) {
+    assertNotSandbox();
     if (args.sessions.length === 0) {
       throw new Error(
         "sessions array must not be empty — provide at least one {title, prompt} session spec",

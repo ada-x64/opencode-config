@@ -13,6 +13,7 @@ import {
   FLEET_CLEANUP_DELAY_MS,
   UUID_RE,
   CONFIRM_RE,
+  assertNotSandbox,
   copilotSendPrompt,
   copilotFindTmux,
   copilotCheckConfirmed,
@@ -24,6 +25,10 @@ import {
 } from "../../src/tools/delegate/_lib";
 
 // delegate tools require aoe/tmux — shape-only tests.
+
+import { existsSync } from "node:fs";
+
+const inSandbox = existsSync("/.dockerenv");
 
 const { session, fleet } = await import("../../src/tools/delegate");
 
@@ -68,7 +73,11 @@ describe("delegate fleet tool", () => {
   it("rejects empty sessions array", async () => {
     await expect(
       execute_tool(fleet, { repo: "/tmp", sessions: [] }),
-    ).rejects.toThrow("sessions array must not be empty");
+    ).rejects.toThrow(
+      inSandbox
+        ? "cannot run inside a sandbox"
+        : "sessions array must not be empty",
+    );
   });
 });
 
@@ -110,6 +119,7 @@ describe("delegate _lib", () => {
 
   describe("exported functions", () => {
     it.each([
+      ["assertNotSandbox", assertNotSandbox],
       ["copilotSendPrompt", copilotSendPrompt],
       ["copilotFindTmux", copilotFindTmux],
       ["copilotCheckConfirmed", copilotCheckConfirmed],
@@ -121,5 +131,19 @@ describe("delegate _lib", () => {
     ])("%s is a function", (_name, fn) => {
       expect(typeof fn).toBe("function");
     });
+  });
+
+  describe("assertNotSandbox", () => {
+    if (inSandbox) {
+      it("throws inside a sandbox container", () => {
+        expect(() => assertNotSandbox()).toThrow(
+          "cannot run inside a sandbox container",
+        );
+      });
+    } else {
+      it("does not throw on host (no /.dockerenv)", () => {
+        expect(() => assertNotSandbox()).not.toThrow();
+      });
+    }
   });
 });
