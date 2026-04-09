@@ -36,6 +36,7 @@
 
 import { parseArgs } from "node:util";
 import {
+  chmodSync,
   copyFileSync,
   existsSync,
   mkdirSync,
@@ -474,7 +475,6 @@ Options:
     mkdirSync(localLogDir, { recursive: true });
     copyFileSync(vaultSyncSrc, vaultSyncDest);
     // Make executable
-    const { chmodSync } = await import("node:fs");
     chmodSync(vaultSyncDest, 0o755);
     console.log(`vault-sync deployed to: ${vaultSyncDest}`);
 

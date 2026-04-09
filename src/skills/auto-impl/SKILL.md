@@ -69,10 +69,10 @@ Then execute these steps in order:
    In a bare repo / worktree setup this creates a new worktree directory and
    updates `repo_path`. All subsequent operations use the (possibly updated) path.
 
-4. **Set schema status** to `in progress`:
+4. **Set schema status** to `🔨 in-progress`:
 
    ```
-   fm_write({ file: schema_file, key: "status", value: "in progress" })
+   fm_write({ file: schema_file, key: "status", value: "🔨 in-progress" })
    ```
 
 5. **Apply `in-progress` label** to the linked GitHub issue (best-effort):
@@ -99,7 +99,7 @@ Then execute these steps in order:
    ```
 
 7. **Check for partial run recovery.** If the schema status was already
-   `in progress` (set in a previous interrupted run), check `git log` against
+   `🔨 in-progress` (set in a previous interrupted run), check `git log` against
    the schema commit groups to determine where to resume. Start from the first
    uncommitted group.
 
@@ -210,10 +210,10 @@ Proceed immediately to the next commit group. Do not pause.
 
 After all commit groups are done and validated:
 
-1. **Set schema status** to `complete`:
+1. **Set schema status** to `✅ complete`:
 
    ```
-   fm_write({ file: schema_file, key: "status", value: "complete" })
+   fm_write({ file: schema_file, key: "status", value: "✅ complete" })
    ```
 
 2. **Remove `in-progress` label** from the linked issue (best-effort):

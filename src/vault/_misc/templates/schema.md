@@ -31,7 +31,7 @@ date: YYYY-MM-DD
 | `branch`   | Target branch name                                                               |
 | `status`   | `📋 todo` / `🔨 in-progress` / `🔍 in-review` / `✅ complete` / `🚫 closed`      |
 | `task`     | Task name (kebab-case, matches directory name under `tasks/`)                    |
-| `priority` | `🔥 critical` / `🔴 high` / `🟡 medium` / `🟢 low`                               |
+| `priority` | `🔥 critical` / `🔴 high` / `🟡 medium` / `🟢 low` / `🟣 non-work`               |
 | `date`     | Creation date (YYYY-MM-DD)                                                       |
 
 ## Problem

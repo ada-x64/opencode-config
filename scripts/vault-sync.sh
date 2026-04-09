@@ -117,6 +117,9 @@ fm_set() {
   ' "$file" > "$tmp" && mv "$tmp" "$file"
 }
 
+# --- Common regex for GitHub URLs ---
+GH_URL_RE='github\.com/([^/]+)/([^/]+)/(pull|issues)/([0-9]+)'
+
 # --- Extract PR URL from issue field ---
 # Handles both formats:
 #   issue: https://github.com/owner/repo/pull/123
@@ -134,8 +137,7 @@ extract_pr_url() {
     url="$issue_val"
   fi
   # Only return if it looks like a GitHub PR or issue URL
-  local gh_url_re='github\.com/([^/]+)/([^/]+)/(pull|issues)/([0-9]+)'
-  if [[ "$url" =~ $gh_url_re ]]; then
+  if [[ "$url" =~ $GH_URL_RE ]]; then
     echo "$url"
   fi
 }
@@ -144,8 +146,7 @@ extract_pr_url() {
 
 parse_github_url() {
   local url="$1"
-  local gh_url_re='github\.com/([^/]+)/([^/]+)/(pull|issues)/([0-9]+)'
-  if [[ "$url" =~ $gh_url_re ]]; then
+  if [[ "$url" =~ $GH_URL_RE ]]; then
     echo "${BASH_REMATCH[1]}/${BASH_REMATCH[2]}" "${BASH_REMATCH[4]}" "${BASH_REMATCH[3]}"
   fi
 }
@@ -220,6 +221,10 @@ while IFS= read -r schema_file; do
   fm_set "$schema_file" "status" "✅ complete"
   log "  Set status to ✅ complete"
 
+  # Read fields we'll need after archive (fm_get won't work once file is moved)
+  repo_field="$(fm_get "$schema_file" "repo" 2>/dev/null || echo "")"
+  issue_field="$(fm_get "$schema_file" "issue" 2>/dev/null || echo "")"
+
   # 2. Archive the task directory
   # Determine archive path preserving structure
   tasks_root="$AGENT_VAULT/tasks"
@@ -246,11 +251,9 @@ while IFS= read -r schema_file; do
       fi
     fi
   elif [[ "$url_type" == "pull" ]]; then
-    # Check if there's a linked issue to close
-    repo_field="$(fm_get "$schema_file" "repo" 2>/dev/null || echo "")"
-    issue_field="$(fm_get "$schema_file" "issue" 2>/dev/null || echo "")"
+    # Check if there's a linked issue to close (fields read before archive)
     # Try to find issue number from the issue field (might differ from PR number)
-    local issue_re='issues/([0-9]+)'
+    issue_re='issues/([0-9]+)'
     if [[ "$issue_field" =~ $issue_re ]]; then
       issue_num="${BASH_REMATCH[1]}"
       issue_repo="${repo_field:-$repo_slug}"

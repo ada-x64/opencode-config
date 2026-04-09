@@ -16,8 +16,8 @@ Every triage document starts with YAML frontmatter:
 
 ```yaml
 ---
-type: escalation | handoff | design-question | run-summary
-agent: auto-impl | implementor | planner | designer | reviewer
+type: activity | escalation | handoff | design-question | run-summary | permissions-request
+agent: auto-impl | implementor | planner | designer | reviewer | auditor | investigate | project-manager | build | plan
 task: task-name
 date: YYYY-MM-DD
 status: ⏳ pending | ✅ addressed | 🚫 dismissed
@@ -26,18 +26,20 @@ status: ⏳ pending | ✅ addressed | 🚫 dismissed
 
 ### Field definitions
 
-| Field    | Values                                                        | Meaning                                                    |
-| -------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
-| `type`   | `escalation`                                                  | Agent is stuck — needs human intervention                  |
-|          | `handoff`                                                     | Agent completed partial work, handing off context          |
-|          | `design-question`                                             | Agent encountered an ambiguous design decision             |
-|          | `run-summary`                                                 | Summary of an autonomous run (what was done, what remains) |
-| `agent`  | `auto-impl`, `implementor`, `planner`, `designer`, `reviewer` | Which agent wrote this                                     |
-| `task`   | string                                                        | Name of the associated task                                |
-| `date`   | `YYYY-MM-DD`                                                  | When the triage was written                                |
-| `status` | `⏳ pending`                                                  | Awaiting human review                                      |
-|          | `✅ addressed`                                                | Human has reviewed and acted on this                       |
-|          | `🚫 dismissed`                                                | Human reviewed and decided no action needed                |
+| Field    | Values                                                                                                                      | Meaning                                                    |
+| -------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `type`   | `activity`                                                                                                                  | Record of agent work performed                             |
+|          | `escalation`                                                                                                                | Agent is stuck — needs human intervention                  |
+|          | `handoff`                                                                                                                   | Agent completed partial work, handing off context          |
+|          | `design-question`                                                                                                           | Agent encountered an ambiguous design decision             |
+|          | `run-summary`                                                                                                               | Summary of an autonomous run (what was done, what remains) |
+|          | `permissions-request`                                                                                                       | Agent needs elevated permissions to proceed                |
+| `agent`  | `auto-impl`, `implementor`, `planner`, `designer`, `reviewer`, `auditor`, `investigate`, `project-manager`, `build`, `plan` | Which agent wrote this                                     |
+| `task`   | string                                                                                                                      | Name of the associated task                                |
+| `date`   | `YYYY-MM-DD`                                                                                                                | When the triage was written                                |
+| `status` | `⏳ pending`                                                                                                                | Awaiting human review                                      |
+|          | `✅ addressed`                                                                                                              | Human has reviewed and acted on this                       |
+|          | `🚫 dismissed`                                                                                                              | Human reviewed and decided no action needed                |
 
 ## Body
 
