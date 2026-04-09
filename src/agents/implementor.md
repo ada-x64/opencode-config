@@ -170,6 +170,7 @@ reflect progress. Do not modify any other part of the review file.
 - Proceed to the next commit group without user approval
 - Make assumptions about ambiguous sub-tasks — ask the user
 - Apply `in-progress` label when the schema's `issue:` field is blank, `null`, `(empty)`, or starts with `local-`
+- Run `git config` to set user identity, signing, or any user-level settings — git identity is provided by the environment
 
 ## Triage & Notifications
 

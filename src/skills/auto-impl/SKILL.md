@@ -302,3 +302,4 @@ When this skill is loaded, build mode MUST NOT:
 - Stop the run because a review loop is stuck — escalate and continue
 - Apply `in-progress` label when the schema's `issue:` field is blank, `null`,
   `(empty)`, or starts with `local-`
+- Run `git config` to set user identity, signing, or any user-level settings — git identity is provided by the environment
