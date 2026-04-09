@@ -326,27 +326,20 @@ export function resolveSecretPlaceholder(
  * Deploy an AoE per-profile config from the profile template.
  *
  * Resolves all placeholders in the profile template using the provided
- * ProfileData and path values, then writes the config.toml to the AoE
- * profile directory. If a gitconfig path is specified, copies it into
- * the profile directory and resolves the GITCONFIG_VOLUME placeholder.
+ * ProfileData, then writes the config.toml to the AoE profile directory.
+ * If a gitconfig path is specified, copies it into the profile directory
+ * and resolves the GITCONFIG_VOLUME placeholder.
  *
  * @param profileName - Original profile name (e.g. "gh/alice")
  * @param profileData - Resolved profile data from loadProfiles()
  * @param profileTemplatePath - Path to src/aoe-profile.toml
  * @param aoeDir - AoE app directory (e.g. ~/.config/agent-of-empires)
- * @param pathVars - Path placeholder values to resolve
  */
 export function deployAoeProfile(
   profileName: string,
   profileData: ProfileData,
   profileTemplatePath: string,
   aoeDir: string,
-  pathVars: {
-    agentVault: string;
-    opencodeConfigSrc: string;
-    sandboxConfigDir: string;
-    opencodeDataDir: string;
-  },
 ): void {
   // Convert profile name for AoE directory: gh/alice → gh-alice
   const aoeName = profileName.replace(/\//g, "-");
@@ -354,21 +347,6 @@ export function deployAoeProfile(
   mkdirSync(aoeProfileDir, { recursive: true });
 
   let content = readFileSync(profileTemplatePath, "utf-8");
-
-  // Resolve path placeholders
-  content = content.replaceAll("{{AGENT_VAULT}}", pathVars.agentVault);
-  content = content.replaceAll(
-    "{{OPENCODE_CONFIG_SRC}}",
-    pathVars.opencodeConfigSrc,
-  );
-  content = content.replaceAll(
-    "{{SANDBOX_CONFIG_DIR}}",
-    pathVars.sandboxConfigDir,
-  );
-  content = content.replaceAll(
-    "{{OPENCODE_DATA_DIR}}",
-    pathVars.opencodeDataDir,
-  );
 
   // Resolve mount_ssh: true for gh/* profiles, false otherwise
   const isGhProfile = profileName.startsWith("gh/");
@@ -691,12 +669,7 @@ Options:
       const profileTemplatePath = join(srcDir, "aoe-profile.toml");
       console.log(`Deploying AoE profile for: ${profile}`);
 
-      deployAoeProfile(profile, profileData, profileTemplatePath, aoeDir, {
-        agentVault,
-        opencodeConfigSrc,
-        sandboxConfigDir: sandboxConfigDir,
-        opencodeDataDir,
-      });
+      deployAoeProfile(profile, profileData, profileTemplatePath, aoeDir);
     } else {
       console.log("Host profile — skipping AoE profile deployment.");
     }
