@@ -70,7 +70,7 @@ const DEFAULT_CONFIG: BuildConfig = {
       "{env:OPENCODE_CONFIG_SRC}/**",
       "/tmp/**",
     ],
-    sandbox_config_dir: "/root/.config/opencode",
+    sandbox_config_dir: "/data/config",
   },
   tiers: {
     design: { model: null },
@@ -721,7 +721,7 @@ export function build(
 
   if (sandboxConfigDirValue === null) {
     sandboxConfigDirValue =
-      globalSection.sandbox_config_dir ?? "/root/.config/opencode";
+      globalSection.sandbox_config_dir ?? "/data/config";
   }
 
   const outRoot = outDirValue
