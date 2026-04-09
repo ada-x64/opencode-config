@@ -82,3 +82,90 @@ export function fmWrite(content: string, key: string, value: string): string {
   // Key not found in frontmatter — return unchanged
   return content;
 }
+
+// ---------------------------------------------------------------------------
+// Validation enums (exported for use by vault_lint)
+// ---------------------------------------------------------------------------
+
+/** Valid status values per vault document type (keyed by vault-relative path prefix). */
+export const STATUS_ENUMS: Record<string, string[]> = {
+  "tasks/": [
+    "📋 todo",
+    "🔨 in-progress",
+    "🔍 in-review",
+    "✅ complete",
+    "🚫 closed",
+  ],
+  "audits/": ["🔨 in-progress", "✅ complete"],
+  "designs/": ["📝 draft", "🟢 active", "✅ complete", "📦 archived"],
+  "drafts/": ["📝 draft", "📤 promoted"],
+  "_misc/activity/": ["⏳ pending", "✅ addressed", "🚫 dismissed"],
+};
+
+/** Valid status values for review files (paths containing `/reviews/`). */
+export const REVIEW_STATUSES = ["📋 todo", "🔨 in-progress", "✅ complete"];
+
+/** Valid priority values (only enforced for `tasks/` paths). */
+export const PRIORITY_VALUES = [
+  "🔥 critical",
+  "🔴 high",
+  "🟡 medium",
+  "🟢 low",
+  "🟣 non-work",
+];
+
+/**
+ * Validate a frontmatter key/value pair for a given file path.
+ *
+ * Only validates `status` and `priority` keys for files inside `$AGENT_VAULT`.
+ * Returns an error message string if invalid, `null` if valid or not applicable.
+ */
+export function validateFmValue(
+  filePath: string,
+  key: string,
+  value: string,
+): string | null {
+  // Only validate status and priority keys
+  if (key !== "status" && key !== "priority") return null;
+
+  // Read AGENT_VAULT — skip validation if unset or file is outside vault
+  const vault = process.env.AGENT_VAULT;
+  if (!vault) return null;
+  // Ensure exact prefix match with separator guard (avoids /vault-extra matching /vault)
+  const vaultPrefix = vault.endsWith("/") ? vault : vault + "/";
+  if (!filePath.startsWith(vaultPrefix)) return null;
+
+  const relPath = filePath.slice(vaultPrefix.length);
+
+  if (key === "priority") {
+    // Priority validation only applies to task schemas
+    if (!relPath.startsWith("tasks/")) return null;
+    if (!PRIORITY_VALUES.includes(value)) {
+      return `invalid priority '${value}' — valid values: ${PRIORITY_VALUES.join(", ")}`;
+    }
+    return null;
+  }
+
+  // key === "status"
+  // Review files take precedence — check before prefix matching
+  if (relPath.includes("/reviews/")) {
+    if (!REVIEW_STATUSES.includes(value)) {
+      return `invalid status '${value}' — valid values: ${REVIEW_STATUSES.join(", ")}`;
+    }
+    return null;
+  }
+
+  // Match relPath against STATUS_ENUMS keys — longest prefix first
+  const matchedKey = Object.keys(STATUS_ENUMS)
+    .filter((prefix) => relPath.startsWith(prefix))
+    .sort((a, b) => b.length - a.length)[0];
+
+  if (!matchedKey) return null; // Unknown document type — skip validation
+
+  const validStatuses = STATUS_ENUMS[matchedKey]!;
+  if (!validStatuses.includes(value)) {
+    return `invalid status '${value}' — valid values: ${validStatuses.join(", ")}`;
+  }
+
+  return null;
+}

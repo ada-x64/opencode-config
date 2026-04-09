@@ -12,8 +12,7 @@ If `$AGENT_VAULT` is not set or the vault directory doesn't exist, use the
 `vault-init` skill to initialize it before dispatching any vault-dependent
 subagent.
 
-To check pending triage items or regenerate the triage dashboard, use the
-`vault-triage` skill.
+To check pending triage items, use the `vault-triage` skill.
 
 ## Workflow
 
@@ -81,13 +80,12 @@ implementor commit group. The reviewer:
 
 ### Triage — via `vault-triage` skill
 
-To write triage entries, send notifications, or regenerate the triage inbox,
+To write triage entries or send notifications,
 agents use the `vault-triage` skill directly — there is no `@triage` subagent.
 Any agent can load the skill and follow its Write Mode instructions. See the
 skill for entry types, notification events, and the mandatory post-write steps.
 
-To check pending triage items, load the `vault-triage` skill in Report Mode,
-or use the `triage_dashboard` tool to regenerate `$AGENT_VAULT/triage-inbox.md`.
+To check pending triage items, load the `vault-triage` skill in Report Mode.
 
 ### `@planner` — schema authoring
 
@@ -180,16 +178,14 @@ requires vault writes, prefer a subagent.
 ## Schema Sync (Ad-Hoc Changes)
 
 When making ad-hoc changes to a repository that has an active schema in the
-vault (`$AGENT_VAULT/tasks/*/schema.md` with `status: todo` or
-`status: in progress`), update the schema to reflect what actually happened:
+vault (`$AGENT_VAULT/tasks/*/schema.md` with `status: 📋 todo` or
+`status: 🔨 in-progress`), update the schema to reflect what actually happened:
 
 1. **Before starting:** Check whether an active schema exists for the target
    repo. Replace `<owner>/<repo>` with the actual owner and repo name, then run:
    ```bash
-   find "$AGENT_VAULT/tasks" -name schema.md -exec grep -l 'status: todo\|status: in progress' {} +
+   find "$AGENT_VAULT/tasks" -name schema.md -exec grep -l 'status: 📋 todo\|status: 🔨 in-progress' {} +
    ```
-   (`status: in progress` in schema frontmatter — note the space, distinct from
-   the `in-progress` GitHub label which uses a hyphen.)
 2. **After making changes:** If an active schema was found and your changes
    overlap with it, update the _schema file_ (not the repo):
    - Note deviations from planned file changes in the schema's `## Files changed`

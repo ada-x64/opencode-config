@@ -123,7 +123,7 @@ each schema's `issue:` frontmatter (which stores a Markdown link like
 match is found, annotate the PR row with the schema name and status.
 
 **For `backend: local` repos:**
-Walk `$vault/tasks/` and read each schema's `status` and `issue` frontmatter fields. Build the Open Issues table from schemas with `status: todo` or `status: in progress`. Build the Closed Issues table from `status: complete` schemas. Set `last_synced`.
+Walk `$vault/tasks/` and read each schema's `status` and `issue` frontmatter fields. Build the Open Issues table from schemas with `status: 📋 todo` or `status: 🔨 in-progress`. Build the Closed Issues table from `status: ✅ complete` schemas. Set `last_synced`.
 
 **Creating a new status document:** If `$vault/projects/<owner>/<repo>.md` does not exist, create it using `vault_write` from the template at `$vault/_misc/templates/project-status.md`. Ask the user which `backend` to use if it is not obvious from context — do not auto-detect.
 
@@ -135,8 +135,8 @@ For `backend: local` repos, PM manages the full task lifecycle inside the vault:
 
 1. `@planner` writes schemas with `issue:` set to a local identifier (e.g., `issue: local-42`).
 2. PM creates/updates the status document's Open Issues table for each new schema.
-3. When an implementor sets `status: in progress` on a schema, PM reads this on the next sync and updates the row.
-4. When a schema reaches `status: complete`, PM moves the row to the Closed Issues section.
+3. When an implementor sets `status: 🔨 in-progress` on a schema, PM reads this on the next sync and updates the row.
+4. When a schema reaches `status: ✅ complete`, PM moves the row to the Closed Issues section.
 5. `vault_gc` still archives the schema — `backend: local` does not affect vault-side archival.
 
 ## Relationship with @planner
@@ -159,7 +159,7 @@ gh label create "review-ready" --color "0075ca" -R <owner>/<repo> 2>/dev/null ||
 ## Triage & Notifications
 
 After completing significant operations, load the `vault-triage` skill and
-follow its **Write Mode** instructions. The three post-work steps are
+follow its **Write Mode** instructions. The two post-work steps are
 **mandatory**:
 
 <!-- triage_icon: project-manager -->

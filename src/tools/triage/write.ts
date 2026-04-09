@@ -79,7 +79,7 @@ export default tool({
       `repo: ${repo}`,
       `headline: ${args.headline}`,
       `date: ${datePart}`,
-      "status: pending",
+      "status: ⏳ pending",
     ];
     if (args.severity) {
       lines.push(`severity: ${args.severity}`);

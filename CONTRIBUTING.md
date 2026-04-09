@@ -51,8 +51,9 @@ for model configuration and writes the file. Use `--reconfigure` to re-prompt.
 
 ### `scripts/build.ts`
 
-Copies `src/` to `out/host/` and `out/sandbox/` (excluding `profiles/` and
-`permissions/`), then applies all stamps to each variant:
+Copies `src/` to `out/host/` and `out/sandbox/` (excluding `profiles/`,
+`permissions/`, `vault/`, and `_shared/` directories), then applies all stamps
+to each variant:
 
 1. Sets the `model` field in `out/<variant>/opencode.json` to `global.model`.
 2. For each agent file, reads `tier` from frontmatter, looks up the tier in

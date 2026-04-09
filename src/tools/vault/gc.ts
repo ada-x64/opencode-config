@@ -53,7 +53,11 @@ export default tool({
 
       // a. Check status frontmatter field
       const status = fmRead(content, "status");
-      if (status === "complete") {
+      if (
+        status === "complete" ||
+        status === "✅ complete" ||
+        status === "🚫 closed"
+      ) {
         toArchive.push(taskDir);
         continue;
       }
@@ -127,6 +131,31 @@ export default tool({
           }
         }
         archived.push(`  moved: ${taskRel} → ${destRel}`);
+
+        // Auto-close linked GitHub issue if still open
+        try {
+          const archivedContent = await readFile(
+            path.join(dest, "schema.md"),
+            "utf-8",
+          );
+          const issueUrl = fmRead(archivedContent, "issue");
+          if (issueUrl) {
+            const m = issueUrl.match(
+              /github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/,
+            );
+            if (m) {
+              const [, owner, repo, num] = m;
+              const result =
+                await Bun.$`gh api repos/${owner}/${repo}/issues/${num}`.json();
+              if (result?.state === "open") {
+                await Bun.$`gh api repos/${owner}/${repo}/issues/${num} -X PATCH -f state=closed`;
+                archived.push(`  closed: ${owner}/${repo}#${num}`);
+              }
+            }
+          }
+        } catch {
+          // Best-effort: don't fail archive on issue close failure
+        }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         archiveErrors.push(`  error: ${taskRel}: ${msg}`);

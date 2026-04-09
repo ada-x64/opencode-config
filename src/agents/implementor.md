@@ -84,11 +84,11 @@ and prints the updated working path (see Behavior §3 below).
 ### Status tracking
 
 - **On startup:** After reading the schema and switching to the branch, update
-  the schema status to `in progress`:
+  the schema status to `🔨 in-progress`:
   ```
-  fm_write({ file: schema_file, key: "status", value: "in progress" })
+  fm_write({ file: schema_file, key: "status", value: "🔨 in-progress" })
   ```
-- **After switching to the branch and setting status `in progress`:** Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
+- **After switching to the branch and setting status `🔨 in-progress`:** Apply the `in-progress` label to the linked GitHub issue (skip if vault-only or blank):
   ```
   issue_field = fm_read({ file: schema_file, key: "issue" })
   repo_slug = fm_read({ file: schema_file, key: "repo" })
@@ -110,11 +110,11 @@ and prints the updated working path (see Behavior §3 below).
   ```
   This is best-effort and never blocks the startup sequence.
 - **After final commit group:** When all commit groups are complete and validated,
-  update the schema status to `complete`:
+  update the schema status to `🔍 in-review`:
   ```
-  fm_write({ file: schema_file, key: "status", value: "complete" })
+  fm_write({ file: schema_file, key: "status", value: "🔍 in-review" })
   ```
-- **After setting status `complete`:** Remove the `in-progress` label from the linked GitHub issue (skip if vault-only or blank):
+- **After setting status `🔍 in-review`:** Remove the `in-progress` label and add the `review-ready` label on the linked GitHub issue (skip if vault-only or blank):
   ```
   issue_field = fm_read({ file: schema_file, key: "issue" })
   repo_slug = fm_read({ file: schema_file, key: "repo" })
@@ -122,7 +122,7 @@ and prints the updated working path (see Behavior §3 below).
   If `issue_field` is non-empty and does not start with `local-`:
   ```bash
   _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
-  gh issue edit "$_issue_num" -R "$repo_slug" --remove-label "in-progress" 2>/dev/null || true
+  gh issue edit "$_issue_num" -R "$repo_slug" --remove-label "in-progress" --add-label "review-ready" 2>/dev/null || true
   ```
   This is best-effort and never blocks the completion sequence.
 - **Also on completion:** Post a completion comment on the linked GitHub issue (skip if vault-only or blank).
@@ -144,13 +144,13 @@ and prints the updated working path (see Behavior §3 below).
 When addressing review feedback, update the review file's `status` property to
 reflect progress. Do not modify any other part of the review file.
 
-- **When starting to address review issues:** Set review status to `in progress`:
+- **When starting to address review issues:** Set review status to `🔨 in-progress`:
   ```
-  fm_write({ file: review_file, key: "status", value: "in progress" })
+  fm_write({ file: review_file, key: "status", value: "🔨 in-progress" })
   ```
-- **After all addressable issues are fixed:** Set review status to `complete`:
+- **After all addressable issues are fixed:** Set review status to `✅ complete`:
   ```
-  fm_write({ file: review_file, key: "status", value: "complete" })
+  fm_write({ file: review_file, key: "status", value: "✅ complete" })
   ```
 
 ## What you MUST NOT do
@@ -166,7 +166,7 @@ reflect progress. Do not modify any other part of the review file.
 ## Triage & Notifications
 
 After completing each commit group and after final completion, load the
-`vault-triage` skill and follow its **Write Mode** instructions. The three
+`vault-triage` skill and follow its **Write Mode** instructions. The two
 post-work steps are **mandatory**:
 
 <!-- triage_icon: implementor -->

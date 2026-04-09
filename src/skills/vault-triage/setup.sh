@@ -73,9 +73,9 @@ EOF
 
 echo "Wrote ntfy client config to $ntfy_config"
 
-# ── Scheduled timers for daily summaries ────────────────────────────
+# ── Scheduled timers for vault-sync ─────────────────────────────────
 config_dir="$(cd "$skill_dir/../.." && pwd)"
-dashboard_cmd="/bin/bash \"$config_dir/tools/triage-dashboard.sh\" --notify-summary"
+sync_cmd="\"$config_dir/../scripts/vault-sync.sh\""
 
 case "$platform" in
 linux | wsl-systemd)
@@ -91,7 +91,7 @@ Description=Vault triage summary notification
 Type=oneshot
 Environment=AGENT_VAULT=$vault
 Environment=NTFY_TOPIC=$topic
-ExecStart=$dashboard_cmd
+ExecStart=$sync_cmd
 UNIT
 
 	cat >"$unit_dir/vault-triage-summary.timer" <<UNIT
@@ -130,9 +130,7 @@ macos)
     <string>com.agent-vault.triage-summary</string>
     <key>ProgramArguments</key>
     <array>
-        <string>bash</string>
-        <string>$config_dir/tools/triage-dashboard.sh</string>
-        <string>--notify-summary</string>
+        <string>$config_dir/../scripts/vault-sync.sh</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
@@ -175,16 +173,16 @@ PLIST
 wsl)
 	# Windows scheduled tasks via schtasks.exe
 	# Note: BurntToast PowerShell module must be installed on Windows side.
-	win_script="$config_dir/tools/triage-dashboard.sh"
+	win_script="$config_dir/../scripts/vault-sync.sh"
 
 	schtasks.exe /Create /SC DAILY /TN "AgentVault\\TriageSummaryAM" \
-		/TR "wsl.exe bash -c \"AGENT_VAULT='$vault' NTFY_TOPIC='$topic' /bin/bash '$win_script' --notify-summary\"" \
+		/TR "wsl.exe bash -c \"AGENT_VAULT='$vault' NTFY_TOPIC='$topic' '$win_script'\"" \
 		/ST 09:00 /F 2>/dev/null || {
 		echo "Warning: could not create morning task. You may need to run from an elevated prompt."
 	}
 
 	schtasks.exe /Create /SC DAILY /TN "AgentVault\\TriageSummaryPM" \
-		/TR "wsl.exe bash -c \"AGENT_VAULT='$vault' NTFY_TOPIC='$topic' /bin/bash '$win_script' --notify-summary\"" \
+		/TR "wsl.exe bash -c \"AGENT_VAULT='$vault' NTFY_TOPIC='$topic' '$win_script'\"" \
 		/ST 17:00 /F 2>/dev/null || {
 		echo "Warning: could not create evening task. You may need to run from an elevated prompt."
 	}

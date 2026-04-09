@@ -1,18 +1,17 @@
 ---
 name: vault-triage
 description: >
-  Full triage skill for all agents — write triage entries, send push notifications,
-  and regenerate the triage inbox. Load this skill after any significant work.
-  Use it to check pending triage items, generate the dashboard, or set up notifications.
+  Full triage skill for all agents — write triage entries and send push
+  notifications. Load this skill after any significant work. Use it to check
+  pending triage items or set up notifications.
 ---
 
 # Vault Triage Skill
 
 ## Overview
 
-Every agent loads this skill after completing significant work. The three
-post-work steps are **mandatory** — skipping notify or inbox update is a
-protocol violation:
+Every agent loads this skill after completing significant work. The two
+post-work steps are **mandatory** — skipping notify is a protocol violation:
 
 1. **Write** a triage entry:
    ```
@@ -21,10 +20,6 @@ protocol violation:
 2. **Send** a push notification:
    ```
    notify_triage({ type: "<type>", task: "<owner>/<repo>/<task>", headline: "<headline>", body: "<body>", icon: "<icon>", emoji: "<semantic-key>" })
-   ```
-3. **Regenerate** the triage inbox:
-   ```
-   triage_dashboard({})
    ```
 
 > **First-time setup:** Run `bash "$OPENCODE_CONFIG_SRC/skills/vault-triage/setup.sh"` once after install.
@@ -198,7 +193,7 @@ To read triage files and generate a summary of pending items:
    fm_read({ file: "<path>", key: "agent", default_value: "unknown" })
    ```
 
-3. Group by type. Filter to `status: pending` by default (unless the human
+3. Group by type. Filter to `status: ⏳ pending` by default (unless the human
    asks for addressed or dismissed items too).
 
 4. Produce a Markdown summary grouped by type:
@@ -210,17 +205,19 @@ To read triage files and generate a summary of pending items:
 
 ---
 
+## Status String Safety
+
+Status and priority values are validated by `fm_write` — the tool will reject
+bare strings like `todo` or `complete` and return the list of valid values.
+
+---
+
 ## Environment
 
 | Variable      | Required | Source                                            |
 | ------------- | -------- | ------------------------------------------------- |
 | `AGENT_VAULT` | Yes      | Agent environment                                 |
 | `NTFY_TOPIC`  | No       | Falls back to `$AGENT_VAULT/_misc/ntfy-topic.txt` |
-
-## Dashboard output
-
-Generated at `$AGENT_VAULT/triage-inbox.md`. Sections: Pending, Addressed,
-Dismissed. Each row has a wiki-link to the triage file, type, agent, and date.
 
 ## Notification priorities
 

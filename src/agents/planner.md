@@ -50,7 +50,20 @@ automatically if the repo uses the bare/worktree layout.
 1. **Explore** the repository to understand relevant code and conventions.
 2. **Discuss** the plan with the user — ask what they want, iterate on approach.
 3. **Write** the schema following the format template (provided via custom instructions).
-   When writing the schema, always set the `status` frontmatter field to `todo`.
+   When writing the schema, always set the `status` frontmatter field to `📋 todo`.
+   Also set `task: <task-name>` in the frontmatter (matching the task directory name).
+
+   **Priority selection:** Before writing the schema, ask the user to choose a
+   priority using the `question` tool, offering these options:
+   - `🔥 critical`
+   - `🔴 high`
+   - `🟡 medium` (Recommended)
+   - `🟢 low`
+   - `🟣 non-work`
+
+   Do not silently default — always ask. Write the chosen priority to the
+   `priority` frontmatter field.
+
 4. **Archive source draft.** If the schema was based on a draft file in
    `$AGENT_VAULT/drafts/`, move it to the archive using `vault_mv`:
    ```
@@ -120,7 +133,7 @@ a draft review), **verify the output before proceeding**. Specifically:
 ## Triage & Notifications
 
 After completing significant work, load the `vault-triage` skill and follow
-its **Write Mode** instructions. The three post-work steps are **mandatory**:
+its **Write Mode** instructions. The two post-work steps are **mandatory**:
 
 <!-- triage_icon: planner -->
 <!-- triage_events:

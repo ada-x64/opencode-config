@@ -52,12 +52,12 @@ owner_repo = wt_owner_repo({ path: repo_path })
 5. Be thorough but only flag real issues — do not pad the review.
 6. Write the full review to the specified review file using `vault_write`,
    overwriting any existing content.
-7. When writing the review, set the `status` frontmatter field to `todo`.
+7. When writing the review, set the `status` frontmatter field to `📋 todo`.
 
 ## Triage & Notifications
 
 After writing the review file, load the `vault-triage` skill and follow its
-**Write Mode** instructions. The three post-work steps are **mandatory**:
+**Write Mode** instructions. The two post-work steps are **mandatory**:
 
 <!-- triage_icon: reviewer -->
 <!-- triage_events:

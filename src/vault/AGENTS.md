@@ -130,4 +130,85 @@ Any mode is capable of managing the vault through the vault skills. Typical acti
 - Agents interact with the vault via the vault tools.
 - **Task and issue titles must not contain regex special characters** (`.`, `(`, `)`, `*`, `[`, `]`, `+`, `?`, `{`, `}`, `^`, `$`, `|`, `\\`).^[1]
 
+### Status Values
+
+All status fields use emoji-prefixed values. Plain strings (`todo`, `complete`, etc.) are **not valid** — they will fail `vault-lint`.
+
+#### Schemas (Task file class)
+
+| Status           | Meaning                           |
+| ---------------- | --------------------------------- |
+| `📋 todo`        | Planned, not started              |
+| `🔨 in-progress` | Active implementation             |
+| `🔍 in-review`   | Implementation done, under review |
+| `✅ complete`    | Done                              |
+| `🚫 closed`      | Cancelled or superseded           |
+
+#### Reviews (Task file class)
+
+| Status           | Meaning            |
+| ---------------- | ------------------ |
+| `📋 todo`        | Review not started |
+| `🔨 in-progress` | Review underway    |
+| `✅ complete`    | Review finished    |
+
+#### Triage / Activity (Activity file class)
+
+| Status         | Meaning                          |
+| -------------- | -------------------------------- |
+| `⏳ pending`   | Awaiting human review            |
+| `✅ addressed` | Human reviewed and acted         |
+| `🚫 dismissed` | Human reviewed, no action needed |
+
+#### Designs (Design file class)
+
+| Status        | Meaning               |
+| ------------- | --------------------- |
+| `📝 draft`    | Work in progress      |
+| `🟢 active`   | Accepted, in use      |
+| `✅ complete` | Finalized             |
+| `📦 archived` | Superseded or retired |
+
+#### Drafts (Draft file class)
+
+| Status        | Meaning                        |
+| ------------- | ------------------------------ |
+| `📝 draft`    | Work in progress               |
+| `📤 promoted` | Promoted to a schema or design |
+
+#### Audits (Audit file class)
+
+| Status           | Meaning                    |
+| ---------------- | -------------------------- |
+| `🔨 in-progress` | Audit running              |
+| `✅ complete`    | Audit finished (immutable) |
+
+#### Priority Values (schemas only)
+
+| Priority      | Meaning                |
+| ------------- | ---------------------- |
+| `🔥 critical` | Drop everything        |
+| `🔴 high`     | Current sprint         |
+| `🟡 medium`   | This quarter           |
+| `🟢 low`      | Backlog                |
+| `🟣 non-work` | Personal / exploratory |
+
+### File Classes
+
+File classes (in `_misc/fileClasses/`) configure the Obsidian metadata-menu plugin. They define which frontmatter fields appear, their types, allowed values, and saved table views. Each file class is bound to a vault folder:
+
+| File Class | Folder            | Purpose                       |
+| ---------- | ----------------- | ----------------------------- |
+| `Task`     | `tasks/`          | Schema and review frontmatter |
+| `Activity` | `_misc/activity/` | Triage entry frontmatter      |
+| `Design`   | `designs/`        | Design document frontmatter   |
+| `Draft`    | `drafts/`         | Draft document frontmatter    |
+| `Audit`    | `audits/`         | Audit report frontmatter      |
+| `Project`  | `projects/`       | Project status frontmatter    |
+| `Note`     | `notes/`          | Repo-notes frontmatter        |
+
+### Home.md
+
+`Home.md` is the vault landing page. It uses `mdm` code blocks (metadata-menu) to render live tables of active tasks, pending triage, active drafts/designs/audits, projects, and recent notes. Do not edit it unless adding a new file class view.
+
 ^[1]: The `vault-lint` script uses title text as a regex pattern when scanning review files — special characters will silently corrupt issue-block extraction.
