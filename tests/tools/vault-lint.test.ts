@@ -13,9 +13,11 @@ let vault: string;
 const origAgentVault = process.env.AGENT_VAULT;
 
 const VALID_SCHEMA = `---
-status: todo
+status: 📋 todo
 repo: lint-owner/lint-repo
+task: task-valid
 date: 2026-01-01
+priority: 🟡 medium
 issue: "[#1](https://github.com/lint-owner/lint-repo/issues/1)"
 ---
 
@@ -40,8 +42,9 @@ Describe the approach here.
 
 // Missing all required H2 sections; also no issue field
 const INVALID_SCHEMA = `---
-status: todo
+status: 📋 todo
 repo: lint-owner/lint-repo
+task: task-invalid
 date: 2026-01-01
 ---
 
@@ -52,6 +55,7 @@ date: 2026-01-01
 const BAD_STATUS_SCHEMA = `---
 status: wip
 repo: lint-owner/lint-repo
+task: task-bad-status
 date: 2026-01-01
 issue: "[#2](https://github.com/lint-owner/lint-repo/issues/2)"
 ---

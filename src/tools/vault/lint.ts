@@ -31,7 +31,7 @@ function lintSchema(content: string, relPath: string): string[] {
     return errors;
   }
 
-  for (const field of ["repo", "date"]) {
+  for (const field of ["repo", "date", "task"]) {
     if (!new RegExp(`^${field}:`, "m").test(block)) {
       errors.push(`${relPath}: missing '${field}' in frontmatter`);
     }
@@ -42,9 +42,33 @@ function lintSchema(content: string, relPath: string): string[] {
     errors.push(`${relPath}: missing 'status' in frontmatter`);
   } else {
     const status = statusMatch[1]!.trim();
-    if (!["todo", "in progress", "complete"].includes(status)) {
+    if (
+      ![
+        "📋 todo",
+        "🔨 in-progress",
+        "🔍 in-review",
+        "✅ complete",
+        "🚫 closed",
+      ].includes(status)
+    ) {
       errors.push(
-        `${relPath}: invalid status value: '${status}' (expected: todo, in progress, complete)`,
+        `${relPath}: invalid status value: '${status}' (expected: 📋 todo, 🔨 in-progress, 🔍 in-review, ✅ complete, 🚫 closed)`,
+      );
+    }
+  }
+
+  const priorityMatch = block.match(/^priority:\s*(.+)$/m);
+  if (!priorityMatch) {
+    errors.push(`${relPath}: warning: missing 'priority' in frontmatter`);
+  } else {
+    const priority = priorityMatch[1]!.trim();
+    if (
+      !["🔥 critical", "🔴 high", "🟡 medium", "🟢 low", "🟣 non-work"].includes(
+        priority,
+      )
+    ) {
+      errors.push(
+        `${relPath}: invalid priority value: '${priority}' (expected: 🔥 critical, 🔴 high, 🟡 medium, 🟢 low, 🟣 non-work)`,
       );
     }
   }
@@ -90,9 +114,9 @@ function lintReview(content: string, relPath: string): string[] {
     errors.push(`${relPath}: missing 'status' in frontmatter`);
   } else {
     const status = statusMatch[1]!.trim();
-    if (!["todo", "in progress", "complete"].includes(status)) {
+    if (!["📋 todo", "🔨 in-progress", "✅ complete"].includes(status)) {
       errors.push(
-        `${relPath}: invalid status value: '${status}' (expected: todo, in progress, complete)`,
+        `${relPath}: invalid status value: '${status}' (expected: 📋 todo, 🔨 in-progress, ✅ complete)`,
       );
     }
   }
