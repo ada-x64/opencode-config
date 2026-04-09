@@ -21,11 +21,11 @@ date: YYYY-MM-DD
 
 ### Frontmatter fields
 
-| Field    | Description                         |
-| -------- | ----------------------------------- |
-| `repo`   | `<owner>/<repo>` identifier         |
+| Field    | Description                                  |
+| -------- | -------------------------------------------- |
+| `repo`   | `<owner>/<repo>` identifier                  |
 | `status` | `📋 todo` / `🔨 in-progress` / `✅ complete` |
-| `date`   | Review date (YYYY-MM-DD)            |
+| `date`   | Review date (YYYY-MM-DD)                     |
 
 Branch and diff info go in the document body (below the H1) since they change per review round.
 

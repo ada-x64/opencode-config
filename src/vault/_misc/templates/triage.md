@@ -35,9 +35,9 @@ status: ⏳ pending | ✅ addressed | 🚫 dismissed
 | `agent`  | `auto-impl`, `implementor`, `planner`, `designer`, `reviewer` | Which agent wrote this                                     |
 | `task`   | string                                                        | Name of the associated task                                |
 | `date`   | `YYYY-MM-DD`                                                  | When the triage was written                                |
-| `status` | `⏳ pending`                                                     | Awaiting human review                                      |
-|          | `✅ addressed`                                                     | Human has reviewed and acted on this                       |
-|          | `🚫 dismissed`                                                     | Human reviewed and decided no action needed                |
+| `status` | `⏳ pending`                                                  | Awaiting human review                                      |
+|          | `✅ addressed`                                                | Human has reviewed and acted on this                       |
+|          | `🚫 dismissed`                                                | Human reviewed and decided no action needed                |
 
 ## Body
 

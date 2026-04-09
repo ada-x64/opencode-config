@@ -122,5 +122,5 @@ The `coverage_source` frontmatter field records where coverage data was obtained
 | `tools_run`         | list   | Tools that executed successfully during this audit                                           |
 | `tools_unavailable` | list   | Tools detected as absent (probed but not found)                                              |
 | `coverage_source`   | string | Where coverage data was obtained (see Coverage Source Values above)                          |
-| `status`            | string | Always `✅ complete` — audit reports are point-in-time, immutable records                       |
+| `status`            | string | Always `✅ complete` — audit reports are point-in-time, immutable records                    |
 | `agent`             | string | Always `auditor`                                                                             |

@@ -106,10 +106,10 @@ existing topic. Run it again after migrating to a new machine.
 
 ## Files
 
-| File                                             | Purpose                                                                    |
-| ------------------------------------------------ | -------------------------------------------------------------------------- |
-| `setup.sh`                                       | One-time platform setup (run manually)                                     |
-| `toast-handler.sh`                               | Cross-platform toast handler for ntfy subscribe (icon + platform dispatch) |
-| `SKILL.md`                                       | Agent-facing descriptor loaded by the `vault-triage` skill                 |
-| `$OPENCODE_CONFIG_SRC/tools/notify.sh`           | `notify_triage` function — used by agents via the `notify_triage` tool     |
-| `$OPENCODE_CONFIG_SRC/tools/triage-write.sh`     | Triage entry writer — used by agents via the `triage_write` tool           |
+| File                                         | Purpose                                                                    |
+| -------------------------------------------- | -------------------------------------------------------------------------- |
+| `setup.sh`                                   | One-time platform setup (run manually)                                     |
+| `toast-handler.sh`                           | Cross-platform toast handler for ntfy subscribe (icon + platform dispatch) |
+| `SKILL.md`                                   | Agent-facing descriptor loaded by the `vault-triage` skill                 |
+| `$OPENCODE_CONFIG_SRC/tools/notify.sh`       | `notify_triage` function — used by agents via the `notify_triage` tool     |
+| `$OPENCODE_CONFIG_SRC/tools/triage-write.sh` | Triage entry writer — used by agents via the `triage_write` tool           |

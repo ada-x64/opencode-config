@@ -21,12 +21,8 @@
   "fileClassExcludedFolders": [],
   "showIndexingStatusInStatusBar": true,
   "fileIndexingExcludedFolders": [],
-  "fileIndexingExcludedExtensions": [
-    ".excalidraw.md"
-  ],
-  "fileIndexingExcludedRegex": [
-    "README.md"
-  ],
+  "fileIndexingExcludedExtensions": [".excalidraw.md"],
+  "fileIndexingExcludedRegex": ["README.md"],
   "frontmatterOnly": false,
   "showFileClassSelectInModal": true,
   "chooseFileClassAtFileCreation": false,

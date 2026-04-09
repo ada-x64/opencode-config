@@ -26,7 +26,7 @@ date: YYYY-MM-DD
 | -------- | --------------------------------------------------- |
 | `task`   | Shared task name used across all per-repo schemas   |
 | `issue`  | GitHub issue link for the umbrella issue (or blank) |
-| `status` | `📋 todo` / `🔨 in-progress` / `✅ complete`                 |
+| `status` | `📋 todo` / `🔨 in-progress` / `✅ complete`        |
 | `date`   | Creation date (YYYY-MM-DD)                          |
 
 ## Problem

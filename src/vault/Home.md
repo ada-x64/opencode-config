@@ -16,7 +16,6 @@ files per page: 10
 showAddField: false
 ```
 
-
 ## Drafts
 
 ```mdm

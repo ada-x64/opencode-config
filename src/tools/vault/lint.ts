@@ -63,9 +63,13 @@ function lintSchema(content: string, relPath: string): string[] {
   } else {
     const priority = priorityMatch[1]!.trim();
     if (
-      !["🔥 critical", "🔴 high", "🟡 medium", "🟢 low", "🟣 non-work"].includes(
-        priority,
-      )
+      ![
+        "🔥 critical",
+        "🔴 high",
+        "🟡 medium",
+        "🟢 low",
+        "🟣 non-work",
+      ].includes(priority)
     ) {
       errors.push(
         `${relPath}: invalid priority value: '${priority}' (expected: 🔥 critical, 🔴 high, 🟡 medium, 🟢 low, 🟣 non-work)`,
