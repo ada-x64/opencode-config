@@ -536,8 +536,6 @@ Remaining bash permissions for worktree operations:
 
 ---
 
----
-
 ## PR-Issue cross-reference
 
 When an agent creates a GitHub issue that relates to an open PR, it must
@@ -628,7 +626,7 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 | -------------------- | ------------------- | ---------------------------------------- | ----------------------------------------- |
 | `AGENT_VAULT`        | Yes (for vault ops) | Absolute path to the Obsidian vault      | None — must be set                        |
 | `AGENT_REPOS`        | Yes (for repo ops)  | Absolute path to local repo checkouts    | None — must be set                        |
-| `NTFY_TOPIC`         | No                  | ntfy.sh topic for push notifications     | `$AGENT_VAULT/_misc/ntfy-topic.txt`       |
+| `NTFY_TOPIC`         | No                  | ntfy.sh topic for push notifications     | `$AGENT_VAULT/_misc/cache/ntfy-topic.txt` |
 | `SANDBOX_CONFIG_DIR` | No                  | Path where sandbox config is deployed    | `$HOME/.config/opencode-sandbox`          |
 | `OCCONF_PROFILES`    | No                  | Path to `profiles.toml` secrets file     | `~/.config/opencode-config/profiles.toml` |
 | `SANDBOX_USER`       | No                  | Container username (set by entrypoint)   | _(none — container runs as root)_         |

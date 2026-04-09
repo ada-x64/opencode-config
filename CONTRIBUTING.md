@@ -59,9 +59,9 @@ to each variant:
 2. For each agent file, reads `tier` from frontmatter, looks up the tier in
    `build.json`, and sets or removes the `model` field accordingly.
 3. Stamps `{{BASH_PERMISSIONS}}` in agent frontmatter from `src/permissions/`:
-   - **Host variant:** reads `src/permissions/host/<agent>.json` for each agent.
+   - **Host variant:** reads `src/permissions/host/<agent>.yaml` for each agent.
      The `bash:` key is injected at 2-space indent; all entries at 4-space indent.
-   - **Sandbox variant:** reads `src/permissions/sandbox.json` and stamps ALL
+   - **Sandbox variant:** reads `src/permissions/sandbox.yaml` and stamps ALL
      agents with the same universal block (`"*": allow` + `gh api *` / `git push*`
      denies). Any remaining `ask` rules are converted to `allow`.
 4. Stamps the `external_directory` block in all agent frontmatter:
@@ -276,7 +276,7 @@ for backward compatibility.
 1. Create `src/agents/<name>.md`.
 2. Open the YAML frontmatter with `{{BASH_PERMISSIONS}}` as the placeholder in
    the `permission:` block (the build system stamps it per-variant).
-3. Create `src/permissions/host/<name>.json` with the agent's bash permission
+3. Create `src/permissions/host/<name>.yaml` with the agent's bash permission
    block starting with `"*": deny` then the allowed commands.
 4. Write the system prompt in the Markdown body after the closing `---`.
 5. Run `bun run build` to propagate `external_directory`, model,
@@ -289,17 +289,17 @@ for backward compatibility.
 
 The global read-only command list lives in `src/opencode.json` under
 `permission.bash`. The shared agent bash baseline lives in
-`src/permissions/host/_baseline.json`. When you add a command to the
+`src/permissions/host/_baseline.yaml`. When you add a command to the
 global read-only list:
 
 1. Add it to `src/opencode.json`.
-2. Add it to `src/permissions/host/_baseline.json` (the shared baseline).
+2. Add it to `src/permissions/host/_baseline.yaml` (the shared baseline).
 3. Run `bun run build` to rebuild `out/`.
 4. Update the baseline table in the vault permission note.
 
 The baseline is merged into every host agent at build time by
 `_build_bash_block()`. Do **not** add baseline commands to individual
-`src/permissions/host/<agent>.json` files — those contain only
+`src/permissions/host/<agent>.yaml` files — those contain only
 agent-specific additions.
 
 ### Keeping vault and repo in sync
