@@ -4,8 +4,6 @@
 # install.ts. Merges on top of the global config.toml at runtime.
 #
 # Placeholders resolved at install time:
-#   Path:    AGENT_VAULT, OPENCODE_CONFIG_SRC, SANDBOX_CONFIG_DIR,
-#            OPENCODE_DATA_DIR
 #   Secrets: GH_TOKEN, NTFY_TOPIC (from profiles.toml)
 #   Docker:  SANDBOX_USER, SANDBOX_GROUP, SANDBOX_UID, SANDBOX_GID
 #   Other:   MOUNT_SSH, GITCONFIG_VOLUME
