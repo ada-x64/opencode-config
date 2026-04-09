@@ -113,7 +113,7 @@ the note.
 ## Triage & Notifications
 
 After writing repo notes, load the `vault-triage` skill and follow its
-**Write Mode** instructions. The three post-work steps are **mandatory**:
+**Write Mode** instructions. The two post-work steps are **mandatory**:
 
 <!-- triage_icon: investigate -->
 <!-- triage_events:

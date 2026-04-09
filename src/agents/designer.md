@@ -103,7 +103,7 @@ subdirectory structure required).
 ## Triage & Notifications
 
 After writing a design document, load the `vault-triage` skill
-and follow its **Write Mode** instructions. The three post-work steps are
+and follow its **Write Mode** instructions. The two post-work steps are
 **mandatory**:
 
 <!-- triage_icon: designer -->

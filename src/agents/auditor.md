@@ -170,7 +170,7 @@ vault_write({
 ```
 
 Follow the template at `$AGENT_VAULT/_misc/templates/audit.md`.
-Set `status: complete` in the frontmatter. The `audits/` directory structure
+Set `status: ✅ complete` in the frontmatter. The `audits/` directory structure
 is created implicitly when writing the first file.
 
 Return a one-paragraph summary to the caller: path written, overall health
@@ -179,7 +179,7 @@ Return a one-paragraph summary to the caller: path written, overall health
 ## Triage & Notifications
 
 After writing the audit report, load the `vault-triage` skill and follow its
-**Write Mode** instructions. The three post-work steps are **mandatory**:
+**Write Mode** instructions. The two post-work steps are **mandatory**:
 
 <!-- triage_icon: auditor -->
 <!-- triage_events:
