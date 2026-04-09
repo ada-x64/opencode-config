@@ -89,9 +89,16 @@ automatically if the repo uses the bare/worktree layout.
 8. **Link** the issue back into the schema header.
 9. **Cross-reference PRs** — if the issue you just created relates to an open
    PR (e.g., a bug found during CI, a design question from review, a follow-up
-   task), post a comment on the PR:
-   ```bash
-   gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."
+   task), post a comment on the PR. Load the `github` skill and use the
+   `github_comment` tool:
+   ```
+   github_comment({
+     repo: "<owner>/<repo>",
+     number: <pr-number>,
+     body: "Opened #<issue-number> to track <short description>.",
+     agent: "planner",
+     type: "pr"
+   })
    ```
    Skip this step if there is no related PR or if the issue is the PR's own
    tracking issue.
