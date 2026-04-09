@@ -20,7 +20,8 @@ assignments and environment-specific values, producing deployable output in
 opencode-config/
 ├── src/                       # Source templates (never modified by build)
 │   ├── opencode.json          #   Core config: model, mode prompts
-│   ├── aoe-config.toml        #   AoE sandbox config template
+│   ├── aoe-config.toml        #   AoE global sandbox config template
+│   ├── aoe-profile.toml       #   AoE per-profile config template
 │   ├── agents/                #   Subagent definitions (7 agents)
 │   │   ├── planner.md
 │   │   ├── project-manager.md
@@ -93,7 +94,9 @@ opencode-config/
 │   │   ├── vault-init/       #     SKILL.md (vault directory init)
 │   │   └── vault-triage/     #     SKILL.md + setup.sh + toast-handler.sh
 │   ├── profiles/              #   Deployment profiles (excluded from out/)
-│   │   └── host.env           #     Standard Linux/WSL workstation
+│   │   ├── host.env           #     Standard Linux/WSL workstation
+│   │   ├── gh.env             #     GitHub user profile (SSH-prefer)
+│   │   └── profiles.toml.example #  Per-profile secrets template (TOML)
 │   └── vault/                 #   Vault source (directory structure for vault_init)
 │       ├── AGENTS.md          #     Vault conventions document
 │       ├── _misc/             #     Infrastructure (templates, images, etc.)
@@ -111,6 +114,7 @@ opencode-config/
 ├── build.json                 # Model tier definitions (gitignored, per-machine)
 ├── docker/                    # Docker sandbox image
 │   ├── Dockerfile             #   Ubuntu 24.04 + opencode + agent toolchain
+│   ├── entrypoint.sh          #   Non-root user setup + gosu privilege drop
 │   └── .dockerignore
 ├── .github/workflows/         # CI
 │   ├── lint.yml               #   shfmt, shellcheck, prettier, bun test
@@ -608,12 +612,17 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 
 ## Environment Variable Reference
 
-| Variable             | Required            | Description                           | Fallback                            |
-| -------------------- | ------------------- | ------------------------------------- | ----------------------------------- |
-| `AGENT_VAULT`        | Yes (for vault ops) | Absolute path to the Obsidian vault   | None — must be set                  |
-| `AGENT_REPOS`        | Yes (for repo ops)  | Absolute path to local repo checkouts | None — must be set                  |
-| `NTFY_TOPIC`         | No                  | ntfy.sh topic for push notifications  | `$AGENT_VAULT/_misc/ntfy-topic.txt` |
-| `SANDBOX_CONFIG_DIR` | No                  | Path where sandbox config is deployed | `$HOME/.config/opencode-sandbox`    |
+| Variable             | Required            | Description                              | Fallback                                  |
+| -------------------- | ------------------- | ---------------------------------------- | ----------------------------------------- |
+| `AGENT_VAULT`        | Yes (for vault ops) | Absolute path to the Obsidian vault      | None — must be set                        |
+| `AGENT_REPOS`        | Yes (for repo ops)  | Absolute path to local repo checkouts    | None — must be set                        |
+| `NTFY_TOPIC`         | No                  | ntfy.sh topic for push notifications     | `$AGENT_VAULT/_misc/ntfy-topic.txt`       |
+| `SANDBOX_CONFIG_DIR` | No                  | Path where sandbox config is deployed    | `$HOME/.config/opencode-sandbox`          |
+| `OCCONF_PROFILES`    | No                  | Path to `profiles.toml` secrets file     | `~/.config/opencode-config/profiles.toml` |
+| `SANDBOX_USER`       | No                  | Container username (set by entrypoint)   | _(none — container runs as root)_         |
+| `SANDBOX_GROUP`      | No                  | Container group name (set by entrypoint) | `agents`                                  |
+| `SANDBOX_UID`        | No                  | Container user UID (set by entrypoint)   | `1000`                                    |
+| `SANDBOX_GID`        | No                  | Container group GID (set by entrypoint)  | `1000`                                    |
 
 `AGENT_VAULT` and `AGENT_REPOS` are checked at the top of any agent session
 that uses the vault or operates on a repository. The `vault-init` skill can

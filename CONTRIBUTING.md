@@ -70,7 +70,7 @@ to each variant:
      (no path restrictions in containers).
 5. Resolves `{{CONFIG_DIR}}` placeholders in agent files:
    - **Host variant:** resolves to the `CONFIG_DIR` from the build configuration.
-   - **Sandbox variant:** resolves to `/root/.config/opencode` (container path).
+   - **Sandbox variant:** resolves to `/data/config` (container path).
 
 The script is idempotent — running it multiple times produces the same result.
 
@@ -89,14 +89,21 @@ Deploys built output to the target config directories:
    `CONFIG_DIR`, `OPENCODE_CONFIG_SRC`, and `SANDBOX_CONFIG_DIR`.
 2. Rsyncs `out/host/` contents to `CONFIG_DIR`.
 3. Rsyncs `out/sandbox/` contents to `SANDBOX_CONFIG_DIR`.
-4. Deploys the AoE config using 3-level fallback (exact → base → default),
-   resolving `{{AGENT_VAULT}}`, `{{OPENCODE_CONFIG_SRC}}`,
-   `{{SANDBOX_CONFIG_DIR}}`, and `{{OPENCODE_DATA_DIR}}` placeholders.
+4. Loads per-profile secrets and Docker user config from `profiles.toml`
+   (see [Per-profile secrets](#per-profile-secrets-profilestoml) below).
+5. Deploys the AoE global config from `src/aoe-config.toml`, resolving
+   `{{AGENT_VAULT}}`, `{{SANDBOX_CONFIG_DIR}}`, and `{{OPENCODE_DATA_DIR}}`
+   path placeholders.
+6. For non-host profiles, deploys an AoE per-profile config from
+   `src/aoe-profile.toml`, resolving path placeholders and per-profile
+   secrets. Copies the profile's gitconfig (if configured) into the AoE
+   profile directory.
 
 ```bash
-bun run install-config                              # host profile (default)
-bun run install-config -- --profile gh/myuser       # gh/* profile (SSH-prefer)
-bun run install-config -- --config-dir /custom     # override CONFIG_DIR
+bun run install-config                                              # host profile (default)
+bun run install-config -- --profile gh/myuser                       # gh/* profile (SSH-prefer)
+bun run install-config -- --config-dir /custom                      # override CONFIG_DIR
+bun run install-config -- --profiles-config /path/to/profiles.toml  # custom profiles.toml
 ```
 
 ### `scripts/setup.ts`
@@ -111,13 +118,11 @@ writes environment variables to the user's shell profile. See
 Profiles live in `src/profiles/` and are excluded from the build output.
 Each is a shell-style `.env` file defining `CONFIG_DIR`, `OPENCODE_CONFIG_SRC`,
 and `SANDBOX_CONFIG_DIR`.
-A profile may also include a `.aoe.toml` file for a profile-specific AoE
-configuration (otherwise `src/aoe-config.toml` is used as the default).
 
-| Profile         | Files                                             | CONFIG_DIR               | SANDBOX_CONFIG_DIR               | AoE config                       |
-| --------------- | ------------------------------------------------- | ------------------------ | -------------------------------- | -------------------------------- |
-| `host`          | `src/profiles/host.env`                           | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` | `src/aoe-config.toml` (default)  |
-| `gh/<username>` | `src/profiles/gh.env`, `src/profiles/gh.aoe.toml` | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` | `src/profiles/gh.aoe.toml` (SSH) |
+| Profile         | Files                   | CONFIG_DIR               | SANDBOX_CONFIG_DIR               |
+| --------------- | ----------------------- | ------------------------ | -------------------------------- |
+| `host`          | `src/profiles/host.env` | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` |
+| `gh/<username>` | `src/profiles/gh.env`   | `$HOME/.config/opencode` | `$HOME/.config/opencode-sandbox` |
 
 #### Profile resolution
 
@@ -125,18 +130,51 @@ For slash-separated profile names like `gh/v-phoenixman`:
 
 1. **`.env` lookup:** tries `src/profiles/gh/v-phoenixman.env` first, then
    falls back to `src/profiles/gh.env` (base for the `gh/*` family).
-2. **`.aoe.toml` lookup:** tries `src/profiles/gh/v-phoenixman.aoe.toml`,
-   then `src/profiles/gh.aoe.toml`, then `src/aoe-config.toml`.
 
 This allows per-user overrides while sharing a common base.
 
+#### Per-profile secrets (`profiles.toml`)
+
+The file `~/.config/opencode-config/profiles.toml` (TOML format, chmod 600)
+stores per-profile secrets and Docker user config that are stamped into
+deployed AoE configs. Override the location with `OCCONF_PROFILES` env var
+or `--profiles-config` CLI flag. See `src/profiles/profiles.toml.example`
+for the full format.
+
+Resolution order for each secret key:
+
+1. `profiles."<profile-name>"` section in `profiles.toml`
+2. `[default]` section in `profiles.toml`
+3. Key-specific fallback (`NTFY_TOPIC` → `$AGENT_VAULT/_misc/cache/ntfy-topic.txt`)
+4. Omit — the entire line is removed from the deployed TOML
+
+Supported keys:
+
+| Key          | Description                                                                     |
+| ------------ | ------------------------------------------------------------------------------- |
+| `GH_TOKEN`   | GitHub personal access token for `gh` CLI                                       |
+| `NTFY_TOPIC` | ntfy.sh topic for push notifications                                            |
+| `gitconfig`  | Path to a gitconfig file on the host (mounted at `/etc/gitconfig` in container) |
+
+Docker user fields (nested under `[profiles."<name>".docker]`):
+
+| Field      | Maps to         | Default                 |
+| ---------- | --------------- | ----------------------- |
+| `username` | `SANDBOX_USER`  | _(none — runs as root)_ |
+| `group`    | `SANDBOX_GROUP` | `agents`                |
+| `uid`      | `SANDBOX_UID`   | `1000`                  |
+| `gid`      | `SANDBOX_GID`   | `1000`                  |
+
+When `SANDBOX_USER` is configured, the container entrypoint creates the
+user/group and drops privileges via `gosu`. See
+[Docker user support](#docker-user-support) below.
+
 #### `gh/*` profile
 
-The `gh/*` profile family differs from `host` only in the AoE sandbox config:
-
-- `mount_ssh = true` — mounts the host SSH agent into the container
-- Adds a git config `insteadOf` rule that rewrites `https://github.com/` URLs
-  to `git@github.com:` so clones/fetches/pushes use SSH
+The `gh/*` profile family is a GitHub-authenticated profile. The AoE profile
+template automatically sets `mount_ssh = true` for `gh/*` profiles, mounting
+the host SSH agent into the container. Configure per-profile tokens and git
+identity in `profiles.toml`.
 
 Usage:
 
@@ -190,16 +228,44 @@ the Docker workflow on pushes to `main` that touch `docker/`.
 
 ### AoE config
 
-`src/aoe-config.toml` is the default AoE template. Profiles can override it by
-placing a `.aoe.toml` file alongside the `.env` (e.g. `src/profiles/gh.aoe.toml`).
-The `install.ts` script resolves the AoE config source using the same fallback
-chain as profile `.env` files (exact → base → default), then deploys it to
-`~/.config/agent-of-empires/config.toml`, resolving `{{AGENT_VAULT}}`,
-`{{OPENCODE_CONFIG_SRC}}`, `{{SANDBOX_CONFIG_DIR}}`, and `{{OPENCODE_DATA_DIR}}`
-placeholders. The config mounts `$SANDBOX_CONFIG_DIR` (the pre-built sandbox
-config tree) into the container at `/root/.config/opencode`, sets up:
-sandbox-by-default, custom image, vault bind-mount (RW), credential passthrough
-(`GH_TOKEN`, `GIT_CONFIG_COUNT`), and resource limits (4 CPU / 8 GB RAM).
+AoE configuration uses a two-template system:
+
+- **Global template** (`src/aoe-config.toml`) — deployed to
+  `~/.config/agent-of-empires/config.toml`. Contains shared sandbox settings:
+  image, resource limits, generic `/data/` mount paths for vault, sandbox
+  config, and opencode data. No `environment` array — that's in the profile
+  template.
+
+- **Profile template** (`src/aoe-profile.toml`) — deployed to
+  `~/.config/agent-of-empires/profiles/<name>/config.toml` for each non-host
+  profile. Contains the `environment` array with per-profile secret
+  placeholders (`{{GH_TOKEN}}`, `{{NTFY_TOPIC}}`, `{{SANDBOX_USER}}`, etc.),
+  `mount_ssh` setting (auto-set based on profile family), and gitconfig
+  volume mount. AoE merges profile config on top of global at runtime.
+
+Profile names with `/` are converted to `-` for AoE directory names (e.g.
+`gh/alice` → `gh-alice`). The `host` profile is special — no AoE profile is
+deployed; only the global config is written.
+
+Deployed AoE config files have mode `0o600` since they may contain tokens.
+
+### Per-profile git configuration
+
+Git configuration in containers is via a standard `.gitconfig` file rather
+than `GIT_CONFIG_COUNT`/`KEY_N`/`VALUE_N` environment variables. When a
+profile specifies `gitconfig = "/path/to/file"` in `profiles.toml`, the file
+is copied into the AoE profile directory and mounted read-only at
+`/etc/gitconfig` in the container. This supports the full range of git
+configuration: user identity, signing keys, credential helpers, protocol
+settings, and URL rewrites.
+
+### Docker user support
+
+When `SANDBOX_USER` is configured in `profiles.toml`, the container entrypoint
+(`docker/entrypoint.sh`) creates the specified user/group and re-executes
+the command via `gosu`. This prevents bind-mounted files from being owned
+by root on the host. Without `SANDBOX_USER`, the container runs as root
+for backward compatibility.
 
 ---
 
