@@ -81,7 +81,11 @@ opencode-config/
 │   │   ├── vault.ts           #     Barrel export for vault/ tools
 │   │   ├── create_issue.ts    #     GitHub issue creation from schema
 │   │   ├── create_pr.ts       #     PR creation from commit log
-│   │   ├── delegate.ts        #     AoE delegation tool
+│   │   ├── delegate/          #     Delegation tools
+│   │   │   ├── _lib.ts        #       Shared delegate helpers
+│   │   │   ├── session.ts     #       delegate tool (single session)
+│   │   │   └── fleet.ts       #       delegate_fleet tool (batch copilot)
+│   │   ├── delegate.ts        #     Barrel export for delegate/ tools
 │   │   └── local_ci.ts        #     Run GitHub Actions locally via gh act
 │   ├── skills/                #   Loadable skill instruction sets
 │   │   ├── auto-impl/        #     Autonomous schema execution skill
@@ -312,13 +316,13 @@ detailed instructions and references to bundled scripts.
 
 ### Available skills
 
-| Skill            | Directory                    | Purpose                                                                               |
-| ---------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
-| `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                   |
-| `delegate`       | `src/skills/delegate/`       | Spawn AoE sessions for parallel agent work                                            |
-| `research-check` | `src/skills/research-check/` | Check notes freshness against current repo state; outputs structured staleness report |
-| `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool         |
-| `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                   |
+| Skill            | Directory                    | Purpose                                                                                    |
+| ---------------- | ---------------------------- | ------------------------------------------------------------------------------------------ |
+| `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                        |
+| `delegate`       | `src/skills/delegate/`       | Fleet orchestration — compose/approve/dispatch workflow with opencode and copilot backends |
+| `research-check` | `src/skills/research-check/` | Check notes freshness against current repo state; outputs structured staleness report      |
+| `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool              |
+| `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                        |
 
 Six lookup skills (`archive`, `notes`, `reviews`, `schemas`,
 `vault`) have been replaced by the `vault_find` tool. Five tool-only skills
@@ -341,7 +345,7 @@ call tools directly — there are no shell scripts to invoke.
 | Triage      | `triage_dashboard`, `triage_write`                                                                                                                 |
 | Vault       | `vault_cache`, `vault_edit`, `vault_find`, `vault_gc`, `vault_init`, `vault_lint`, `vault_ls`, `vault_mv`, `vault_read`, `vault_rm`, `vault_write` |
 | GitHub      | `create_issue`, `create_pr`                                                                                                                        |
-| Other       | `delegate`, `local_ci`                                                                                                                             |
+| Other       | `delegate`, `delegate_fleet`, `local_ci`                                                                                                           |
 
 ---
 
