@@ -1,13 +1,12 @@
-# AoE (Agent of Empires) configuration template
+# AoE (Agent of Empires) global configuration template
 #
-# This file is a versioned template with placeholders. install.ts resolves
-# {{AGENT_VAULT}}, {{OPENCODE_CONFIG_SRC}}, {{SANDBOX_CONFIG_DIR}}, and
-# {{OPENCODE_DATA_DIR}} and deploys the result to
-# ~/.config/agent-of-empires/config.toml.
+# This file is deployed to ~/.config/agent-of-empires/config.toml by
+# install.ts. It contains shared sandbox settings (image, resources,
+# generic mount paths). Profile-specific settings (secrets, gitconfig,
+# mount_ssh) are in per-profile configs deployed from src/aoe-profile.toml.
 #
-# Requires on host:
-#   export GH_TOKEN=$(gh auth token 2>/dev/null)
-#   export NTFY_TOPIC="<your-ntfy-topic>"
+# Path placeholders resolved at install time:
+#   {{AGENT_VAULT}}, {{SANDBOX_CONFIG_DIR}}, {{OPENCODE_DATA_DIR}}
 
 [session]
 default_tool = "opencode"
@@ -21,20 +20,7 @@ memory_limit = "8g"
 mount_ssh = false
 
 extra_volumes = [
-    "{{AGENT_VAULT}}:/root/obsidian/agent.obs",
-    "{{SANDBOX_CONFIG_DIR}}:/root/.config/opencode",
-    "{{OPENCODE_DATA_DIR}}:/root/.local/share/opencode",
-]
-
-environment = [
-    "AGENT_VAULT=/root/obsidian/agent.obs",
-    "AGENT_REPOS=/workspace",
-    "OPENCODE_CONFIG_SRC=/root/.config/opencode",
-    "GH_TOKEN",
-    "NTFY_TOPIC",
-    "GIT_CONFIG_COUNT=2",
-    "GIT_CONFIG_KEY_0=credential.https://github.com.helper",
-    "GIT_CONFIG_VALUE_0=!gh auth git-credential",
-    "GIT_CONFIG_KEY_1=protocol.version",
-    "GIT_CONFIG_VALUE_1=2",
+    "{{AGENT_VAULT}}:/data/vault",
+    "{{SANDBOX_CONFIG_DIR}}:/data/config",
+    "{{OPENCODE_DATA_DIR}}:/data/opencode-data",
 ]
