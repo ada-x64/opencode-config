@@ -279,7 +279,11 @@ describe("fm_write validation", () => {
       });
       expect(result).not.toMatch(/^Error:/);
     } finally {
-      process.env.AGENT_VAULT = saved;
+      if (saved !== undefined) {
+        process.env.AGENT_VAULT = saved;
+      } else {
+        delete process.env.AGENT_VAULT;
+      }
     }
   });
 
@@ -293,5 +297,71 @@ describe("fm_write validation", () => {
     expect(result).not.toMatch(/^Error:/);
     const written = await execute_tool(fm_read, { file, key: "repo" });
     expect(written).toBe("any-value/no-validation");
+  });
+
+  it("validates audits/ status enum", async () => {
+    const file = await makeVaultFile("audits/owner/repo/2026-01-01-audit.md");
+    // "📋 todo" is not valid for audits — only "🔨 in-progress" and "✅ complete"
+    // The vault doc starts with "📋 todo", so set a different invalid value to
+    // ensure fmWrite detects a change and triggers validation.
+    const reject = await execute_tool(fm_write, {
+      file,
+      key: "status",
+      value: "🔍 in-review",
+    });
+    expect(reject).toMatch(/^Error:/);
+    expect(reject).toContain("invalid status");
+
+    const accept = await execute_tool(fm_write, {
+      file,
+      key: "status",
+      value: "✅ complete",
+    });
+    expect(accept).not.toMatch(/^Error:/);
+  });
+
+  it("validates designs/ status enum", async () => {
+    const file = await makeVaultFile("designs/my-design.md");
+    const reject = await execute_tool(fm_write, {
+      file,
+      key: "status",
+      value: "🔨 in-progress",
+    });
+    expect(reject).toMatch(/^Error:/);
+
+    const accept = await execute_tool(fm_write, {
+      file,
+      key: "status",
+      value: "📝 draft",
+    });
+    expect(accept).not.toMatch(/^Error:/);
+  });
+
+  it("validates drafts/ status enum", async () => {
+    const file = await makeVaultFile("drafts/my-draft.md");
+    const reject = await execute_tool(fm_write, {
+      file,
+      key: "status",
+      value: "✅ complete",
+    });
+    expect(reject).toMatch(/^Error:/);
+
+    const accept = await execute_tool(fm_write, {
+      file,
+      key: "status",
+      value: "📤 promoted",
+    });
+    expect(accept).not.toMatch(/^Error:/);
+  });
+
+  it("is a silent no-op for missing keys — no validation error", async () => {
+    const file = await makeVaultFile("tasks/owner/repo/mytask8/schema.md");
+    const result = await execute_tool(fm_write, {
+      file,
+      key: "nonexistent",
+      value: "bare-invalid",
+    });
+    // Key doesn't exist in frontmatter → fmWrite is a no-op → no validation
+    expect(result).not.toMatch(/^Error:/);
   });
 });

@@ -130,9 +130,12 @@ export function validateFmValue(
 
   // Read AGENT_VAULT — skip validation if unset or file is outside vault
   const vault = process.env.AGENT_VAULT;
-  if (!vault || !filePath.startsWith(vault)) return null;
+  if (!vault) return null;
+  // Ensure exact prefix match with separator guard (avoids /vault-extra matching /vault)
+  const vaultPrefix = vault.endsWith("/") ? vault : vault + "/";
+  if (!filePath.startsWith(vaultPrefix)) return null;
 
-  const relPath = filePath.slice(vault.length + 1);
+  const relPath = filePath.slice(vaultPrefix.length);
 
   if (key === "priority") {
     // Priority validation only applies to task schemas

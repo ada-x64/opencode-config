@@ -14,14 +14,16 @@ export default tool({
       .describe("Frontmatter key to write (e.g. 'status')"),
     value: tool.schema
       .string()
-      .describe("Value to set (e.g. 'in progress', 'complete')"),
+      .describe("Value to set (e.g. '📋 todo', '✅ complete')"),
   },
   async execute(args) {
-    const error = validateFmValue(args.file, args.key, args.value);
-    if (error) return `Error: ${error}`;
     const original = await readFile(args.file, "utf-8");
+    // Only validate if the key actually exists in frontmatter (fmWrite is a
+    // silent no-op for missing keys, so validation shouldn't block that).
     const updated = fmWrite(original, args.key, args.value);
     if (updated !== original) {
+      const error = validateFmValue(args.file, args.key, args.value);
+      if (error) return `Error: ${error}`;
       await writeFile(args.file, updated, "utf-8");
     }
     return `Updated ${args.key} to '${args.value}' in ${args.file}`;

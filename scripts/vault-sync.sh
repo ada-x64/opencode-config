@@ -50,7 +50,7 @@ log() { echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] $*"; }
 
 NTFY_TOPIC="${NTFY_TOPIC:-}"
 if [[ -z "$NTFY_TOPIC" && -f "$AGENT_VAULT/_misc/ntfy-topic.txt" ]]; then
-  NTFY_TOPIC="$(cat "$AGENT_VAULT/_misc/ntfy-topic.txt" | tr -d '[:space:]')"
+  NTFY_TOPIC="$(tr -d '[:space:]' < "$AGENT_VAULT/_misc/ntfy-topic.txt")"
 fi
 
 notify() {

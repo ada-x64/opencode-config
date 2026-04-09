@@ -8,3 +8,4 @@ build.json
 .venv
 uv.lock
 src/tools/vault/_vault_manifest.ts
+create-pr.sh
