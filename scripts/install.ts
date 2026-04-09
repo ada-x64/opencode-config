@@ -229,7 +229,14 @@ export function loadProfiles(
   let parsed: Record<string, unknown> = {};
   if (existsSync(profilesConfigPath)) {
     const raw = readFileSync(profilesConfigPath, "utf-8");
-    parsed = Bun.TOML.parse(raw) as Record<string, unknown>;
+    try {
+      parsed = Bun.TOML.parse(raw) as Record<string, unknown>;
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `Failed to parse ${profilesConfigPath}: ${msg}`,
+      );
+    }
   }
 
   const defaults = (parsed["default"] ?? {}) as Record<string, unknown>;
@@ -391,7 +398,7 @@ export function deployAoeProfile(
     const destGitconfig = join(aoeProfileDir, "gitconfig");
     copyFileSync(profileData.gitconfig, destGitconfig);
     // chmod 644 — readable by container user
-    Bun.write(destGitconfig, readFileSync(destGitconfig));
+    chmodSync(destGitconfig, 0o644);
 
     content = resolveSecretPlaceholder(
       content,
@@ -661,7 +668,7 @@ Options:
     );
     const profileData = loadProfiles(profile, profilesConfigPath, agentVault);
 
-    if (!profileData.GH_TOKEN) {
+    if (profile !== "host" && !profileData.GH_TOKEN) {
       console.error(
         "Warning: GH_TOKEN not configured for this profile — sandbox will have no GitHub authentication.",
       );
