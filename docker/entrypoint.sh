@@ -14,11 +14,12 @@ if [[ -n "${SANDBOX_USER:-}" ]]; then
         -m -s /bin/bash "$SANDBOX_USER" 2>/dev/null || true
 
     # Ensure bind-mount points are group-accessible.
-    # Uses the sandbox group for shared access without changing host ownership.
+    # Only chmod the mount-point itself (not -R) to avoid mutating host
+    # file permissions through bind-mounts.
     for dir in /data/vault /data/config /data/opencode-data /workspace; do
         if [[ -d "$dir" ]]; then
-            chgrp -R "$sandbox_group" "$dir" 2>/dev/null || true
-            chmod -R g+rwX "$dir" 2>/dev/null || true
+            chgrp "$sandbox_group" "$dir" 2>/dev/null || true
+            chmod g+rwX "$dir" 2>/dev/null || true
         fi
     done
 
