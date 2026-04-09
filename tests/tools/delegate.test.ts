@@ -1,9 +1,28 @@
 import { describe, it, expect } from "bun:test";
-import { configDir, scriptPath } from "../../src/tools/delegate/_lib";
-import { existsSync } from "fs";
-import path from "path";
+import {
+  OPENCODE_INIT_DELAY_MS,
+  COPILOT_INIT_DELAY_MS,
+  COPILOT_POST_PROMPT_DELAY_MS,
+  COPILOT_POLL_INTERVAL_MS,
+  COPILOT_POLL_MAX_ATTEMPTS,
+  COPILOT_POST_DELEGATE_DELAY_MS,
+  FLEET_INIT_DELAY_MS,
+  FLEET_STAGGER_DELAY_MS,
+  FLEET_POST_DELEGATE_DELAY_MS,
+  FLEET_CLEANUP_DELAY_MS,
+  UUID_RE,
+  CONFIRM_RE,
+  copilotSendPrompt,
+  copilotFindTmux,
+  copilotCheckConfirmed,
+  createIsolatedWorktree,
+  removeWorktree,
+  createAoeSession,
+  delegateSession,
+  delegateFleet,
+} from "../../src/tools/delegate/_lib";
 
-// delegate tools require aoe/tmux/bash — shape-only tests.
+// delegate tools require aoe/tmux — shape-only tests.
 
 const { session, fleet } = await import("../../src/tools/delegate");
 
@@ -53,17 +72,53 @@ describe("delegate fleet tool", () => {
 });
 
 describe("delegate _lib", () => {
-  it("configDir is a non-empty string", () => {
-    expect(typeof configDir).toBe("string");
-    expect(configDir.length).toBeGreaterThan(0);
+  describe("timing constants", () => {
+    it.each([
+      ["OPENCODE_INIT_DELAY_MS", OPENCODE_INIT_DELAY_MS],
+      ["COPILOT_INIT_DELAY_MS", COPILOT_INIT_DELAY_MS],
+      ["COPILOT_POST_PROMPT_DELAY_MS", COPILOT_POST_PROMPT_DELAY_MS],
+      ["COPILOT_POLL_INTERVAL_MS", COPILOT_POLL_INTERVAL_MS],
+      ["COPILOT_POLL_MAX_ATTEMPTS", COPILOT_POLL_MAX_ATTEMPTS],
+      ["COPILOT_POST_DELEGATE_DELAY_MS", COPILOT_POST_DELEGATE_DELAY_MS],
+      ["FLEET_INIT_DELAY_MS", FLEET_INIT_DELAY_MS],
+      ["FLEET_STAGGER_DELAY_MS", FLEET_STAGGER_DELAY_MS],
+      ["FLEET_POST_DELEGATE_DELAY_MS", FLEET_POST_DELEGATE_DELAY_MS],
+      ["FLEET_CLEANUP_DELAY_MS", FLEET_CLEANUP_DELAY_MS],
+    ])("%s is a positive number", (_name, value) => {
+      expect(typeof value).toBe("number");
+      expect(value).toBeGreaterThan(0);
+    });
   });
 
-  it("scriptPath points to delegate.sh", () => {
-    expect(scriptPath).toContain("skills/delegate/delegate.sh");
-    expect(path.isAbsolute(scriptPath)).toBe(true);
+  describe("regex constants", () => {
+    it("UUID_RE matches a valid UUID", () => {
+      expect(UUID_RE).toBeInstanceOf(RegExp);
+      expect(UUID_RE.test("a1b2c3d4-e5f6-7890-abcd-ef1234567890")).toBe(true);
+      expect(UUID_RE.test("not-a-uuid")).toBe(false);
+    });
+
+    it("CONFIRM_RE matches confirmation keywords", () => {
+      expect(CONFIRM_RE).toBeInstanceOf(RegExp);
+      expect(CONFIRM_RE.test("ready")).toBe(true);
+      expect(CONFIRM_RE.test("Understood")).toBe(true);
+      expect(CONFIRM_RE.test("I CONFIRM")).toBe(true);
+      expect(CONFIRM_RE.test("will wait")).toBe(true);
+      expect(CONFIRM_RE.test("hello world")).toBe(false);
+    });
   });
 
-  it("delegate.sh exists at scriptPath", () => {
-    expect(existsSync(scriptPath)).toBe(true);
+  describe("exported functions", () => {
+    it.each([
+      ["copilotSendPrompt", copilotSendPrompt],
+      ["copilotFindTmux", copilotFindTmux],
+      ["copilotCheckConfirmed", copilotCheckConfirmed],
+      ["createIsolatedWorktree", createIsolatedWorktree],
+      ["removeWorktree", removeWorktree],
+      ["createAoeSession", createAoeSession],
+      ["delegateSession", delegateSession],
+      ["delegateFleet", delegateFleet],
+    ])("%s is a function", (_name, fn) => {
+      expect(typeof fn).toBe("function");
+    });
   });
 });
