@@ -83,6 +83,10 @@ and prints the updated working path (see Behavior §3 below).
 
 ### Status tracking
 
+> **GitHub comments:** Load the `github` skill (`skill("github")`) before
+> posting comments. Use the `github_comment` tool — it auto-appends a
+> disclosure footer.
+
 - **On startup:** After reading the schema and switching to the branch, update
   the schema status to `🔨 in-progress`:
   ```
@@ -100,13 +104,15 @@ and prints the updated working path (see Behavior §3 below).
   ```
   This is best-effort and never blocks the startup sequence.
 - **Also on startup:** Post a start comment on the linked GitHub issue (skip if vault-only or blank).
-  Reuse the `issue_field` and `repo_slug` from above:
-  ```bash
-  _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
-  _group_count="$(grep -c '^### Commit group\|^## [0-9]' "$schema_file" 2>/dev/null || echo '?')"
-  gh issue comment "$_issue_num" -R "$repo_slug" \
-    --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
-    2>/dev/null || true
+  Reuse the `_issue_num` and `repo_slug` from above. Load the `github` skill
+  and use the `github_comment` tool:
+  ```
+  github_comment({
+    repo: repo_slug,
+    number: _issue_num,
+    body: "### Changed\n\nImplementation started on branch `${branch}`.\n\n### Validation\n\n- Schema: ${_group_count} commit groups\n- Started at: ${datetime}",
+    agent: "implementor"
+  })
   ```
   This is best-effort and never blocks the startup sequence.
 - **After final commit group:** When all commit groups are complete and validated,
@@ -126,12 +132,14 @@ and prints the updated working path (see Behavior §3 below).
   ```
   This is best-effort and never blocks the completion sequence.
 - **Also on completion:** Post a completion comment on the linked GitHub issue (skip if vault-only or blank).
-  Reuse the `issue_field` and `repo_slug` from above:
-  ```bash
-  _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
-  gh issue comment "$_issue_num" -R "$repo_slug" \
-    --body "Implementation complete on branch \`${branch}\`. All commit groups implemented and validated." \
-    2>/dev/null || true
+  Reuse the `_issue_num` and `repo_slug` from above. Use the `github_comment` tool:
+  ```
+  github_comment({
+    repo: repo_slug,
+    number: _issue_num,
+    body: "### Changed\n\nImplementation complete on branch `${branch}`.\nAll commit groups implemented and validated.",
+    agent: "implementor"
+  })
   ```
   This is best-effort and never blocks the completion sequence.
 - **Worktree cleanup suggestion:** If a new worktree was created during startup
