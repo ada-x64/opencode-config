@@ -463,6 +463,45 @@ Options:
     console.error("Warning: no AoE config template found — skipping.");
   }
 
+  // --- Deploy vault-sync cron script ---
+  const vaultSyncSrc = join(srcDir, "..", "scripts", "vault-sync.sh");
+  const localBinDir = join(homedir(), ".local", "bin");
+  const localLogDir = join(homedir(), ".local", "log");
+  const vaultSyncDest = join(localBinDir, "vault-sync");
+
+  if (existsSync(vaultSyncSrc)) {
+    mkdirSync(localBinDir, { recursive: true });
+    mkdirSync(localLogDir, { recursive: true });
+    copyFileSync(vaultSyncSrc, vaultSyncDest);
+    // Make executable
+    const { chmodSync } = await import("node:fs");
+    chmodSync(vaultSyncDest, 0o755);
+    console.log(`vault-sync deployed to: ${vaultSyncDest}`);
+
+    // Install cron entry if not already present
+    try {
+      const existingCron =
+        (await $`crontab -l 2>/dev/null`.text()).trim() || "";
+      if (!existingCron.includes("vault-sync")) {
+        const cronLine = `*/15 * * * * AGENT_VAULT="${agentVault}" ${vaultSyncDest} >> ${localLogDir}/vault-sync.log 2>&1`;
+        const newCron = existingCron
+          ? `${existingCron}\n${cronLine}\n`
+          : `${cronLine}\n`;
+        await $`echo ${newCron} | crontab -`;
+        console.log("Installed vault-sync cron (every 15 minutes).");
+      } else {
+        console.log("vault-sync cron already installed — skipping.");
+      }
+    } catch {
+      console.error(
+        "Warning: could not install cron entry — install manually.",
+      );
+      console.error(
+        `  */15 * * * * AGENT_VAULT="${agentVault}" ${vaultSyncDest} >> ${localLogDir}/vault-sync.log 2>&1`,
+      );
+    }
+  }
+
   // --- Summary ---
   console.log();
   console.log("Done.");
