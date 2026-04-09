@@ -1,3 +1,4 @@
 # Keep the Docker build context minimal
 *
 !Dockerfile
+!entrypoint.sh
