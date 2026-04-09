@@ -49,6 +49,9 @@ review_file="$task_dir/reviews/review.md"
 
 Then execute these steps in order:
 
+> **GitHub comments:** The `github` skill should be loaded at the start of
+> the session. Use `github_comment` for all issue/PR comments.
+
 1. **Read `CONTRIBUTING.md`** from `$repo_path` root (if it exists). This
    provides project conventions for the implementation.
 
@@ -89,13 +92,16 @@ Then execute these steps in order:
    gh issue edit "$_issue_num" -R "$repo_slug" --add-label "in-progress" 2>/dev/null || true
    ```
 
-6. **Post a start comment** on the linked issue (best-effort):
+6. **Post a start comment** on the linked issue (best-effort). Use the
+   `github_comment` tool:
 
-   ```bash
-   _group_count="$(grep -c '^### Commit' "$schema_file" 2>/dev/null || echo '?')"
-   gh issue comment "$_issue_num" -R "$repo_slug" \
-     --body "Implementation started on branch \`${branch}\`. Schema: ${_group_count} commit groups. Started at $(date -u '+%Y-%m-%d %H:%M UTC')." \
-     2>/dev/null || true
+   ```
+   github_comment({
+     repo: repo_slug,
+     number: _issue_num,
+     body: "### Changed\n\nImplementation started on branch `${branch}`.\n\n### Validation\n\n- Schema: ${_group_count} commit groups\n- Started at: ${datetime}",
+     agent: "auto-impl"
+   })
    ```
 
 7. **Check for partial run recovery.** If the schema status was already
@@ -223,12 +229,16 @@ After all commit groups are done and validated:
    gh issue edit "$_issue_num" -R "$repo_slug" --remove-label "in-progress" 2>/dev/null || true
    ```
 
-3. **Post a completion comment** on the linked issue (best-effort):
+3. **Post a completion comment** on the linked issue (best-effort). Use the
+   `github_comment` tool:
 
-   ```bash
-   gh issue comment "$_issue_num" -R "$repo_slug" \
-     --body "Implementation complete on branch \`${branch}\`. ${_groups_completed} commit groups implemented and validated." \
-     2>/dev/null || true
+   ```
+   github_comment({
+     repo: repo_slug,
+     number: _issue_num,
+     body: "### Changed\n\nImplementation complete on branch `${branch}`.\n${_groups_completed} commit groups implemented and validated.",
+     agent: "auto-impl"
+   })
    ```
 
 4. **Write a `run-summary` triage entry.** Include: commit groups completed,

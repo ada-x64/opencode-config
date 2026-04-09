@@ -81,6 +81,7 @@ opencode-config/
 │   │   ├── vault.ts           #     Barrel export for vault/ tools
 │   │   ├── create_issue.ts    #     GitHub issue creation from schema
 │   │   ├── create_pr.ts       #     PR creation from commit log
+│   │   ├── github_comment.ts  #     GitHub comment posting with auto-footer
 │   │   ├── delegate/          #     Delegation tools
 │   │   │   ├── _lib.ts        #       Shared delegate helpers
 │   │   │   ├── session.ts     #       delegate tool (single session)
@@ -90,6 +91,7 @@ opencode-config/
 │   ├── skills/                #   Loadable skill instruction sets
 │   │   ├── auto-impl/        #     Autonomous schema execution skill
 │   │   ├── delegate/         #     AoE delegation skill
+│   │   ├── github/           #     GitHub comment templates and conventions
 │   │   ├── research-check/   #     SKILL.md + check.sh (notes freshness)
 │   │   ├── vault-init/       #     SKILL.md (vault directory init)
 │   │   └── vault-triage/     #     SKILL.md + setup.sh + toast-handler.sh
@@ -189,7 +191,7 @@ Research ──► Plan ──────► Implement ──────► Re
   creates a GitHub issue, and links it into the schema.
 - **Write access:** Full vault mutations (schemas and drafts); GitHub issue
   creation and project board adds (both require user approval via `ask`);
-  `gh pr comment*` (ask — to cross-reference PRs when creating a related issue).
+  `github_comment` (ask — to cross-reference PRs when creating a related issue).
 - **Post-schema:** Archives source drafts from `$AGENT_VAULT/drafts/` to `$AGENT_VAULT/_misc/archive/` with a date prefix.
 - **Does not:** Implement anything; write outside the vault.
 
@@ -201,8 +203,8 @@ Research ──► Plan ──────► Implement ──────► Re
   `$AGENT_VAULT/projects/<owner>/<repo>.md` status documents, and runs
   `vault_gc`/`vault_lint` as part of project cleanup.
 - **Write access:** All `gh issue *`, `gh project *`, `gh label *`, and
-  `gh api repos/*/milestones` mutations; `gh pr comment*`; `vault_gc` and
-  `vault_lint` tools.
+  `gh api repos/*/milestones` mutations; `github_comment` (for PR
+  cross-references); `vault_gc` and `vault_lint` tools.
 - **Does not:** Edit source files; run any git write command; merge or close PRs;
   create or delete repositories; operate on repos not in the vault.
 
@@ -217,7 +219,8 @@ Research ──► Plan ──────► Implement ──────► Re
 - **Write access:** Full repository edits, `git add`, `git switch`,
   `git checkout`, build/test tools, `gh issue edit`/`comment`. Uses custom tools
   for frontmatter (`fm_read`/`fm_write`), worktree ops (`wt_detect`/`wt_switch_branch`),
-  notifications (`notify_triage`), and issue creation (`create_issue`).
+  notifications (`notify_triage`), issue creation (`create_issue`), and GitHub
+  commenting (`github_comment` — loads `github` skill for templates).
 - **Does not:** `git commit` (the user does that); push; skip approval gates.
 
 #### `auto-impl` skill — autonomous schema execution
@@ -323,6 +326,7 @@ detailed instructions and references to bundled scripts.
 | ---------------- | ---------------------------- | ------------------------------------------------------------------------------------------ |
 | `auto-impl`      | `src/skills/auto-impl/`      | Autonomous schema execution — turns build mode into an orchestrator                        |
 | `delegate`       | `src/skills/delegate/`       | Fleet orchestration — compose/approve/dispatch workflow with opencode and copilot backends |
+| `github`         | `src/skills/github/`         | Comment templates and conventions for issue/PR commenting with auto-footer                 |
 | `research-check` | `src/skills/research-check/` | Check notes freshness against current repo state; outputs structured staleness report      |
 | `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool              |
 | `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries and send push notifications                                           |
@@ -347,7 +351,7 @@ call tools directly — there are no shell scripts to invoke.
 | Notify      | `notify_triage`, `session_notify`                                                                                                                  |
 | Triage      | `triage_write`                                                                                                                                     |
 | Vault       | `vault_cache`, `vault_edit`, `vault_find`, `vault_gc`, `vault_init`, `vault_lint`, `vault_ls`, `vault_mv`, `vault_read`, `vault_rm`, `vault_write` |
-| GitHub      | `create_issue`, `create_pr`                                                                                                                        |
+| GitHub      | `create_issue`, `create_pr`, `github_comment`                                                                                                      |
 | Other       | `delegate`, `delegate_fleet`, `local_ci`                                                                                                           |
 
 ---
@@ -545,8 +549,16 @@ This applies to `@planner` (ask) and `@project-manager` (allow). The
 `auto-impl` skill also posts cross-reference comments when escalations create
 issues. `@reviewer` does not create issues and is therefore exempt.
 
-```bash
-gh pr comment <pr-number> -R <owner>/<repo> --body "Opened #<issue-number> to track <short description>."
+Use the `github_comment` tool (which auto-appends a disclosure footer):
+
+```
+github_comment({
+  repo: "<owner>/<repo>",
+  number: <pr-number>,
+  body: "Opened #<issue-number> to track <short description>.",
+  agent: "<agent-name>",
+  type: "pr"
+})
 ```
 
 ---
