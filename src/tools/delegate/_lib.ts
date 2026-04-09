@@ -1,6 +1,6 @@
 /** Shared helpers for delegate tools (session + fleet). */
 
-// --- 1a. Timing constants (ms) ---
+// --- Timing constants (ms) ---
 
 export const OPENCODE_INIT_DELAY_MS = 5000;
 export const COPILOT_INIT_DELAY_MS = 8000;
@@ -13,13 +13,13 @@ export const FLEET_STAGGER_DELAY_MS = 1000;
 export const FLEET_POST_DELEGATE_DELAY_MS = 8000;
 export const FLEET_CLEANUP_DELAY_MS = 30000;
 
-// --- 1a. Regex patterns ---
+// --- Regex patterns ---
 
 export const UUID_RE =
   /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 export const CONFIRM_RE = /ready|understood|confirm|will wait/i;
 
-// --- 1b. Copilot protocol primitives ---
+// --- Copilot protocol primitives ---
 
 /**
  * Send the copilot "read this task" prompt prefix via aoe send.
@@ -59,7 +59,7 @@ export async function copilotCheckConfirmed(sid: string): Promise<boolean> {
   return CONFIRM_RE.test(result.stdout.toString());
 }
 
-// --- 1c. Worktree helpers ---
+// --- Worktree helpers ---
 
 /**
  * Create an isolated git worktree under /tmp/delegate-<uuid>.
@@ -110,7 +110,7 @@ export async function removeWorktree(
   await Bun.$`git -C ${repo} worktree remove ${worktreePath} --force`.nothrow();
 }
 
-// --- 1d. Session creation ---
+// --- Session creation ---
 
 /**
  * Create an aoe session and return its session ID.
@@ -152,8 +152,10 @@ export async function createAoeSession(opts: {
     stderr: "pipe",
   });
 
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
+  const [stdout, stderr] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
   await proc.exited;
 
   const combined = stdout + stderr;
@@ -168,7 +170,7 @@ export async function createAoeSession(opts: {
   return match[0];
 }
 
-// --- 1e. Internal dispatch functions ---
+// --- Internal dispatch functions ---
 
 /**
  * Dispatch an opencode session: wait for init, then send prompt.
@@ -216,7 +218,7 @@ async function _delegateCopilot(sid: string, prompt: string): Promise<void> {
   await Bun.$`tmux send-keys -t ${tmuxSession} Enter`;
 }
 
-// --- 1f. Composed delegate session ---
+// --- Composed delegate session ---
 
 /**
  * Create and dispatch a single AoE session.
@@ -280,7 +282,7 @@ export async function delegateSession(args: {
   return sessionId;
 }
 
-// --- 1g. Internal fleet functions ---
+// --- Internal fleet functions ---
 
 /**
  * Create isolated worktrees and aoe sessions for a fleet.
@@ -300,8 +302,7 @@ async function _fleetCreateSessions(
   const worktreePaths: string[] = [];
   const indices: number[] = [];
 
-  for (let i = 0; i < sessions.length; i++) {
-    const session = sessions[i];
+  for (const [i, session] of sessions.entries()) {
     let worktreePath: string;
 
     try {
@@ -356,10 +357,9 @@ async function _fleetRunProtocol(
   await Bun.sleep(FLEET_INIT_DELAY_MS);
 
   // Send prompts with stagger
-  for (let i = 0; i < sessionIds.length; i++) {
-    const sid = sessionIds[i];
-    const sessionIndex = indices[i];
-    await copilotSendPrompt(sid, sessions[sessionIndex].prompt);
+  for (const [i, sid] of sessionIds.entries()) {
+    const sessionIndex = indices[i]!;
+    await copilotSendPrompt(sid, sessions[sessionIndex]!.prompt);
     await Bun.sleep(FLEET_STAGGER_DELAY_MS);
   }
 
@@ -380,9 +380,9 @@ async function _fleetRunProtocol(
   for (let attempt = 0; attempt < COPILOT_POLL_MAX_ATTEMPTS; attempt++) {
     await Bun.sleep(COPILOT_POLL_INTERVAL_MS);
     let allDone = true;
-    for (let i = 0; i < sessionIds.length; i++) {
+    for (const [i, sid] of sessionIds.entries()) {
       if (confirmed[i]) continue;
-      if (await copilotCheckConfirmed(sessionIds[i])) {
+      if (await copilotCheckConfirmed(sid)) {
         confirmed[i] = true;
       } else {
         allDone = false;
@@ -423,7 +423,7 @@ async function _fleetCleanup(
   }
 }
 
-// --- 1h. Composed delegate fleet ---
+// --- Composed delegate fleet ---
 
 /**
  * Create and dispatch a fleet of copilot AoE sessions.
