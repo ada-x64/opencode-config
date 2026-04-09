@@ -1,0 +1,36 @@
+# AoE per-profile configuration template
+#
+# Deployed to ~/.config/agent-of-empires/profiles/<name>/config.toml by
+# install.ts. Merges on top of the global config.toml at runtime.
+#
+# Placeholders resolved at install time:
+#   Path:    AGENT_VAULT, OPENCODE_CONFIG_SRC, SANDBOX_CONFIG_DIR,
+#            OPENCODE_DATA_DIR
+#   Secrets: GH_TOKEN, NTFY_TOPIC (from profiles.toml)
+#   Docker:  SANDBOX_USER, SANDBOX_GROUP, SANDBOX_UID, SANDBOX_GID
+#   Other:   MOUNT_SSH, GITCONFIG_VOLUME
+#
+# Lines with undefined placeholders are removed from the deployed file.
+
+[sandbox]
+enabled_by_default = true
+mount_ssh = {{MOUNT_SSH}}
+
+extra_volumes = [
+    "{{GITCONFIG_VOLUME}}",
+]
+
+environment = [
+    "AGENT_VAULT=/data/vault",
+    "AGENT_REPOS=/workspace",
+    "OPENCODE_CONFIG_SRC=/data/config",
+    # GH_TOKEN: per-profile GitHub token from profiles.toml
+    "GH_TOKEN={{GH_TOKEN}}",
+    # NTFY_TOPIC: per-profile ntfy topic from profiles.toml
+    "NTFY_TOPIC={{NTFY_TOPIC}}",
+    # SANDBOX_USER/GROUP/UID/GID: Docker user configuration from profiles.toml
+    "SANDBOX_USER={{SANDBOX_USER}}",
+    "SANDBOX_GROUP={{SANDBOX_GROUP}}",
+    "SANDBOX_UID={{SANDBOX_UID}}",
+    "SANDBOX_GID={{SANDBOX_GID}}",
+]
