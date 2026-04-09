@@ -74,29 +74,24 @@ export async function createIsolatedWorktree(
   const uuid = crypto.randomUUID();
   const worktreePath = `/tmp/delegate-${uuid}`;
 
-  if (branch) {
-    const withBranch =
-      await Bun.$`git -C ${repo} worktree add ${worktreePath} ${branch} --detach`.nothrow();
-    if (withBranch.exitCode !== 0) {
-      const detachOnly =
-        await Bun.$`git -C ${repo} worktree add ${worktreePath} --detach`.nothrow();
-      if (detachOnly.exitCode !== 0) {
-        throw new Error(
-          `createIsolatedWorktree: failed to create worktree at '${worktreePath}' for repo '${repo}'`,
-        );
-      }
-    }
-  } else {
-    const result =
-      await Bun.$`git -C ${repo} worktree add ${worktreePath} --detach`.nothrow();
-    if (result.exitCode !== 0) {
-      throw new Error(
-        `createIsolatedWorktree: failed to create worktree at '${worktreePath}' for repo '${repo}'`,
-      );
-    }
+  // Try with branch first, fall back to plain --detach
+  const attempts = branch
+    ? [
+        Bun.$`git -C ${repo} worktree add ${worktreePath} ${branch} --detach`,
+        Bun.$`git -C ${repo} worktree add ${worktreePath} --detach`,
+      ]
+    : [Bun.$`git -C ${repo} worktree add ${worktreePath} --detach`];
+
+  let lastStderr = "";
+  for (const cmd of attempts) {
+    const result = await cmd.nothrow();
+    if (result.exitCode === 0) return worktreePath;
+    lastStderr = result.stderr.toString().trim();
   }
 
-  return worktreePath;
+  throw new Error(
+    `createIsolatedWorktree: failed to create worktree at '${worktreePath}' for repo '${repo}': ${lastStderr}`,
+  );
 }
 
 /**
@@ -210,7 +205,10 @@ async function _delegateCopilot(sid: string, prompt: string): Promise<void> {
   }
 
   if (!confirmed) {
-    console.warn(`WARNING: Copilot did not confirm within 90s`);
+    const timeoutSec = Math.round(
+      (COPILOT_POLL_MAX_ATTEMPTS * COPILOT_POLL_INTERVAL_MS) / 1000,
+    );
+    console.warn(`WARNING: Copilot did not confirm within ${timeoutSec}s`);
   }
 
   await Bun.$`aoe send ${sid} /delegate`;
@@ -284,6 +282,13 @@ export async function delegateSession(args: {
 
 // --- Internal fleet functions ---
 
+/** A successfully created fleet entry linking session, worktree, and input index. */
+interface FleetEntry {
+  sid: string;
+  worktreePath: string;
+  originalIndex: number;
+}
+
 /**
  * Create isolated worktrees and aoe sessions for a fleet.
  * Per-session failures are logged and skipped.
@@ -293,14 +298,8 @@ async function _fleetCreateSessions(
   repo: string,
   group: string | undefined,
   sessions: { title: string; prompt: string; branch?: string }[],
-): Promise<{
-  sessionIds: string[];
-  worktreePaths: string[];
-  indices: number[];
-}> {
-  const sessionIds: string[] = [];
-  const worktreePaths: string[] = [];
-  const indices: number[] = [];
+): Promise<FleetEntry[]> {
+  const entries: FleetEntry[] = [];
 
   for (const [i, session] of sessions.entries()) {
     let worktreePath: string;
@@ -331,12 +330,10 @@ async function _fleetCreateSessions(
       continue;
     }
 
-    worktreePaths.push(worktreePath);
-    sessionIds.push(sid);
-    indices.push(i);
+    entries.push({ sid, worktreePath, originalIndex: i });
   }
 
-  return { sessionIds, worktreePaths, indices };
+  return entries;
 }
 
 /**
@@ -345,11 +342,10 @@ async function _fleetCreateSessions(
  */
 async function _fleetRunProtocol(
   sessions: { prompt: string }[],
-  sessionIds: string[],
-  indices: number[],
+  entries: FleetEntry[],
 ): Promise<void> {
   // Start all sessions
-  for (const sid of sessionIds) {
+  for (const { sid } of entries) {
     await Bun.$`aoe session start ${sid}`;
   }
 
@@ -357,42 +353,38 @@ async function _fleetRunProtocol(
   await Bun.sleep(FLEET_INIT_DELAY_MS);
 
   // Send prompts with stagger
-  for (const [i, sid] of sessionIds.entries()) {
-    const sessionIndex = indices[i]!;
-    await copilotSendPrompt(sid, sessions[sessionIndex]!.prompt);
+  for (const { sid, originalIndex } of entries) {
+    await copilotSendPrompt(sid, sessions[originalIndex]!.prompt);
     await Bun.sleep(FLEET_STAGGER_DELAY_MS);
   }
 
   // Find tmux sessions and press Enter
-  const tmuxBySid: Record<string, string> = {};
-  for (const sid of sessionIds) {
+  const tmuxBySid = new Map<string, string>();
+  for (const { sid } of entries) {
     const tmuxSession = await copilotFindTmux(sid);
     if (tmuxSession) {
       await Bun.$`tmux send-keys -t ${tmuxSession} Enter`;
-      tmuxBySid[sid] = tmuxSession;
+      tmuxBySid.set(sid, tmuxSession);
     } else {
       console.warn(`WARNING: Could not find tmux session for ${sid}`);
     }
   }
 
   // Shared confirmation poll
-  const confirmed = Array.from({ length: sessionIds.length }, () => false);
+  const confirmed = new Set<string>();
   for (let attempt = 0; attempt < COPILOT_POLL_MAX_ATTEMPTS; attempt++) {
     await Bun.sleep(COPILOT_POLL_INTERVAL_MS);
-    let allDone = true;
-    for (const [i, sid] of sessionIds.entries()) {
-      if (confirmed[i]) continue;
+    for (const { sid } of entries) {
+      if (confirmed.has(sid)) continue;
       if (await copilotCheckConfirmed(sid)) {
-        confirmed[i] = true;
-      } else {
-        allDone = false;
+        confirmed.add(sid);
       }
     }
-    if (allDone) break;
+    if (confirmed.size === entries.length) break;
   }
 
   // Send /delegate to all sessions
-  for (const sid of sessionIds) {
+  for (const { sid } of entries) {
     await Bun.$`aoe send ${sid} /delegate`;
   }
 
@@ -400,8 +392,8 @@ async function _fleetRunProtocol(
   await Bun.sleep(FLEET_POST_DELEGATE_DELAY_MS);
 
   // Press Enter in all tmux sessions to confirm dialog
-  for (const sid of sessionIds) {
-    const tmuxSession = tmuxBySid[sid];
+  for (const { sid } of entries) {
+    const tmuxSession = tmuxBySid.get(sid);
     if (tmuxSession) {
       await Bun.$`tmux send-keys -t ${tmuxSession} Enter`;
     }
@@ -414,12 +406,12 @@ async function _fleetRunProtocol(
  */
 async function _fleetCleanup(
   repo: string,
-  worktreePaths: string[],
+  entries: FleetEntry[],
 ): Promise<void> {
   // Allow time for copilot post-handoff git operations
   await Bun.sleep(FLEET_CLEANUP_DELAY_MS);
-  for (const wt of worktreePaths) {
-    await removeWorktree(repo, wt);
+  for (const { worktreePath } of entries) {
+    await removeWorktree(repo, worktreePath);
   }
 }
 
@@ -434,22 +426,18 @@ export async function delegateFleet(args: {
   sessions: { title: string; prompt: string; branch?: string }[];
   group?: string;
 }): Promise<string[]> {
-  const { sessionIds, worktreePaths, indices } = await _fleetCreateSessions(
+  const entries = await _fleetCreateSessions(
     args.repo,
     args.group,
     args.sessions,
   );
 
-  if (sessionIds.length === 0) {
-    // Clean up any partial worktrees before throwing
-    for (const wt of worktreePaths) {
-      await removeWorktree(args.repo, wt);
-    }
+  if (entries.length === 0) {
     throw new Error("delegateFleet: no sessions were created successfully");
   }
 
-  await _fleetRunProtocol(args.sessions, sessionIds, indices);
-  await _fleetCleanup(args.repo, worktreePaths);
+  await _fleetRunProtocol(args.sessions, entries);
+  await _fleetCleanup(args.repo, entries);
 
-  return sessionIds;
+  return entries.map((e) => e.sid);
 }

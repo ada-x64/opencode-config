@@ -1,4 +1,5 @@
 import { describe, it, expect } from "bun:test";
+import { execute_tool } from "./_lib";
 import {
   OPENCODE_INIT_DELAY_MS,
   COPILOT_INIT_DELAY_MS,
@@ -65,9 +66,9 @@ describe("delegate fleet tool", () => {
   });
 
   it("rejects empty sessions array", async () => {
-    await expect(fleet.execute({ repo: "/tmp", sessions: [] })).rejects.toThrow(
-      "sessions array must not be empty",
-    );
+    await expect(
+      execute_tool(fleet, { repo: "/tmp", sessions: [] }),
+    ).rejects.toThrow("sessions array must not be empty");
   });
 });
 
