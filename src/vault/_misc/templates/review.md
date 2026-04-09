@@ -9,7 +9,7 @@ Every review starts with YAML frontmatter followed by an H1 title:
 ```markdown
 ---
 repo: <owner>/<repo>
-status: todo
+status: 📋 todo
 date: YYYY-MM-DD
 ---
 
@@ -24,7 +24,7 @@ date: YYYY-MM-DD
 | Field    | Description                         |
 | -------- | ----------------------------------- |
 | `repo`   | `<owner>/<repo>` identifier         |
-| `status` | `todo` / `in progress` / `complete` |
+| `status` | `📋 todo` / `🔨 in-progress` / `✅ complete` |
 | `date`   | Review date (YYYY-MM-DD)            |
 
 Branch and diff info go in the document body (below the H1) since they change per review round.

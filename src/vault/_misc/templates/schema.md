@@ -13,7 +13,9 @@ Every schema starts with YAML frontmatter followed by an H1 title:
 repo: <owner>/<repo>
 issue: <link or blank>
 branch: <branch-name>
-status: todo
+status: 📋 todo
+task: <task-name>
+priority: 🟡 medium
 date: YYYY-MM-DD
 ---
 
@@ -27,7 +29,9 @@ date: YYYY-MM-DD
 | `repo`   | `<owner>/<repo>` identifier                                                      |
 | `issue`  | GitHub issue link (e.g. `[#1](https://github.com/owner/repo/issues/1)`) or blank |
 | `branch` | Target branch name                                                               |
-| `status` | `todo` / `in progress` / `complete`                                              |
+| `status` | `📋 todo` / `🔨 in-progress` / `🔍 in-review` / `✅ complete` / `🚫 closed`     |
+| `task`   | Task name (kebab-case, matches directory name under `tasks/`)                      |
+| `priority` | `🔥 critical` / `🔴 high` / `🟡 medium` / `🟢 low`                             |
 | `date`   | Creation date (YYYY-MM-DD)                                                       |
 
 ## Problem
