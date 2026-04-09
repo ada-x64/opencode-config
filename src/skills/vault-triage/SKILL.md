@@ -193,7 +193,7 @@ To read triage files and generate a summary of pending items:
    fm_read({ file: "<path>", key: "agent", default_value: "unknown" })
    ```
 
-3. Group by type. Filter to `status: pending` by default (unless the human
+3. Group by type. Filter to `status: ⏳ pending` by default (unless the human
    asks for addressed or dismissed items too).
 
 4. Produce a Markdown summary grouped by type:

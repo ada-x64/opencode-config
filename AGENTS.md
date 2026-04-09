@@ -62,7 +62,6 @@ opencode-config/
 │   │   │   └── session.ts     #       session_notify tool
 │   │   ├── notify.ts          #     Barrel export for notify/ tools
 │   │   ├── triage/            #     Triage tools
-│   │   │   ├── dashboard.ts   #       triage_dashboard tool
 │   │   │   └── write.ts       #       triage_write tool
 │   │   ├── triage.ts          #     Barrel export for triage/ tools
 │   │   ├── vault/             #     Vault tools
@@ -214,7 +213,7 @@ Research ──► Plan ──────► Implement ──────► Re
 - **Write access:** Full repository edits, `git add`, `git switch`,
   `git checkout`, build/test tools, `gh issue edit`/`comment`. Uses custom tools
   for frontmatter (`fm_read`/`fm_write`), worktree ops (`wt_detect`/`wt_switch_branch`),
-  notifications (`notify_triage`/`triage_dashboard`), and issue creation (`create_issue`).
+  notifications (`notify_triage`), and issue creation (`create_issue`).
 - **Does not:** `git commit` (the user does that); push; skip approval gates.
 
 #### `auto-impl` skill — autonomous schema execution
@@ -322,7 +321,7 @@ detailed instructions and references to bundled scripts.
 | `delegate`       | `src/skills/delegate/`       | Fleet orchestration — compose/approve/dispatch workflow with opencode and copilot backends |
 | `research-check` | `src/skills/research-check/` | Check notes freshness against current repo state; outputs structured staleness report      |
 | `vault-init`     | `src/skills/vault-init/`     | Initialize or verify the vault directory structure; use the `vault_init` tool              |
-| `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries, send push notifications, regenerate the inbox                        |
+| `vault-triage`   | `src/skills/vault-triage/`   | Write triage entries and send push notifications                                           |
 
 Six lookup skills (`archive`, `notes`, `reviews`, `schemas`,
 `vault`) have been replaced by the `vault_find` tool. Five tool-only skills
@@ -342,7 +341,7 @@ call tools directly — there are no shell scripts to invoke.
 | Frontmatter | `fm_read`, `fm_write`                                                                                                                              |
 | Worktree    | `wt_detect`, `wt_owner_repo`, `wt_switch_branch`, `wt_cleanup`                                                                                     |
 | Notify      | `notify_triage`, `session_notify`                                                                                                                  |
-| Triage      | `triage_dashboard`, `triage_write`                                                                                                                 |
+| Triage      | `triage_write`                                                                                                                                     |
 | Vault       | `vault_cache`, `vault_edit`, `vault_find`, `vault_gc`, `vault_init`, `vault_lint`, `vault_ls`, `vault_mv`, `vault_read`, `vault_rm`, `vault_write` |
 | GitHub      | `create_issue`, `create_pr`                                                                                                                        |
 | Other       | `delegate`, `delegate_fleet`, `local_ci`                                                                                                           |
@@ -377,7 +376,7 @@ $AGENT_VAULT/
 ├── designs/                  # Cross-cutting design documents
 ├── drafts/                   # Work-in-progress staging area
 ├── projects/                 # Per-repo project status documents
-├── triage-inbox.md           # Generated triage dashboard
+├── Home.md                   # Vault landing page (metadata-menu live tables)
 └── AGENTS.md                 # Vault conventions document
 ```
 
@@ -393,7 +392,7 @@ access it through dedicated vault I/O tools that accept paths relative to
 - **Frontmatter:** `fm_read` / `fm_write` custom tools
 - **Move/rename:** `vault_mv` tool
 - **Delete:** `vault_rm` tool (files only; use `vault_gc` for bulk cleanup)
-- **Specialized:** `vault_gc`, `vault_lint`, `triage_dashboard`, etc. (unchanged)
+- **Specialized:** `vault_gc`, `vault_lint`, etc.
 
 ### Initializing the vault
 
@@ -597,9 +596,9 @@ notify_triage({
 ```
 
 All 7 agents (and the `auto-impl` skill) load the `vault-triage` skill after
-completing significant work, write a triage entry, send a notification (via
-`notify_triage` tool), and regenerate the inbox (via `triage_dashboard` tool).
-These three post-work steps are mandatory — see the skill's Overview section.
+completing significant work, write a triage entry, and send a notification (via
+`notify_triage` tool). These two post-work steps are mandatory — see the skill's
+Overview section.
 
 Notification priorities: escalation/design-question → high (audible);
 activity/handoff → default (non-audible); run-summary → low (silent). All
