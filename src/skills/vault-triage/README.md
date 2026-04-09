@@ -1,24 +1,19 @@
 # vault-triage
 
 Surfaces agent triage output (escalations, design questions, run summaries)
-via a Markdown dashboard and push notifications.
+via push notifications.
 
 ## What it does
 
 When agents run autonomously overnight they write `triage.md` files deep inside
-`$AGENT_VAULT/tasks/`. This skill gives you two ways to find them:
+`$AGENT_VAULT/tasks/`. This skill gives you push notifications to find them:
 
-1. **Dashboard** (`triage-inbox.md`) — a generated Markdown file at the vault
-   root listing all triage entries grouped by status (Pending / Addressed /
-   Dismissed). Refresh it on demand; open it in Obsidian for clickable
-   wiki-links.
-
-2. **Push notifications** — agents call `notify_triage` after writing a triage
-   entry. All notifications produce desktop toasts (via ntfy subscriber →
-   BurntToast / notify-send / osascript) and phone alerts. Escalations and
-   design questions ring audibly (high priority); activity and handoff are
-   silent; run summaries are low priority. A scheduled daily digest sends a
-   count summary at 9am and 5pm.
+- **Push notifications** — agents call `notify_triage` after writing a triage
+  entry. All notifications produce desktop toasts (via ntfy subscriber →
+  BurntToast / notify-send / osascript) and phone alerts. Escalations and
+  design questions ring audibly (high priority); activity and handoff are
+  silent; run summaries are low priority. A scheduled daily digest sends a
+  count summary at 9am and 5pm.
 
 Notifications travel via **ntfy.sh**: the agent does a plain `curl` POST, and
 you receive it on your phone (ntfy app) and desktop (ntfy client daemon →
@@ -92,28 +87,10 @@ seconds.
 
 ## Daily usage
 
-### Refresh the dashboard
+### Check pending items
 
-```bash
-bash "$OPENCODE_CONFIG_SRC/tools/triage-dashboard.sh"
-```
-
-Opens/refreshes `$AGENT_VAULT/triage-inbox.md`. The scheduled timer does this
-automatically and sends a summary notification instead of writing the file
-(`--notify-summary` flag).
-
-### Check pending items without opening Obsidian
-
-```bash
-bash "$OPENCODE_CONFIG_SRC/tools/triage-dashboard.sh" && \
-  grep -A 20 "## Pending" "$AGENT_VAULT/triage-inbox.md"
-```
-
-### Send a manual summary notification now
-
-```bash
-bash "$OPENCODE_CONFIG_SRC/tools/triage-dashboard.sh" --notify-summary
-```
+Use the `vault-triage` skill in Report Mode, or use `vault_find({ section: "triage" })`
+to locate and read triage entries directly.
 
 ## Environment variables
 
@@ -134,6 +111,5 @@ existing topic. Run it again after migrating to a new machine.
 | `setup.sh`                                       | One-time platform setup (run manually)                                     |
 | `toast-handler.sh`                               | Cross-platform toast handler for ntfy subscribe (icon + platform dispatch) |
 | `SKILL.md`                                       | Agent-facing descriptor loaded by the `vault-triage` skill                 |
-| `$OPENCODE_CONFIG_SRC/tools/triage-dashboard.sh` | Dashboard generator and summary notifier (run on demand or by timer)       |
 | `$OPENCODE_CONFIG_SRC/tools/notify.sh`           | `notify_triage` function — used by agents via the `notify_triage` tool     |
 | `$OPENCODE_CONFIG_SRC/tools/triage-write.sh`     | Triage entry writer — used by agents via the `triage_write` tool           |

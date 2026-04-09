@@ -245,7 +245,7 @@ After all commit groups are done and validated:
 
 ## Triage & Notifications
 
-All triage entries follow the `vault-triage` skill protocol. The three
+All triage entries follow the `vault-triage` skill protocol. The two
 post-write steps are **mandatory** after every triage write:
 
 1. Write the entry:
@@ -258,12 +258,6 @@ post-write steps are **mandatory** after every triage write:
 
    ```
    notify_triage({ type: "<type>", task: "<owner>/<repo>/<task>", headline: "<headline>", body: "<body>", icon: "auto-implementor", emoji: "<semantic-key>" })
-   ```
-
-3. Regenerate inbox:
-
-   ```
-   triage_dashboard({})
    ```
 
 ### Events table
