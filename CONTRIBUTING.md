@@ -104,11 +104,11 @@ bun run install-config -- --profiles-config /custom/profiles.toml  # override pr
 
 Path resolution order: CLI flag → env var → default.
 
-| Flag                      | Env var                | Default                          |
-| ------------------------- | ---------------------- | -------------------------------- |
-| `--opencode-config-dir`   | `OPENCODE_CONFIG_DIR`  | `~/.config/opencode`             |
-| `--sandbox-config-dir`    | `SANDBOX_CONFIG_DIR`   | `~/.config/opencode-sandbox`     |
-| `--profiles-config`       | `OCCONF_PROFILES`      | `~/.config/occonf/profiles.toml` |
+| Flag                    | Env var               | Default                          |
+| ----------------------- | --------------------- | -------------------------------- |
+| `--opencode-config-dir` | `OPENCODE_CONFIG_DIR` | `~/.config/opencode`             |
+| `--sandbox-config-dir`  | `SANDBOX_CONFIG_DIR`  | `~/.config/opencode-sandbox`     |
+| `--profiles-config`     | `OCCONF_PROFILES`     | `~/.config/occonf/profiles.toml` |
 
 ### `scripts/setup.ts`
 

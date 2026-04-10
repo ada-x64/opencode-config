@@ -549,7 +549,7 @@ Options:
     console.error(`  CONFIG_DIR: ${resolvedConfig}`);
     console.error("");
     console.error(
-      "Rsyncing out/host/ onto itself would be destructive. Check your profile.",
+      "Rsyncing out/host/ onto itself would be destructive. Check --opencode-config-dir.",
     );
     process.exit(1);
   }
@@ -582,7 +582,7 @@ Options:
       console.error(`  SANDBOX_CONFIG_DIR: ${resolvedSandbox}`);
       console.error("");
       console.error(
-        "Rsyncing out/sandbox/ onto itself would be destructive. Check your profile.",
+        "Rsyncing out/sandbox/ onto itself would be destructive. Check --sandbox-config-dir.",
       );
       process.exit(1);
     }
@@ -707,48 +707,48 @@ Options:
       }
       console.log(`Deployed ${allProfileNames.length} AoE profile(s).`);
     }
+
+    // --- Deploy vault-sync cron script ---
+    const vaultSyncSrc = join(srcDir, "..", "scripts", "vault-sync.sh");
+    const localBinDir = join(homedir(), ".local", "bin");
+    const localLogDir = join(homedir(), ".local", "log");
+    const vaultSyncDest = join(localBinDir, "vault-sync");
+
+    if (existsSync(vaultSyncSrc)) {
+      mkdirSync(localBinDir, { recursive: true });
+      mkdirSync(localLogDir, { recursive: true });
+      copyFileSync(vaultSyncSrc, vaultSyncDest);
+      // Make executable
+      chmodSync(vaultSyncDest, 0o755);
+      console.log(`vault-sync deployed to: ${vaultSyncDest}`);
+
+      // Install cron entry if not already present
+      try {
+        const existingCron =
+          (await $`crontab -l 2>/dev/null`.text()).trim() || "";
+        if (!existingCron.includes("vault-sync")) {
+          const cronLine = `*/15 * * * * AGENT_VAULT="${agentVault}" ${vaultSyncDest} >> ${localLogDir}/vault-sync.log 2>&1`;
+          const newCron = existingCron
+            ? `${existingCron}\n${cronLine}\n`
+            : `${cronLine}\n`;
+          await $`echo ${newCron} | crontab -`;
+          console.log("Installed vault-sync cron (every 15 minutes).");
+        } else {
+          console.log("vault-sync cron already installed — skipping.");
+        }
+      } catch {
+        console.error(
+          "Warning: could not install cron entry — install manually.",
+        );
+        console.error(
+          `  */15 * * * * AGENT_VAULT="${agentVault}" ${vaultSyncDest} >> ${localLogDir}/vault-sync.log 2>&1`,
+        );
+      }
+    }
   } else {
     console.error(
-      "Warning: AGENT_VAULT not set — skipping AoE config deployment.",
+      "Warning: AGENT_VAULT not set — skipping AoE config and vault-sync deployment.",
     );
-  }
-
-  // --- Deploy vault-sync cron script ---
-  const vaultSyncSrc = join(srcDir, "..", "scripts", "vault-sync.sh");
-  const localBinDir = join(homedir(), ".local", "bin");
-  const localLogDir = join(homedir(), ".local", "log");
-  const vaultSyncDest = join(localBinDir, "vault-sync");
-
-  if (existsSync(vaultSyncSrc)) {
-    mkdirSync(localBinDir, { recursive: true });
-    mkdirSync(localLogDir, { recursive: true });
-    copyFileSync(vaultSyncSrc, vaultSyncDest);
-    // Make executable
-    chmodSync(vaultSyncDest, 0o755);
-    console.log(`vault-sync deployed to: ${vaultSyncDest}`);
-
-    // Install cron entry if not already present
-    try {
-      const existingCron =
-        (await $`crontab -l 2>/dev/null`.text()).trim() || "";
-      if (!existingCron.includes("vault-sync")) {
-        const cronLine = `*/15 * * * * AGENT_VAULT="${agentVault}" ${vaultSyncDest} >> ${localLogDir}/vault-sync.log 2>&1`;
-        const newCron = existingCron
-          ? `${existingCron}\n${cronLine}\n`
-          : `${cronLine}\n`;
-        await $`echo ${newCron} | crontab -`;
-        console.log("Installed vault-sync cron (every 15 minutes).");
-      } else {
-        console.log("vault-sync cron already installed — skipping.");
-      }
-    } catch {
-      console.error(
-        "Warning: could not install cron entry — install manually.",
-      );
-      console.error(
-        `  */15 * * * * AGENT_VAULT="${agentVault}" ${vaultSyncDest} >> ${localLogDir}/vault-sync.log 2>&1`,
-      );
-    }
   }
 
   // --- Summary ---

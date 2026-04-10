@@ -208,7 +208,7 @@ async function main(): Promise<void> {
     // --- Run install.ts (rsyncs out/ → CONFIG_DIR, deploys AoE config) ---
     info("Running install.ts...");
     const installScript = path.join(repoRoot, "scripts", "install.ts");
-    await $`bun run ${installScript} --config-dir ${CONFIG_DIR}`
+    await $`bun run ${installScript} --opencode-config-dir ${CONFIG_DIR}`
       .env(env)
       .cwd(repoRoot);
   } finally {
