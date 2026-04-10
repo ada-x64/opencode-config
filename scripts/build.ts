@@ -720,8 +720,7 @@ export function build(
   const extDirs = globalSection.external_directory;
 
   if (sandboxConfigDirValue === null) {
-    sandboxConfigDirValue =
-      globalSection.sandbox_config_dir ?? "/data/config";
+    sandboxConfigDirValue = globalSection.sandbox_config_dir ?? "/data/config";
   }
 
   const outRoot = outDirValue
