@@ -9,6 +9,7 @@ import {
   resolveProfileFile,
   resolveProfilesConfig,
   loadProfiles,
+  listProfileNames,
   resolveSecretPlaceholder,
 } from "../../scripts/install.ts";
 
@@ -229,14 +230,41 @@ describe("resolveProfilesConfig", () => {
   it("returns default when both are empty/undefined", () => {
     const result = resolveProfilesConfig("", undefined);
     const home = Bun.env.HOME ?? homedir();
-    expect(result).toBe(
-      path.join(home, ".config", "opencode-config", "profiles.toml"),
-    );
+    expect(result).toBe(path.join(home, ".config", "occonf", "profiles.toml"));
   });
 
   it("prefers CLI flag over env var", () => {
     const result = resolveProfilesConfig("/cli/path.toml", "/env/path.toml");
     expect(result).toBe("/cli/path.toml");
+  });
+});
+
+// --- listProfileNames ---
+
+describe("listProfileNames", () => {
+  it("returns profile names from profiles.toml", async () => {
+    const cfg = path.join(tmp, "list-profiles-1.toml");
+    await writeFile(
+      cfg,
+      '[profiles."gh/alice"]\nGH_TOKEN = "tok"\n\n[profiles."gh/bob"]\nGH_TOKEN = "tok2"\n',
+    );
+    expect(listProfileNames(cfg)).toEqual(["gh/alice", "gh/bob"]);
+  });
+
+  it("returns empty array when file does not exist", () => {
+    expect(listProfileNames(path.join(tmp, "nonexistent.toml"))).toEqual([]);
+  });
+
+  it("returns empty array when no profiles section", async () => {
+    const cfg = path.join(tmp, "list-profiles-2.toml");
+    await writeFile(cfg, "[default]\n");
+    expect(listProfileNames(cfg)).toEqual([]);
+  });
+
+  it("returns empty array on malformed TOML", async () => {
+    const cfg = path.join(tmp, "list-profiles-3.toml");
+    await writeFile(cfg, "{{{{invalid toml}}}}");
+    expect(listProfileNames(cfg)).toEqual([]);
   });
 });
 

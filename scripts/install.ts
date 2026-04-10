@@ -10,7 +10,7 @@
  *                         names like "gh/username" — tries src/profiles/gh/username.env
  *                         first, then falls back to src/profiles/gh.env.
  *   --config-dir <path>  Override CONFIG_DIR from the profile.
- *   --profiles-config <path>  Path to profiles.toml (default: ~/.config/opencode-config/profiles.toml,
+ *   --profiles-config <path>  Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
  *                              override with OCCONF_PROFILES env var).
  *   --help               Show this help message and exit.
  *
@@ -27,9 +27,12 @@
  *   6. Deploys AoE global config from src/aoe-config.toml (resolving path
  *      placeholders: {{AGENT_VAULT}}, {{SANDBOX_CONFIG_DIR}},
  *      {{OPENCODE_DATA_DIR}}).
- *   7. For non-host profiles, deploys an AoE per-profile config from
- *      src/aoe-profile.toml (resolving path placeholders and per-profile
- *      secrets from profiles.toml: {{GH_TOKEN}}, {{NTFY_TOPIC}},
+ *   6b. If profiles.toml doesn't exist, interactively prompts the user to
+ *       generate one with defaults (GitHub username, GH_TOKEN, gitconfig,
+ *       Docker user). Skips silently in non-interactive mode.
+ *   7. Deploys AoE per-profile configs for ALL profiles listed in
+ *      profiles.toml (resolving path placeholders and per-profile
+ *      secrets: {{GH_TOKEN}}, {{NTFY_TOPIC}},
  *      {{SANDBOX_USER}}, {{SANDBOX_GROUP}}, {{SANDBOX_UID}}, {{SANDBOX_GID}},
  *      {{MOUNT_SSH}}, {{GITCONFIG_VOLUME}}).
  *   8. Prints a deployment summary.
@@ -55,6 +58,7 @@ import {
 import { resolve, join, dirname } from "node:path";
 import { homedir } from "node:os";
 import { $ } from "bun";
+import * as p from "@clack/prompts";
 
 // ---------------------------------------------------------------------------
 // Exported utilities — importable by tests without side effects
@@ -175,7 +179,7 @@ export function resolveProfileFile(
  * Resolve the path to profiles.toml using 3-level fallback:
  *   1. CLI flag (--profiles-config)
  *   2. OCCONF_PROFILES env var
- *   3. Default: ~/.config/opencode-config/profiles.toml
+ *   3. Default: ~/.config/occonf/profiles.toml
  *
  * @returns Resolved absolute path (may not exist yet — caller should handle)
  */
@@ -185,7 +189,7 @@ export function resolveProfilesConfig(
 ): string {
   if (cliFlag) return resolve(cliFlag);
   if (envVar) return resolve(envVar);
-  return join(homedir(), ".config", "opencode-config", "profiles.toml");
+  return join(homedir(), ".config", "occonf", "profiles.toml");
 }
 
 /**
@@ -282,6 +286,154 @@ export function loadProfiles(
   }
 
   return result;
+}
+
+/**
+ * List all profile names defined in profiles.toml.
+ *
+ * @param profilesConfigPath - Absolute path to profiles.toml
+ * @returns Array of profile names (e.g. ["gh/alice", "gh/bob"])
+ */
+export function listProfileNames(profilesConfigPath: string): string[] {
+  if (!existsSync(profilesConfigPath)) return [];
+  const raw = readFileSync(profilesConfigPath, "utf-8");
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = Bun.TOML.parse(raw) as Record<string, unknown>;
+  } catch {
+    return [];
+  }
+  const profiles = (parsed["profiles"] ?? {}) as Record<string, unknown>;
+  return Object.keys(profiles);
+}
+
+/**
+ * Interactively generate a default profiles.toml.
+ *
+ * Detects GitHub username, optionally captures GH_TOKEN (with user
+ * confirmation), detects gitconfig path and Docker user settings from
+ * the current environment.
+ *
+ * @param destPath - Where to write the generated file
+ * @returns true if a file was generated, false if skipped
+ */
+export async function generateDefaultProfiles(
+  destPath: string,
+): Promise<boolean> {
+  if (!process.stdin.isTTY) {
+    console.error(
+      `No profiles.toml found. Copy src/profiles/profiles.toml.example to ${destPath} and edit it.`,
+    );
+    return false;
+  }
+
+  p.intro("profiles.toml setup");
+
+  const shouldGenerate = await p.confirm({
+    message: `No profiles.toml found at ${destPath}. Generate one with defaults?`,
+  });
+  if (p.isCancel(shouldGenerate) || !shouldGenerate) {
+    p.cancel("Skipping profiles.toml generation.");
+    return false;
+  }
+
+  // Detect GitHub username
+  let ghUsername = "";
+  const s = p.spinner();
+  s.start("Detecting GitHub username...");
+  try {
+    ghUsername = (await $`gh api user -q .login 2>/dev/null`.text()).trim();
+  } catch {
+    try {
+      const status = await $`gh auth status 2>&1`.text();
+      const match = status.match(/Logged in to github\.com account (\S+)/);
+      if (match) ghUsername = match[1]!;
+    } catch {
+      // No gh CLI available
+    }
+  }
+
+  if (!ghUsername) {
+    s.stop("Could not detect GitHub username.");
+    p.cancel("Is gh CLI installed and authenticated?");
+    return false;
+  }
+  s.stop(`GitHub username: ${ghUsername}`);
+
+  // GH_TOKEN — prompt before capturing
+  let ghToken = "";
+  const includeToken = await p.confirm({
+    message: "Include GH_TOKEN? This will run 'gh auth token'.",
+    initialValue: true,
+  });
+  if (!p.isCancel(includeToken) && includeToken) {
+    try {
+      ghToken = (await $`gh auth token`.text()).trim();
+    } catch {
+      p.log.warn("'gh auth token' failed — omitting GH_TOKEN.");
+    }
+  }
+
+  // Detect gitconfig
+  const gitconfigPath = join(homedir(), ".gitconfig");
+  const hasGitconfig = existsSync(gitconfigPath);
+
+  // Detect Docker user settings
+  const username = Bun.env.USER ?? "agent";
+  let uid = "1000";
+  let gid = "1000";
+  try {
+    uid = (await $`id -u`.text()).trim();
+    gid = (await $`id -g`.text()).trim();
+  } catch {
+    // Use defaults
+  }
+
+  // Build TOML content
+  const lines: string[] = [
+    `# Auto-generated by install.ts on ${new Date().toISOString().slice(0, 10)}`,
+    "# Edit this file to customize per-profile sandbox settings.",
+    "# See src/profiles/profiles.toml.example for full documentation.",
+    "#",
+    `# Location: ${destPath}`,
+    "# Permissions: 600 (contains tokens)",
+    "",
+    "[default]",
+    "",
+    `[profiles."gh/${ghUsername}"]`,
+  ];
+
+  if (ghToken) {
+    lines.push(`GH_TOKEN = "${ghToken}"`);
+  }
+  if (hasGitconfig) {
+    lines.push(`gitconfig = "${gitconfigPath}"`);
+  }
+
+  lines.push("");
+  lines.push(`[profiles."gh/${ghUsername}".docker]`);
+  lines.push(`username = "${username}"`);
+  lines.push(`uid = ${uid}`);
+  lines.push(`gid = ${gid}`);
+  lines.push("");
+
+  const content = lines.join("\n");
+
+  mkdirSync(dirname(destPath), { recursive: true });
+  writeFileSync(destPath, content, { mode: 0o600 });
+
+  p.note(
+    [
+      `Profile:     gh/${ghUsername}`,
+      `GH_TOKEN:    ${ghToken ? "included" : "omitted"}`,
+      `gitconfig:   ${hasGitconfig ? gitconfigPath : "none"}`,
+      `Docker user: ${username} (${uid}:${gid})`,
+    ].join("\n"),
+    `Generated ${destPath}`,
+  );
+
+  p.outro("profiles.toml ready");
+  return true;
 }
 
 /**
@@ -430,8 +582,8 @@ Options:
                          names like "gh/username" — tries src/profiles/gh/username.env
                          first, then falls back to src/profiles/gh.env.
   --config-dir <path>  Override CONFIG_DIR from the profile.
-  --profiles-config <path>  Path to profiles.toml (default: ~/.config/opencode-config/profiles.toml,
-                             override with OCCONF_PROFILES env var).
+  --profiles-config <path>  Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
+                              override with OCCONF_PROFILES env var).
   --help               Show this help message and exit.
 `;
 
@@ -657,15 +809,10 @@ Options:
       args["profiles-config"]!,
       Bun.env.OCCONF_PROFILES,
     );
-    const profileData = loadProfiles(profile, profilesConfigPath, agentVault);
 
-    if (profile !== "host" && !profileData.GH_TOKEN) {
-      console.error(
-        "Warning: GH_TOKEN not configured for this profile — sandbox will have no GitHub authentication.",
-      );
-      console.error(
-        `  Add GH_TOKEN to ${profilesConfigPath} and re-run install to fix this.`,
-      );
+    // Auto-generate profiles.toml if missing
+    if (!existsSync(profilesConfigPath)) {
+      await generateDefaultProfiles(profilesConfigPath);
     }
 
     // Deploy global AoE config
@@ -686,19 +833,37 @@ Options:
     writeFileSync(globalAoeDest, globalContent, "utf-8");
     console.log(`AoE global config deployed to: ${globalAoeDest}`);
 
-    // Deploy per-profile AoE config (skip for "host" profile)
-    if (profile !== "host") {
-      const profileTemplatePath = join(srcDir, "aoe-profile.toml");
-      console.log(`Deploying AoE profile for: ${profile}`);
+    // Deploy AoE profiles for ALL profiles listed in profiles.toml
+    const profileTemplatePath = join(srcDir, "aoe-profile.toml");
+    const allProfileNames = listProfileNames(profilesConfigPath);
 
-      deployAoeProfile(profile, profileData, profileTemplatePath, aoeDir, {
-        agentVault,
-        opencodeConfigSrc,
-        sandboxConfigDir: sandboxConfigDir,
-        opencodeDataDir,
-      });
+    if (!existsSync(profileTemplatePath)) {
+      console.log(
+        "No AoE profile template found — skipping per-profile deployment.",
+      );
+    } else if (allProfileNames.length === 0) {
+      console.log(
+        "No profiles defined in profiles.toml — skipping AoE profile deployment.",
+      );
     } else {
-      console.log("Host profile — skipping AoE profile deployment.");
+      for (const name of allProfileNames) {
+        console.log(`Deploying AoE profile: ${name}`);
+        const data = loadProfiles(name, profilesConfigPath, agentVault);
+
+        if (!data.GH_TOKEN) {
+          console.error(
+            `  Warning: GH_TOKEN not configured for profile "${name}" — sandbox will have no GitHub authentication.`,
+          );
+        }
+
+        deployAoeProfile(name, data, profileTemplatePath, aoeDir, {
+          agentVault,
+          opencodeConfigSrc,
+          sandboxConfigDir: sandboxConfigDir,
+          opencodeDataDir,
+        });
+      }
+      console.log(`Deployed ${allProfileNames.length} AoE profile(s).`);
     }
   } else {
     console.error(

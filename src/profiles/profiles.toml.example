@@ -1,9 +1,13 @@
 # Per-profile configuration for opencode-config sandboxes.
 #
 # This file is NOT checked in — it lives at:
-#   ~/.config/opencode-config/profiles.toml
+#   ~/.config/occonf/profiles.toml
 # Override location with OCCONF_PROFILES env var or --profiles-config flag.
 # Permissions should be 600 (contains tokens).
+#
+# If this file doesn't exist, install.ts will offer to generate it
+# with defaults detected from your environment (GitHub username,
+# gitconfig path, Docker UID/GID).
 #
 # Resolution order for each key:
 #   1. profiles."<profile-name>" section (exact match)
