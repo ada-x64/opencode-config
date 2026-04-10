@@ -233,9 +233,7 @@ export function loadProfiles(
       parsed = Bun.TOML.parse(raw) as Record<string, unknown>;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      throw new Error(
-        `Failed to parse ${profilesConfigPath}: ${msg}`,
-      );
+      throw new Error(`Failed to parse ${profilesConfigPath}: ${msg}`);
     }
   }
 
@@ -374,10 +372,7 @@ export function deployAoeProfile(
 
   // Resolve mount_ssh: true for gh/* profiles, false otherwise
   const isGhProfile = profileName.startsWith("gh/");
-  content = content.replaceAll(
-    "{{MOUNT_SSH}}",
-    isGhProfile ? "true" : "false",
-  );
+  content = content.replaceAll("{{MOUNT_SSH}}", isGhProfile ? "true" : "false");
 
   // Resolve secret placeholders
   const secretKeys: (keyof ProfileData)[] = [
@@ -410,11 +405,7 @@ export function deployAoeProfile(
     );
   } else {
     // No gitconfig — remove the volume line
-    content = resolveSecretPlaceholder(
-      content,
-      "GITCONFIG_VOLUME",
-      undefined,
-    );
+    content = resolveSecretPlaceholder(content, "GITCONFIG_VOLUME", undefined);
   }
 
   // Write profile config with restricted permissions

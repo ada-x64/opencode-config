@@ -10,7 +10,6 @@ import {
   resolveProfilesConfig,
   loadProfiles,
   resolveSecretPlaceholder,
-  type ProfileData,
 } from "../../scripts/install.ts";
 
 // ---------------------------------------------------------------------------
@@ -264,10 +263,7 @@ describe("loadProfiles", () => {
 
   it("falls back to default section", async () => {
     profilesConfig = path.join(tmp, "profiles-2.toml");
-    await writeFile(
-      profilesConfig,
-      '[default]\nGH_TOKEN = "default-token"\n',
-    );
+    await writeFile(profilesConfig, '[default]\nGH_TOKEN = "default-token"\n');
     const result = loadProfiles("gh/bob", profilesConfig, vaultDir);
     expect(result.GH_TOKEN).toBe("default-token");
   });
