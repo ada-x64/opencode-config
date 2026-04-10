@@ -3,23 +3,23 @@
  * install.ts — deploy built config from out/host/ and out/sandbox/ to target directories
  *
  * Usage:
- *   bun scripts/install.ts [--profile <name>] [--config-dir <path>] [--help]
+ *   bun scripts/install.ts [options]
  *
  * Options:
- *   --profile <name>     Profile to use (default: host). Supports slash-separated
- *                         names like "gh/username" — tries src/profiles/gh/username.env
- *                         first, then falls back to src/profiles/gh.env.
- *   --config-dir <path>  Override CONFIG_DIR from the profile.
- *   --profiles-config <path>  Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
- *                              override with OCCONF_PROFILES env var).
- *   --help               Show this help message and exit.
+ *   --opencode-config-dir <path>  Host config directory (default: ~/.config/opencode,
+ *                                  override with OPENCODE_CONFIG_DIR env var).
+ *   --sandbox-config-dir <path>   Sandbox config directory (default: ~/.config/opencode-sandbox,
+ *                                  override with SANDBOX_CONFIG_DIR env var).
+ *   --profiles-config <path>      Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
+ *                                  override with OCCONF_PROFILES env var).
+ *   --help                        Show this help message and exit.
  *
  * Prerequisites:
  *   Run build first to produce the out/ directory.
  *
  * What it does:
- *   1. Loads the selected profile to set CONFIG_DIR, OPENCODE_CONFIG_SRC, and
- *      SANDBOX_CONFIG_DIR.
+ *   1. Resolves CONFIG_DIR and SANDBOX_CONFIG_DIR from CLI flags, env vars,
+ *      or defaults. Derives OPENCODE_CONFIG_SRC from the repo root.
  *   2. Verifies out/host/ exists (must run build first).
  *   3. Refuses to run if out/host/ == CONFIG_DIR (would be a no-op or destructive).
  *   4. rsyncs out/host/ contents to CONFIG_DIR.
@@ -51,7 +51,6 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
-  readdirSync,
   writeFileSync,
   statSync,
 } from "node:fs";
@@ -63,117 +62,6 @@ import * as p from "@clack/prompts";
 // ---------------------------------------------------------------------------
 // Exported utilities — importable by tests without side effects
 // ---------------------------------------------------------------------------
-
-/**
- * Parse a shell-style .env file into a key-value record.
- *
- * Supports `export` prefix, `$HOME` / `${HOME}` / `~` expansion, quoted
- * values (note: single-quoted values are still subject to variable expansion,
- * unlike POSIX shell), and forward-reference expansion of previously-parsed keys.
- */
-export function parseEnvFile(envPath: string): Record<string, string> {
-  const result: Record<string, string> = {};
-  const home = Bun.env.HOME ?? homedir();
-  const content = readFileSync(envPath, "utf-8");
-
-  for (const rawLine of content.split("\n")) {
-    let line = rawLine.trim();
-
-    if (!line || line.startsWith("#")) continue;
-
-    if (line.startsWith("export ")) {
-      line = line.slice("export ".length);
-    }
-
-    const eqIdx = line.indexOf("=");
-    if (eqIdx === -1) continue;
-
-    const key = line.slice(0, eqIdx).trim();
-    let value = line.slice(eqIdx + 1).trim();
-
-    // Strip outer quotes
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    // Expand $HOME / ${HOME}
-    value = value.replace(/\$HOME|\$\{HOME\}/g, home);
-
-    // Expand ~ at the start
-    if (value.startsWith("~/")) {
-      value = join(home, value.slice(2));
-    } else if (value === "~") {
-      value = home;
-    }
-
-    // Expand other $VAR / ${VAR} references from already-parsed values
-    value = value.replace(
-      /\$\{(\w+)\}|\$(\w+)/g,
-      (_match, braced: string | undefined, plain: string | undefined) => {
-        const varName = braced ?? plain ?? "";
-        return result[varName] ?? Bun.env[varName] ?? "";
-      },
-    );
-
-    result[key] = value;
-  }
-
-  return result;
-}
-
-/**
- * Validate a profile name against a positive allowlist.
- *
- * Segments must start with an alphanumeric character, followed by word chars,
- * dots, or dashes. An optional single slash separates family/user profiles
- * (e.g. "gh/username"). Requiring a leading alphanumeric rejects all-dot
- * segments (".", "..") which would cause path traversal via join()
- * normalization. Also inherently blocks null bytes, backslashes, and
- * multi-depth paths.
- *
- * @throws {Error} if the name is invalid (caught in main block → process.exit)
- */
-export function assertSafeProfileName(name: string): void {
-  if (
-    !/^[a-zA-Z0-9][a-zA-Z0-9._-]*(\/[a-zA-Z0-9][a-zA-Z0-9._-]*)?$/.test(name)
-  ) {
-    throw new Error(
-      `Unsafe or malformed profile name: ${name}\n` +
-        "Profile names must match <name> or <family>/<name>. Each segment must\n" +
-        "start with an alphanumeric character and contain only [a-zA-Z0-9._-].",
-    );
-  }
-}
-
-/**
- * Resolve a profile .env file using 2-level fallback:
- *   1. Exact: profilesDir/<profileName>.env
- *   2. Base:  profilesDir/<family>.env (for "family/user" names)
- *
- * @param profileName - The profile name (e.g. "host", "gh/username")
- * @param profilesDir - The directory containing profile .env files
- * @returns The resolved file path, or null if not found
- */
-export function resolveProfileFile(
-  profileName: string,
-  profilesDir: string,
-): string | null {
-  const exact = join(profilesDir, `${profileName}.env`);
-  if (existsSync(exact)) return exact;
-
-  // Fall back to base: "gh/username" → "gh"
-  const slashIdx = profileName.indexOf("/");
-  if (slashIdx !== -1) {
-    const base = profileName.slice(0, slashIdx);
-    const basePath = join(profilesDir, `${base}.env`);
-    if (existsSync(basePath)) return basePath;
-  }
-
-  return null;
-}
 
 /**
  * Resolve the path to profiles.toml using 3-level fallback:
@@ -575,24 +463,24 @@ if (import.meta.main) {
   const HELP_TEXT = `install.ts — deploy built config from out/host/ and out/sandbox/ to target directories
 
 Usage:
-  bun scripts/install.ts [--profile <name>] [--config-dir <path>] [--help]
+  bun scripts/install.ts [options]
 
 Options:
-  --profile <name>     Profile to use (default: host). Supports slash-separated
-                         names like "gh/username" — tries src/profiles/gh/username.env
-                         first, then falls back to src/profiles/gh.env.
-  --config-dir <path>  Override CONFIG_DIR from the profile.
-  --profiles-config <path>  Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
-                              override with OCCONF_PROFILES env var).
-  --help               Show this help message and exit.
+  --opencode-config-dir <path>  Host config directory (default: ~/.config/opencode,
+                                 override with OPENCODE_CONFIG_DIR env var).
+  --sandbox-config-dir <path>   Sandbox config directory (default: ~/.config/opencode-sandbox,
+                                 override with SANDBOX_CONFIG_DIR env var).
+  --profiles-config <path>      Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
+                                 override with OCCONF_PROFILES env var).
+  --help                        Show this help message and exit.
 `;
 
   // --- Argument parsing ---
   const { values: args } = parseArgs({
     args: Bun.argv.slice(2),
     options: {
-      profile: { type: "string", default: "host" },
-      "config-dir": { type: "string", default: "" },
+      "opencode-config-dir": { type: "string", default: "" },
+      "sandbox-config-dir": { type: "string", default: "" },
       "profiles-config": { type: "string", default: "" },
       help: { type: "boolean", default: false },
     },
@@ -612,65 +500,6 @@ Options:
   const outDir = join(repoRoot, "out");
   const outHostDir = join(outDir, "host");
   const outSandboxDir = join(outDir, "sandbox");
-  const profilesDir = join(srcDir, "profiles");
-
-  const profile = args.profile!;
-  const configDirOverride = args["config-dir"]!;
-
-  // --- Validate profile name ---
-  try {
-    assertSafeProfileName(profile);
-  } catch (e: unknown) {
-    console.error(`Error: ${(e as Error).message}`);
-    process.exit(1);
-  }
-
-  // --- Load profile ---
-  const profileFile = resolveProfileFile(profile, profilesDir);
-  if (!profileFile) {
-    const slashIdx = profile.indexOf("/");
-    console.error(`Error: profile not found for: ${profile}`);
-    console.error(
-      `  Tried: src/profiles/${profile}.env` +
-        (slashIdx !== -1
-          ? `, src/profiles/${profile.slice(0, slashIdx)}.env`
-          : ""),
-    );
-    console.error("Available profiles:");
-    if (existsSync(profilesDir)) {
-      const entries = readdirSync(profilesDir)
-        .filter((f) => f.endsWith(".env"))
-        .sort();
-      for (const p of entries) {
-        console.error(`  ${p.replace(/\.env$/, "")}`);
-      }
-    }
-    process.exit(1);
-  }
-
-  const envVars = parseEnvFile(profileFile);
-
-  let configDirStr: string = envVars["CONFIG_DIR"] ?? "";
-  let opencodeConfigSrc: string = envVars["OPENCODE_CONFIG_SRC"] ?? "";
-  let agentVault: string = envVars["AGENT_VAULT"] ?? Bun.env.AGENT_VAULT ?? "";
-  let sandboxConfigDirStr: string =
-    envVars["SANDBOX_CONFIG_DIR"] ??
-    join(homedir(), ".config", "opencode-sandbox");
-
-  if (!configDirStr) {
-    console.error("Error: CONFIG_DIR not set in profile.");
-    process.exit(1);
-  }
-
-  if (!opencodeConfigSrc) {
-    console.error("Error: OPENCODE_CONFIG_SRC not set in profile.");
-    process.exit(1);
-  }
-
-  // --- Apply --config-dir override ---
-  if (configDirOverride) {
-    configDirStr = configDirOverride;
-  }
 
   // --- Expand ~ and resolve ---
   function expandHome(p: string): string {
@@ -680,12 +509,26 @@ Options:
     return p;
   }
 
-  const configDir = resolve(expandHome(configDirStr));
-  opencodeConfigSrc = expandHome(opencodeConfigSrc);
-  const sandboxConfigDir = resolve(expandHome(sandboxConfigDirStr));
+  // --- Resolve paths: CLI flag → env var → default ---
+  const configDir = resolve(
+    expandHome(
+      args["opencode-config-dir"] ||
+        Bun.env.OPENCODE_CONFIG_DIR ||
+        "~/.config/opencode",
+    ),
+  );
+  const opencodeConfigSrc = repoRoot;
+  const sandboxConfigDir = resolve(
+    expandHome(
+      args["sandbox-config-dir"] ||
+        Bun.env.SANDBOX_CONFIG_DIR ||
+        "~/.config/opencode-sandbox",
+    ),
+  );
   const opencodeDataDir = resolve(
     expandHome("~/.local/share/opencode-sandbox-data"),
   );
+  let agentVault: string = Bun.env.AGENT_VAULT ?? "";
 
   // --- Check out/host/ exists ---
   if (!existsSync(outHostDir) || !statSync(outHostDir).isDirectory()) {
@@ -713,7 +556,6 @@ Options:
 
   // --- Rsync out/host/ to CONFIG_DIR ---
   console.log(`Deploying host config to: ${configDir}`);
-  console.log(`Profile:      ${profile} (${profileFile})`);
   console.log(`Source:       ${outHostDir}`);
   console.log();
 
@@ -913,7 +755,6 @@ Options:
   console.log();
   console.log("Done.");
   console.log();
-  console.log(`  Profile:             ${profile}`);
   console.log(`  Host source:         ${outHostDir}`);
   console.log(`  Host target:         ${configDir}`);
   console.log(`  Sandbox source:      ${outSandboxDir}`);
