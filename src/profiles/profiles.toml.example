@@ -18,6 +18,7 @@
 # Fallbacks:
 #   GH_TOKEN:   none — omitted if not configured
 #   NTFY_TOPIC: reads $AGENT_VAULT/_misc/cache/ntfy-topic.txt
+#   mount_ssh:  false
 #   gitconfig:  none — no git config injected
 #   docker.*:   none — runs as root
 
@@ -29,6 +30,7 @@
 # [profiles."gh/alice"]
 # GH_TOKEN = "gho_alice_token_here"
 # NTFY_TOPIC = "alice-custom-topic"
+# mount_ssh = true
 # gitconfig = "/home/alice/.gitconfig-work"
 #
 # [profiles."gh/alice".docker]

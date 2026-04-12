@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { mkdtemp, rm, mkdir, writeFile } from "fs/promises";
+import { existsSync, readFileSync, statSync } from "fs";
 import { tmpdir, homedir } from "os";
 import path from "path";
 
@@ -8,6 +9,8 @@ import {
   loadProfiles,
   listProfileNames,
   resolveSecretPlaceholder,
+  deployAoeProfile,
+  sanitizeProfileName,
 } from "../../scripts/install.ts";
 
 // ---------------------------------------------------------------------------
@@ -250,5 +253,269 @@ describe("resolveSecretPlaceholder", () => {
     const content = "a={{GH_TOKEN}}\nb={{GH_TOKEN}}\n";
     const result = resolveSecretPlaceholder(content, "GH_TOKEN", "tok");
     expect(result).toBe("a=tok\nb=tok\n");
+  });
+});
+
+// --- deployAoeProfile ---
+
+describe("deployAoeProfile", () => {
+  const REPO_ROOT = path.resolve(import.meta.dir, "../..");
+  const profileTemplatePath = path.join(REPO_ROOT, "src", "aoe-profile.toml");
+
+  it("sets mount_ssh = true when profile data has mount_ssh: true", async () => {
+    const aoeDir = path.join(tmp, "aoe-gh-mount");
+    await mkdir(aoeDir, { recursive: true });
+
+    deployAoeProfile(
+      "gh/alice",
+      { mount_ssh: true },
+      profileTemplatePath,
+      aoeDir,
+    );
+
+    const config = readFileSync(
+      path.join(aoeDir, "profiles", "gh-alice", "config.toml"),
+      "utf-8",
+    );
+    expect(config).toContain("mount_ssh = true");
+  });
+
+  it("sets mount_ssh = false when mount_ssh is not set", async () => {
+    const aoeDir = path.join(tmp, "aoe-local-mount");
+    await mkdir(aoeDir, { recursive: true });
+
+    deployAoeProfile("local", {}, profileTemplatePath, aoeDir);
+
+    const config = readFileSync(
+      path.join(aoeDir, "profiles", "local", "config.toml"),
+      "utf-8",
+    );
+    expect(config).toContain("mount_ssh = false");
+  });
+
+  it("resolves all secret placeholders when present", async () => {
+    const aoeDir = path.join(tmp, "aoe-secrets");
+    await mkdir(aoeDir, { recursive: true });
+
+    deployAoeProfile(
+      "gh/alice",
+      {
+        GH_TOKEN: "ghp_test123",
+        NTFY_TOPIC: "alice-topic",
+        SANDBOX_USER: "alice",
+        SANDBOX_GROUP: "agents",
+        SANDBOX_UID: "1000",
+        SANDBOX_GID: "1000",
+      },
+      profileTemplatePath,
+      aoeDir,
+    );
+
+    const config = readFileSync(
+      path.join(aoeDir, "profiles", "gh-alice", "config.toml"),
+      "utf-8",
+    );
+    expect(config).toContain("GH_TOKEN=ghp_test123");
+    expect(config).toContain("NTFY_TOPIC=alice-topic");
+    expect(config).toContain("SANDBOX_USER=alice");
+    expect(config).toContain("SANDBOX_GROUP=agents");
+    expect(config).toContain("SANDBOX_UID=1000");
+    expect(config).toContain("SANDBOX_GID=1000");
+    expect(config).not.toContain("{{");
+  });
+
+  it("removes lines for undefined secrets", async () => {
+    const aoeDir = path.join(tmp, "aoe-undef");
+    await mkdir(aoeDir, { recursive: true });
+
+    // Only GH_TOKEN set — everything else should be removed
+    deployAoeProfile(
+      "gh/alice",
+      { GH_TOKEN: "ghp_test123" },
+      profileTemplatePath,
+      aoeDir,
+    );
+
+    const config = readFileSync(
+      path.join(aoeDir, "profiles", "gh-alice", "config.toml"),
+      "utf-8",
+    );
+    expect(config).toContain("GH_TOKEN=ghp_test123");
+    // Undefined secrets should not appear as values — no placeholder remains
+    expect(config).not.toContain("{{NTFY_TOPIC}}");
+    expect(config).not.toContain("{{SANDBOX_USER}}");
+    expect(config).not.toContain("{{");
+    // The actual environment lines for undefined secrets should be removed
+    expect(config).not.toMatch(/"NTFY_TOPIC=/);
+    expect(config).not.toMatch(/"SANDBOX_USER=/);
+  });
+
+  it("copies gitconfig and resolves GITCONFIG_VOLUME", async () => {
+    const aoeDir = path.join(tmp, "aoe-gitconfig");
+    await mkdir(aoeDir, { recursive: true });
+
+    // Create a fake gitconfig
+    const fakeGitconfig = path.join(tmp, "fake-gitconfig");
+    await writeFile(fakeGitconfig, "[user]\n  name = Test\n");
+
+    deployAoeProfile(
+      "gh/alice",
+      { gitconfig: fakeGitconfig },
+      profileTemplatePath,
+      aoeDir,
+    );
+
+    // Gitconfig copied into profile directory
+    const copiedGitconfig = path.join(
+      aoeDir,
+      "profiles",
+      "gh-alice",
+      "gitconfig",
+    );
+    expect(existsSync(copiedGitconfig)).toBe(true);
+    expect(readFileSync(copiedGitconfig, "utf-8")).toContain("[user]");
+
+    // GITCONFIG_VOLUME resolved to the copy path
+    const config = readFileSync(
+      path.join(aoeDir, "profiles", "gh-alice", "config.toml"),
+      "utf-8",
+    );
+    expect(config).toContain(`${copiedGitconfig}:/etc/gitconfig:ro`);
+    expect(config).not.toContain("{{GITCONFIG_VOLUME}}");
+  });
+
+  it("removes GITCONFIG_VOLUME line when no gitconfig", async () => {
+    const aoeDir = path.join(tmp, "aoe-no-gitconfig");
+    await mkdir(aoeDir, { recursive: true });
+
+    deployAoeProfile("gh/alice", {}, profileTemplatePath, aoeDir);
+
+    const config = readFileSync(
+      path.join(aoeDir, "profiles", "gh-alice", "config.toml"),
+      "utf-8",
+    );
+    expect(config).not.toContain("{{GITCONFIG_VOLUME}}");
+    // No volume line with /etc/gitconfig
+    expect(config).not.toContain("/etc/gitconfig");
+  });
+
+  it("converts slash in profile name to dash for directory", async () => {
+    const aoeDir = path.join(tmp, "aoe-slash");
+    await mkdir(aoeDir, { recursive: true });
+
+    deployAoeProfile("gh/bob", {}, profileTemplatePath, aoeDir);
+
+    expect(
+      existsSync(path.join(aoeDir, "profiles", "gh-bob", "config.toml")),
+    ).toBe(true);
+    // Should NOT create a nested gh/bob/ directory
+    expect(
+      existsSync(path.join(aoeDir, "profiles", "gh", "bob", "config.toml")),
+    ).toBe(false);
+  });
+
+  it("writes config with restricted permissions", async () => {
+    const aoeDir = path.join(tmp, "aoe-perms");
+    await mkdir(aoeDir, { recursive: true });
+
+    deployAoeProfile("gh/alice", {}, profileTemplatePath, aoeDir);
+
+    const configPath = path.join(aoeDir, "profiles", "gh-alice", "config.toml");
+    const mode = statSync(configPath).mode & 0o777;
+    expect(mode).toBe(0o600);
+  });
+});
+
+// --- sanitizeProfileName ---
+
+describe("sanitizeProfileName", () => {
+  describe("accepts valid names", () => {
+    const valid: [string, string][] = [
+      ["host", "host"],
+      ["gh", "gh"],
+      ["my-profile", "my-profile"],
+      ["my.profile", "my.profile"],
+      ["Profile1", "Profile1"],
+      ["gh/alice", "gh-alice"],
+      ["gh/my.user-1", "gh-my.user-1"],
+      ["a", "a"],
+      ["a/b", "a-b"],
+      ["abc123/def456", "abc123-def456"],
+    ];
+
+    for (const [input, expected] of valid) {
+      it(`"${input}" → "${expected}"`, () => {
+        expect(sanitizeProfileName(input)).toBe(expected);
+      });
+    }
+  });
+
+  describe("rejects invalid names", () => {
+    const invalid: [string, string][] = [
+      ["", "empty"],
+      ["..", "dot-dot traversal"],
+      [".", "single dot"],
+      ["gh/..", "family with dot-dot"],
+      ["gh/.", "family with single dot"],
+      ["../etc", "relative traversal"],
+      ["/etc/passwd", "absolute path"],
+      ["a\\b", "backslash"],
+      ["a/b/c", "multi-depth"],
+      [".hidden", "leading dot"],
+      ["-dash", "leading dash"],
+      ["_under", "leading underscore"],
+      ["gh/.hidden", "family with leading dot"],
+      ["gh/-dash", "family with leading dash"],
+      [" spaces", "leading space"],
+      ["has space", "contains space"],
+      ["gh/", "trailing slash"],
+      ["/", "bare slash"],
+      ["gh//user", "double slash"],
+    ];
+
+    for (const [input, desc] of invalid) {
+      it(`rejects ${desc}: "${input}"`, () => {
+        expect(() => sanitizeProfileName(input)).toThrow();
+      });
+    }
+  });
+});
+
+// --- loadProfiles: mount_ssh ---
+
+describe("loadProfiles mount_ssh", () => {
+  let vaultDir: string;
+
+  beforeAll(async () => {
+    vaultDir = path.join(tmp, "profiles-vault-mount");
+    await mkdir(path.join(vaultDir, "_misc", "cache"), { recursive: true });
+  });
+
+  it("reads mount_ssh = true from profile section", async () => {
+    const cfg = path.join(tmp, "mount-ssh-1.toml");
+    await writeFile(cfg, '[profiles."gh/alice"]\nmount_ssh = true\n');
+    const result = loadProfiles("gh/alice", cfg, vaultDir);
+    expect(result.mount_ssh).toBe(true);
+  });
+
+  it("reads mount_ssh = false from profile section", async () => {
+    const cfg = path.join(tmp, "mount-ssh-2.toml");
+    await writeFile(cfg, '[profiles."local"]\nmount_ssh = false\n');
+    const result = loadProfiles("local", cfg, vaultDir);
+    expect(result.mount_ssh).toBe(false);
+  });
+
+  it("falls back to default section for mount_ssh", async () => {
+    const cfg = path.join(tmp, "mount-ssh-3.toml");
+    await writeFile(cfg, "[default]\nmount_ssh = true\n");
+    const result = loadProfiles("some-profile", cfg, vaultDir);
+    expect(result.mount_ssh).toBe(true);
+  });
+
+  it("returns undefined when mount_ssh not set anywhere", async () => {
+    const cfg = path.join(tmp, "mount-ssh-4.toml");
+    await writeFile(cfg, "[default]\n");
+    const result = loadProfiles("some-profile", cfg, vaultDir);
+    expect(result.mount_ssh).toBeUndefined();
   });
 });

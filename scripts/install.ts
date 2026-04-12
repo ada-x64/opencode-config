@@ -84,10 +84,64 @@ export function resolveProfilesConfig(
  * Profile data loaded from profiles.toml for a specific profile.
  * undefined values mean "omit this key from deployed config".
  */
+/**
+ * Validate and sanitize a profile name for use as a directory component.
+ *
+ * Allowed characters: [a-zA-Z0-9._-/]. At most one slash separating
+ * a family and user segment (e.g. "gh/alice"). Each segment must start
+ * with an alphanumeric character.
+ *
+ * Returns the sanitized directory-safe name (slashes replaced with dashes).
+ * Throws on invalid input.
+ */
+export function sanitizeProfileName(name: string): string {
+  if (!name) throw new Error("Profile name must not be empty.");
+
+  // Reject characters outside the allowlist
+  if (/[^a-zA-Z0-9._\-/]/.test(name)) {
+    throw new Error(
+      `Profile name "${name}" contains invalid characters. Allowed: [a-zA-Z0-9._-/]`,
+    );
+  }
+
+  // Reject structural issues
+  if (name.endsWith("/")) {
+    throw new Error(`Profile name "${name}" must not end with a slash.`);
+  }
+
+  const segments = name.split("/");
+  if (segments.length > 2) {
+    throw new Error(
+      `Profile name "${name}" has too many segments. Maximum depth is family/name.`,
+    );
+  }
+
+  for (const seg of segments) {
+    if (!seg) {
+      throw new Error(
+        `Profile name "${name}" contains an empty segment (double slash).`,
+      );
+    }
+    if (seg === "." || seg === "..") {
+      throw new Error(
+        `Profile name "${name}" contains a path traversal segment.`,
+      );
+    }
+    if (/^[^a-zA-Z0-9]/.test(seg)) {
+      throw new Error(
+        `Profile name "${name}": each segment must start with an alphanumeric character.`,
+      );
+    }
+  }
+
+  return name.replace(/\//g, "-");
+}
+
 export interface ProfileData {
   GH_TOKEN?: string;
   NTFY_TOPIC?: string;
   gitconfig?: string;
+  mount_ssh?: boolean;
   SANDBOX_USER?: string;
   SANDBOX_GROUP?: string;
   SANDBOX_UID?: string;
@@ -153,6 +207,12 @@ export function loadProfiles(
         result.NTFY_TOPIC = topic;
       }
     }
+  }
+
+  // mount_ssh: boolean from profile → default → undefined (defaults to false)
+  const mountSsh = profileSection["mount_ssh"] ?? defaults["mount_ssh"];
+  if (typeof mountSsh === "boolean") {
+    result.mount_ssh = mountSsh;
   }
 
   // Docker user fields: profiles."<name>".docker → SANDBOX_*
@@ -297,6 +357,7 @@ export async function generateDefaultProfiles(
   if (hasGitconfig) {
     lines.push(`gitconfig = "${gitconfigPath}"`);
   }
+  lines.push("mount_ssh = true");
 
   lines.push("");
   lines.push(`[profiles."gh/${ghUsername}".docker]`);
@@ -381,16 +442,17 @@ export function deployAoeProfile(
   profileTemplatePath: string,
   aoeDir: string,
 ): void {
-  // Convert profile name for AoE directory: gh/alice → gh-alice
-  const aoeName = profileName.replace(/\//g, "-");
+  const aoeName = sanitizeProfileName(profileName);
   const aoeProfileDir = join(aoeDir, "profiles", aoeName);
   mkdirSync(aoeProfileDir, { recursive: true });
 
   let content = readFileSync(profileTemplatePath, "utf-8");
 
-  // Resolve mount_ssh: true for gh/* profiles, false otherwise
-  const isGhProfile = profileName.startsWith("gh/");
-  content = content.replaceAll("{{MOUNT_SSH}}", isGhProfile ? "true" : "false");
+  // Resolve mount_ssh from profile data (defaults to false)
+  content = content.replaceAll(
+    "{{MOUNT_SSH}}",
+    String(profileData.mount_ssh ?? false),
+  );
 
   // Resolve secret placeholders
   const secretKeys: (keyof ProfileData)[] = [
@@ -444,19 +506,15 @@ Usage:
   bun scripts/install.ts [options]
 
 Options:
-  --profile <name>     Profile to use (default: host). Supports slash-separated
-                       names like "gh/username" — tries the exact .env first,
-                       then falls back to the base (e.g. gh.env for gh/*).
-  --config-dir <path>  Override CONFIG_DIR from the profile.
-  --out-dir <path>     Override the build output directory (default: <repo>/out).
-  --config-dir <path>  Override CONFIG_DIR from the profile.
   --opencode-config-dir <path>  Host config directory (default: ~/.config/opencode,
                                  override with OPENCODE_CONFIG_DIR env var).
   --sandbox-config-dir <path>   Sandbox config directory (default: ~/.config/opencode-sandbox,
                                  override with SANDBOX_CONFIG_DIR env var).
   --profiles-config <path>      Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
                                  override with OCCONF_PROFILES env var).
-  --help               Show this help message and exit.
+  --out-dir <path>              Output directory to read build artifacts from
+                                 (default: <repo-root>/out).
+  --help                        Show this help message and exit.
 `;
 
   // --- Argument parsing ---
