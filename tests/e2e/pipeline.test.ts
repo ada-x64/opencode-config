@@ -316,3 +316,101 @@ describe("install e2e", () => {
     expect(result.stdout).toContain("vault-sync");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Full pipeline e2e test
+// ---------------------------------------------------------------------------
+
+describe("full pipeline e2e", () => {
+  let env: Record<string, string>;
+  let home: string;
+  let outDir: string;
+  const buildJsonPath = join(REPO_ROOT, "build.json");
+  let savedBuildJson: string | null = null;
+
+  beforeAll(() => {
+    ({ home, outDir, env } = createIsolatedEnv());
+
+    // Save existing build.json
+    if (existsSync(buildJsonPath)) {
+      savedBuildJson = readFileSync(buildJsonPath, "utf-8");
+    }
+  });
+
+  afterAll(() => {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(outDir, { recursive: true, force: true });
+
+    // Restore build.json
+    if (savedBuildJson !== null) {
+      writeFileSync(buildJsonPath, savedBuildJson);
+    } else if (existsSync(buildJsonPath)) {
+      rmSync(buildJsonPath);
+    }
+  });
+
+  it("build → install → deployed files are correct", async () => {
+    const configDir = join(home, ".config", "opencode");
+    const agentVault = join(home, "test-vault");
+    mkdirSync(agentVault, { recursive: true });
+
+    // Write deterministic build.json
+    writeFileSync(
+      buildJsonPath,
+      JSON.stringify(DETERMINISTIC_BUILD_JSON, null, 2),
+    );
+
+    const envFull = {
+      ...env,
+      AGENT_VAULT: agentVault,
+    };
+
+    // Step 1: Build to temp out dir
+    const buildResult = await runScript(
+      "scripts/build.ts",
+      ["--out-dir", outDir, "--config-dir", configDir],
+      envFull,
+    );
+    expect(buildResult.exitCode).toBe(0);
+
+    // Step 2: Install with --profile host, reading from temp out dir
+    const installResult = await runScript(
+      "scripts/install.ts",
+      ["--profile", "host", "--out-dir", outDir],
+      envFull,
+    );
+    expect(installResult.exitCode).toBe(0);
+
+    // Step 3: Verify deployed files
+
+    // opencode.json deployed and stamped
+    const deployedConfig = JSON.parse(
+      readFileSync(join(configDir, "opencode.json"), "utf-8"),
+    );
+    expect(deployedConfig.model).toBeTruthy();
+
+    // Agent deployed with permissions resolved
+    const deployedAgent = readFileSync(
+      join(configDir, "agents", "planner.md"),
+      "utf-8",
+    );
+    expect(deployedAgent).not.toContain("{{BASH_PERMISSIONS}}");
+    expect(deployedAgent).not.toContain("{{include:");
+    expect(deployedAgent).not.toContain("{{CONFIG_DIR}}");
+
+    // AoE global config deployed with resolved placeholders
+    const aoeGlobal = readFileSync(
+      join(home, ".config", "agent-of-empires", "config.toml"),
+      "utf-8",
+    );
+    expect(aoeGlobal).toContain(agentVault);
+    expect(aoeGlobal).not.toContain("{{AGENT_VAULT}}");
+
+    // vault-sync deployed
+    expect(existsSync(join(home, ".local", "bin", "vault-sync"))).toBe(true);
+
+    // Sandbox config deployed
+    const sandboxConfigDir = join(home, ".config", "opencode-sandbox");
+    expect(existsSync(join(sandboxConfigDir, "opencode.json"))).toBe(true);
+  });
+});
