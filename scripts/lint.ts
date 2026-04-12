@@ -76,7 +76,7 @@ await run("shellcheck", async () => {
 });
 
 await run("bun test", async () => {
-  const proc = await $`bun test`
+  const proc = await $`LOG_LEVEL=error bun test --dots`
     .env({ ...process.env, OPENCODE_CONFIG_SRC: `${root}/src` })
     .nothrow();
   return proc.exitCode === 0;

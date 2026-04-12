@@ -13,7 +13,6 @@ import {
   stampBashPermissions,
   stampExternalDirs,
   convertAskToAllow,
-  resolveConfigDir,
   buildBashBlock,
 } from "../../scripts/build.ts";
 
