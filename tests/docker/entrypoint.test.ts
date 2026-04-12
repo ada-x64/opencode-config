@@ -6,8 +6,12 @@ import { describe, it, expect } from "bun:test";
  * These tests run INSIDE the Docker container. They validate the
  * entrypoint.sh behavior by invoking it as a subprocess with
  * different environment configurations.
+ *
+ * Skipped automatically when not running inside the sandbox container
+ * (detected via OCCONF_SANDBOX env var set in the Dockerfile).
  */
 
+const IN_CONTAINER = process.env.OCCONF_SANDBOX === "1";
 const ENTRYPOINT = "/usr/local/bin/entrypoint.sh";
 
 /** Run entrypoint.sh with given env and command, return stdout/stderr/exitCode */
@@ -30,7 +34,7 @@ async function runEntrypoint(
   return { stdout, stderr, exitCode };
 }
 
-describe("entrypoint — root fallback", () => {
+describe.skipIf(!IN_CONTAINER)("entrypoint — root fallback", () => {
   it("runs as root when SANDBOX_USER is not set", async () => {
     const result = await runEntrypoint({}, ["id", "-u"]);
     expect(result.exitCode).toBe(0);
@@ -44,7 +48,7 @@ describe("entrypoint — root fallback", () => {
   });
 });
 
-describe("entrypoint — non-root user via SANDBOX_USER", () => {
+describe.skipIf(!IN_CONTAINER)("entrypoint — non-root user via SANDBOX_USER", () => {
   const userEnv = {
     SANDBOX_USER: "testuser",
     SANDBOX_GROUP: "testgroup",
@@ -92,7 +96,7 @@ describe("entrypoint — non-root user via SANDBOX_USER", () => {
   });
 });
 
-describe("entrypoint — mount points", () => {
+describe.skipIf(!IN_CONTAINER)("entrypoint — mount points", () => {
   const mountPoints = [
     "/data/vault",
     "/data/config",

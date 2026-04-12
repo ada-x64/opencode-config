@@ -5,8 +5,12 @@ import { describe, it, expect } from "bun:test";
  *
  * These tests run INSIDE the Docker container. They validate that all
  * expected tools are installed, on PATH, and executable.
+ *
+ * Skipped automatically when not running inside the sandbox container
+ * (detected via OCCONF_SANDBOX env var set in the Dockerfile).
  */
 
+const IN_CONTAINER = process.env.OCCONF_SANDBOX === "1";
 const ENTRYPOINT = "/usr/local/bin/entrypoint.sh";
 
 /** Run a command and return stdout/stderr/exitCode */
@@ -35,7 +39,7 @@ async function getEnv(name: string): Promise<string> {
   return result.stdout.trim();
 }
 
-describe("tool availability", () => {
+describe.skipIf(!IN_CONTAINER)("tool availability", () => {
   const tools = [
     "bun",
     "cargo",
@@ -58,7 +62,7 @@ describe("tool availability", () => {
   }
 });
 
-describe("tool version checks", () => {
+describe.skipIf(!IN_CONTAINER)("tool version checks", () => {
   it("bun --version succeeds", async () => {
     const result = await run(["bun", "--version"]);
     expect(result.exitCode).toBe(0);
@@ -85,7 +89,7 @@ describe("tool version checks", () => {
   });
 });
 
-describe("environment variables", () => {
+describe.skipIf(!IN_CONTAINER)("environment variables", () => {
   it("BUN_INSTALL is /opt/bun", async () => {
     expect(await getEnv("BUN_INSTALL")).toBe("/opt/bun");
   });
@@ -107,7 +111,7 @@ describe("environment variables", () => {
   });
 });
 
-describe("tool paths are shared (not user-specific)", () => {
+describe.skipIf(!IN_CONTAINER)("tool paths are shared (not user-specific)", () => {
   it("bun is under /opt/bun", async () => {
     const result = await run(["which", "bun"]);
     expect(result.stdout.trim()).toStartWith("/opt/bun");
@@ -134,7 +138,7 @@ describe("tool paths are shared (not user-specific)", () => {
   });
 });
 
-describe("tools work for non-root user", () => {
+describe.skipIf(!IN_CONTAINER)("tools work for non-root user", () => {
   const toolChecks = [
     ["bun", "--version"],
     ["cargo", "--version"],
