@@ -89,6 +89,60 @@ export function entrypointTests() {
     });
   });
 
+  describe("config symlinks", () => {
+    it("symlinks $HOME/.config/opencode → /data/config as root", async () => {
+      const result = await runEntrypoint({}, [
+        "readlink",
+        "-f",
+        "/root/.config/opencode",
+      ]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe("/data/config");
+    });
+
+    it("symlinks $HOME/.local/share/opencode → /data/opencode-data as root", async () => {
+      const result = await runEntrypoint({}, [
+        "readlink",
+        "-f",
+        "/root/.local/share/opencode",
+      ]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe("/data/opencode-data");
+    });
+
+    it("symlinks into user HOME when SANDBOX_USER is set", async () => {
+      const env = {
+        SANDBOX_USER: "symlinktest",
+        SANDBOX_GROUP: "symlinktest",
+        SANDBOX_UID: "5000",
+        SANDBOX_GID: "5000",
+      };
+      const result = await runEntrypoint(env, [
+        "readlink",
+        "-f",
+        "/home/symlinktest/.config/opencode",
+      ]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe("/data/config");
+    });
+
+    it("symlinks opencode data into user HOME when SANDBOX_USER is set", async () => {
+      const env = {
+        SANDBOX_USER: "symlinktest2",
+        SANDBOX_GROUP: "symlinktest2",
+        SANDBOX_UID: "5001",
+        SANDBOX_GID: "5001",
+      };
+      const result = await runEntrypoint(env, [
+        "readlink",
+        "-f",
+        "/home/symlinktest2/.local/share/opencode",
+      ]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe("/data/opencode-data");
+    });
+  });
+
   describe("mount points", () => {
     const mountPoints = [
       "/data/vault",

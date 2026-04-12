@@ -25,6 +25,18 @@ if [[ -n "${SANDBOX_USER:-}" ]]; then
 
     # Set HOME for the target user
     export HOME="/home/$SANDBOX_USER"
+fi
+
+# Bridge /data/config → $HOME/.config/opencode so opencode finds its config.
+# Bridge /data/opencode-data → $HOME/.local/share/opencode for state/database.
+# Must run after HOME is set (either /home/$SANDBOX_USER or default /root).
+mkdir -p "$HOME/.config" "$HOME/.local/share"
+ln -sfn /data/config "$HOME/.config/opencode"
+ln -sfn /data/opencode-data "$HOME/.local/share/opencode"
+
+if [[ -n "${SANDBOX_USER:-}" ]]; then
+    # Ensure the symlink parents are owned by the target user
+    chown -R "${SANDBOX_UID}:${SANDBOX_GID}" "$HOME/.config" "$HOME/.local" 2>/dev/null || true
 
     # Re-exec as the target user via gosu
     exec gosu "$SANDBOX_USER" "$@"

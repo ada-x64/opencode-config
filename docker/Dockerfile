@@ -15,6 +15,9 @@ RUN apt-get update && apt-get install -y \
     fzf \
     sudo \
     unzip \
+    rsync \
+    tmux \
+    shellcheck \
     && rm -rf /var/lib/apt/lists/*
 
 # yq — install from GitHub releases (Ubuntu 24.04 package is a different tool)

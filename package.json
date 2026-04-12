@@ -15,7 +15,8 @@
     "build": "bun run scripts/build.ts",
     "install-config": "bun run scripts/install.ts",
     "setup": "bun run scripts/setup.ts",
-    "lint": "bun run scripts/lint.ts"
+    "lint": "bun run scripts/lint.ts",
+    "test": "bun run scripts/test.ts"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
