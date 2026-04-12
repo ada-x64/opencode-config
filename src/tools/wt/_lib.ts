@@ -1,3 +1,4 @@
+import { $ } from "bun";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 
@@ -16,9 +17,9 @@ export async function wtDetect(
     if (gitStat?.isDirectory()) return "clone";
     if (gitStat?.isFile()) return "worktree";
 
-    const headStat = await stat(path.join(p, "HEAD")).catch(() => null);
-    const refsStat = await stat(path.join(p, "refs")).catch(() => null);
-    if (headStat?.isFile() && refsStat?.isDirectory()) return "bare";
+    // needs to check if a subdirectory (typically '.bare') contains these files
+    if ((await $`git rev-parse --is-bare-repository`).text() === "true")
+      return "bare";
 
     return "unknown";
   } catch {
