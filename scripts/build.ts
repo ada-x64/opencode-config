@@ -731,6 +731,7 @@ export function build(
   config: BuildConfig,
   configDirValue = "",
   sandboxConfigDirValue: string | null = null,
+  outDirValue: string | null = null,
 ): string {
   if (!configDirValue) {
     configDirValue =
@@ -747,7 +748,9 @@ export function build(
       globalSection.sandbox_config_dir ?? "/root/.config/opencode";
   }
 
-  const outRoot = path.join(REPO_ROOT, "out");
+  const outRoot = outDirValue
+    ? path.resolve(outDirValue)
+    : path.join(REPO_ROOT, "out");
   const outHost = path.join(outRoot, "host");
   const outSandbox = path.join(outRoot, "sandbox");
 
@@ -830,10 +833,16 @@ if (import.meta.main) {
       reconfigure: { type: "boolean", default: false },
       "config-dir": { type: "string", default: "" },
       "sandbox-config-dir": { type: "string", default: "" },
+      "out-dir": { type: "string", default: "" },
     },
     strict: true,
   });
 
   const config = await ensureConfig(values.reconfigure);
-  build(config, values["config-dir"], values["sandbox-config-dir"] || null);
+  build(
+    config,
+    values["config-dir"],
+    values["sandbox-config-dir"] || null,
+    values["out-dir"] || null,
+  );
 }

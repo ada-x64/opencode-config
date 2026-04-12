@@ -212,13 +212,14 @@ if (import.meta.main) {
   const HELP_TEXT = `install.ts — deploy built config from out/host/ and out/sandbox/ to target directories
 
 Usage:
-  bun scripts/install.ts [--profile <name>] [--config-dir <path>] [--help]
+  bun scripts/install.ts [--profile <name>] [--config-dir <path>] [--out-dir <path>] [--help]
 
 Options:
   --profile <name>     Profile to use (default: host). Supports slash-separated
                        names like "gh/username" — tries the exact .env first,
                        then falls back to the base (e.g. gh.env for gh/*).
   --config-dir <path>  Override CONFIG_DIR from the profile.
+  --out-dir <path>     Override the build output directory (default: <repo>/out).
   --help               Show this help message and exit.
 `;
 
@@ -228,6 +229,7 @@ Options:
     options: {
       profile: { type: "string", default: "host" },
       "config-dir": { type: "string", default: "" },
+      "out-dir": { type: "string", default: "" },
       help: { type: "boolean", default: false },
     },
     strict: true,
@@ -243,7 +245,9 @@ Options:
   const scriptDir = dirname(resolve(import.meta.filename));
   const repoRoot = resolve(scriptDir, "..");
   const srcDir = join(repoRoot, "src");
-  const outDir = join(repoRoot, "out");
+  const outDir = args["out-dir"]
+    ? resolve(args["out-dir"])
+    : join(repoRoot, "out");
   const outHostDir = join(outDir, "host");
   const outSandboxDir = join(outDir, "sandbox");
   const profilesDir = join(srcDir, "profiles");
