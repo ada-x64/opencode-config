@@ -31,9 +31,13 @@
  *   6. Deploys AoE global config from src/aoe-config.toml (resolving path
  *      placeholders: {{AGENT_VAULT}}, {{SANDBOX_CONFIG_DIR}},
  *      {{OPENCODE_DATA_DIR}}).
- *   6b. If profiles.toml doesn't exist, interactively prompts the user to
- *       generate one with defaults (GitHub username, GH_TOKEN, gitconfig,
- *       Docker user). Skips silently in non-interactive mode.
+ *   6b. If profiles.toml doesn't exist:
+ *       - Interactive (TTY): prompts the user to generate one with
+ *         defaults (GitHub username, GH_TOKEN strategy, gitconfig,
+ *         Docker user).
+ *       - --non-interactive: auto-generates using detected defaults
+ *         (GitHub username via gh CLI, optional GH_TOKEN from env).
+ *       - Non-TTY without --non-interactive: prints an error message.
  *   7. Deploys AoE per-profile configs for ALL profiles listed in
  *      profiles.toml (resolving path placeholders and per-profile
  *      secrets: {{GH_TOKEN}}, {{NTFY_TOPIC}},
