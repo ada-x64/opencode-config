@@ -1,0 +1,40 @@
+# Per-profile configuration for opencode-config sandboxes.
+#
+# This file is NOT checked in — it lives at:
+#   ~/.config/occonf/profiles.toml
+# Override location with OCCONF_PROFILES env var or --profiles-config flag.
+# Permissions should be 600 (contains tokens).
+#
+# If this file doesn't exist, install.ts will offer to generate it
+# with defaults detected from your environment (GitHub username,
+# gitconfig path, Docker UID/GID).
+#
+# Resolution order for each key:
+#   1. profiles."<profile-name>" section (exact match)
+#   2. [default] section
+#   3. Key-specific fallback (see below)
+#   4. Omit (line removed from deployed AoE config)
+#
+# Fallbacks:
+#   GH_TOKEN:   none — omitted if not configured
+#   NTFY_TOPIC: reads $AGENT_VAULT/_misc/cache/ntfy-topic.txt
+#   mount_ssh:  false
+#   gitconfig:  none — no git config injected
+#   docker.*:   none — runs as root
+
+[default]
+# GH_TOKEN = "ghp_your_default_token"
+# NTFY_TOPIC = "your-default-topic"
+
+# Per-profile overrides — profile names with "/" must be quoted
+# [profiles."gh/alice"]
+# GH_TOKEN = "gho_alice_token_here"
+# NTFY_TOPIC = "alice-custom-topic"
+# mount_ssh = true
+# gitconfig = "/home/alice/.gitconfig-work"
+#
+# [profiles."gh/alice".docker]
+# username = "alice"
+# group = "agents"
+# uid = 1000
+# gid = 1000
