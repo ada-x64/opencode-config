@@ -64,7 +64,7 @@ describe("assertSafeProfileName", () => {
     ];
 
     for (const [name, desc] of invalid) {
-      it(`rejects ${desc}: "${name.replace(/\x00/g, "\\x00")}"`, () => {
+      it(`rejects ${desc}: "${name.replace("\u{0}", "\\x00")}"`, () => {
         expect(() => assertSafeProfileName(name)).toThrow();
       });
     }

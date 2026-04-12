@@ -7,7 +7,6 @@
  *   - model field in opencode.json
  *   - model + external_directory in agent frontmatter
  *   - {{BASH_PERMISSIONS}} placeholder resolved per-variant from permissions
- *   - {{CONFIG_DIR}} placeholder resolution in agent files
  *
  * Source files in src/ are NEVER modified.
  *
@@ -701,29 +700,6 @@ export function convertAskToAllow(agentsDir: string): void {
 }
 
 // ---------------------------------------------------------------------------
-// {{CONFIG_DIR}} resolution
-// ---------------------------------------------------------------------------
-
-export function resolveConfigDir(
-  agentsDir: string,
-  configDirValue: string,
-): void {
-  let count = 0;
-  for (const agentFile of listMdFiles(agentsDir)) {
-    const text = fs.readFileSync(agentFile, "utf-8");
-    if (text.includes("{{CONFIG_DIR}}")) {
-      fs.writeFileSync(
-        agentFile,
-        text.replaceAll("{{CONFIG_DIR}}", configDirValue),
-      );
-      console.log(`  resolved: ${path.basename(agentFile)}`);
-      count++;
-    }
-  }
-  console.log(`  ${count} agent file(s) updated.`);
-}
-
-// ---------------------------------------------------------------------------
 // Main build orchestrator
 // ---------------------------------------------------------------------------
 
@@ -731,6 +707,7 @@ export function build(
   config: BuildConfig,
   configDirValue = "",
   sandboxConfigDirValue: string | null = null,
+  outDirValue: string | null = null,
 ): string {
   if (!configDirValue) {
     configDirValue =
@@ -747,7 +724,9 @@ export function build(
       globalSection.sandbox_config_dir ?? "/root/.config/opencode";
   }
 
-  const outRoot = path.join(REPO_ROOT, "out");
+  const outRoot = outDirValue
+    ? path.resolve(outDirValue)
+    : path.join(REPO_ROOT, "out");
   const outHost = path.join(outRoot, "host");
   const outSandbox = path.join(outRoot, "sandbox");
 
@@ -780,11 +759,6 @@ export function build(
   console.log("Stamping external_directory (host)...");
   stampExternalDirs(agentsDirHost, extDirs, "host");
 
-  console.log(
-    `Resolving {{CONFIG_DIR}} → ${configDirValue} in host agent files...`,
-  );
-  resolveConfigDir(agentsDirHost, configDirValue);
-
   console.log();
   console.log("=".repeat(60));
   console.log("Building sandbox variant → out/sandbox/");
@@ -807,11 +781,6 @@ export function build(
   console.log("Converting 'ask' → 'allow' in sandbox agents...");
   convertAskToAllow(agentsDirSandbox);
 
-  console.log(
-    `Resolving {{CONFIG_DIR}} → ${sandboxConfigDirValue} in sandbox agent files...`,
-  );
-  resolveConfigDir(agentsDirSandbox, sandboxConfigDirValue);
-
   console.log();
   console.log(`Done. Build output in ${outRoot}/`);
   console.log(`  Host:    ${outHost}/`);
@@ -830,10 +799,16 @@ if (import.meta.main) {
       reconfigure: { type: "boolean", default: false },
       "config-dir": { type: "string", default: "" },
       "sandbox-config-dir": { type: "string", default: "" },
+      "out-dir": { type: "string", default: "" },
     },
     strict: true,
   });
 
   const config = await ensureConfig(values.reconfigure);
-  build(config, values["config-dir"], values["sandbox-config-dir"] || null);
+  build(
+    config,
+    values["config-dir"],
+    values["sandbox-config-dir"] || null,
+    values["out-dir"] || null,
+  );
 }
