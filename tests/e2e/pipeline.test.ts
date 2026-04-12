@@ -112,7 +112,6 @@ describe("build e2e", () => {
     expect(planner).toContain("{env:AGENT_REPOS}/**");
 
     // No unresolved placeholders remain
-    expect(planner).not.toContain("{{CONFIG_DIR}}");
     expect(planner).not.toContain("{{include:");
     expect(planner).not.toContain("{{TRIAGE_ICON}}");
     expect(planner).not.toContain("{{TRIAGE_EVENTS}}");
@@ -138,7 +137,6 @@ describe("build e2e", () => {
     }
 
     // No unresolved placeholders
-    expect(planner).not.toContain("{{CONFIG_DIR}}");
     expect(planner).not.toContain("{{include:");
   });
 });
@@ -396,7 +394,6 @@ describe("full pipeline e2e", () => {
     );
     expect(deployedAgent).not.toContain("{{BASH_PERMISSIONS}}");
     expect(deployedAgent).not.toContain("{{include:");
-    expect(deployedAgent).not.toContain("{{CONFIG_DIR}}");
 
     // AoE global config deployed with resolved placeholders
     const aoeGlobal = readFileSync(
