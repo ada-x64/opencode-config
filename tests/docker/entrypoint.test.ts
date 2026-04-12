@@ -119,6 +119,7 @@ describe("entrypoint — mount points", () => {
   it("mount points are group-writable when SANDBOX_USER is set", async () => {
     const env = {
       SANDBOX_USER: "mounttest",
+      SANDBOX_GROUP: "mounttest",
       SANDBOX_UID: "3000",
       SANDBOX_GID: "3000",
     };

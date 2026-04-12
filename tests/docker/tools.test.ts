@@ -151,6 +151,7 @@ describe("tools work for non-root user", () => {
         [ENTRYPOINT, tool!, ...args],
         {
           SANDBOX_USER: "tooltest",
+          SANDBOX_GROUP: "tooltest",
           SANDBOX_UID: "4000",
           SANDBOX_GID: "4000",
         },
