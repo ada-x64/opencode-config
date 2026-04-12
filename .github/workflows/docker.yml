@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
     paths: ["docker/**"]
+  pull_request:
+    branches: [main]
+    paths: ["docker/**", "tests/docker/**"]
   workflow_dispatch:
 
 env:
@@ -11,9 +14,27 @@ env:
   IMAGE_NAME: ${{ github.repository_owner }}/cubething-occonf-sandbox
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t occonf-test docker/
+
+      - name: Run Docker integration tests
+        run: >
+          docker run --rm
+          -v ${{ github.workspace }}:/workspace
+          occonf-test
+          bun test tests/docker/
+
   build-and-push:
     name: Build & Push
     runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       packages: write
