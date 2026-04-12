@@ -85,10 +85,6 @@ export function resolveProfilesConfig(
 }
 
 /**
- * Profile data loaded from profiles.toml for a specific profile.
- * undefined values mean "omit this key from deployed config".
- */
-/**
  * Validate and sanitize a profile name for use as a directory component.
  *
  * Allowed characters: [a-zA-Z0-9._-/]. At most one slash separating
@@ -141,6 +137,10 @@ export function sanitizeProfileName(name: string): string {
   return name.replace(/\//g, "-");
 }
 
+/**
+ * Profile data loaded from profiles.toml for a specific profile.
+ * undefined values mean "omit this key from deployed config".
+ */
 export interface ProfileData {
   GH_TOKEN?: string;
   NTFY_TOPIC?: string;
@@ -402,7 +402,7 @@ export function writeProfilesFile(destPath: string, content: string): void {
  * result to destPath with 600 permissions.
  *
  * @param destPath - Where to write the generated file
- * @param includeToken - Whether to capture GH_TOKEN via `gh auth token`
+ * @param includeToken - Whether to read GH_TOKEN from the environment
  * @returns true if a file was generated, false on failure
  */
 export async function generateProfilesNonInteractive(
