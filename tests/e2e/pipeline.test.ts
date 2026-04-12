@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { createIsolatedEnv, runScript, REPO_ROOT } from "./_helpers";
 
@@ -81,9 +75,7 @@ describe("build e2e", () => {
     expect(existsSync(join(outDir, "sandbox", "opencode.json"))).toBe(true);
 
     // Agent files present
-    expect(existsSync(join(outDir, "host", "agents", "planner.md"))).toBe(
-      true,
-    );
+    expect(existsSync(join(outDir, "host", "agents", "planner.md"))).toBe(true);
     expect(existsSync(join(outDir, "sandbox", "agents", "planner.md"))).toBe(
       true,
     );
@@ -229,7 +221,7 @@ describe("install e2e", () => {
     const configDir = join(home, ".config", "opencode");
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir, "--opencode-config-dir", configDir],
+      ["--out-dir", outDir, "--opencode-config-dir", configDir, "--skip-cron"],
       env,
     );
 
@@ -244,7 +236,7 @@ describe("install e2e", () => {
   it("rsyncs sandbox config to SANDBOX_CONFIG_DIR", async () => {
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir],
+      ["--out-dir", outDir, "--skip-cron"],
       env,
     );
 
@@ -263,7 +255,7 @@ describe("install e2e", () => {
 
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir],
+      ["--out-dir", outDir, "--skip-cron"],
       envNoVault,
     );
 
@@ -288,7 +280,7 @@ describe("install e2e", () => {
 
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir],
+      ["--out-dir", outDir, "--skip-cron"],
       envWithVault,
     );
 
@@ -327,7 +319,7 @@ describe("install e2e", () => {
 
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir],
+      ["--out-dir", outDir, "--skip-cron"],
       envWithVault,
     );
 
@@ -338,8 +330,23 @@ describe("install e2e", () => {
     const vaultSyncDest = join(home, ".local", "bin", "vault-sync");
     expect(existsSync(vaultSyncDest)).toBe(true);
 
-    // Verify the output mentions vault-sync deployment
+    // Verify the output mentions vault-sync deployment and cron skip
     expect(result.stdout).toContain("vault-sync");
+    expect(result.stdout).toContain("Skipping cron installation");
+  });
+
+  it("refuses to install when out/host/ equals CONFIG_DIR", async () => {
+    // Point --opencode-config-dir at the same path as out/host/
+    const hostDir = join(outDir, "host");
+
+    const result = await runScript(
+      "scripts/install.ts",
+      ["--out-dir", outDir, "--opencode-config-dir", hostDir, "--skip-cron"],
+      env,
+    );
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("equals target CONFIG_DIR");
   });
 });
 
@@ -411,7 +418,7 @@ describe("profiles e2e", () => {
 
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir],
+      ["--out-dir", outDir, "--skip-cron"],
       { ...env, AGENT_VAULT: agentVault },
     );
 
@@ -455,7 +462,7 @@ describe("profiles e2e", () => {
 
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir],
+      ["--out-dir", outDir, "--skip-cron"],
       { ...env, AGENT_VAULT: agentVault },
     );
 
@@ -501,7 +508,7 @@ describe("profiles e2e", () => {
 
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir],
+      ["--out-dir", outDir, "--skip-cron"],
       { ...env, AGENT_VAULT: agentVault },
     );
 
@@ -536,7 +543,7 @@ describe("profiles e2e", () => {
 
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir],
+      ["--out-dir", outDir, "--skip-cron"],
       { ...env, AGENT_VAULT: agentVault },
     );
 
@@ -559,13 +566,150 @@ describe("profiles e2e", () => {
 
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir],
+      ["--out-dir", outDir, "--skip-cron"],
       { ...env, AGENT_VAULT: agentVault },
     );
 
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toContain("GH_TOKEN not configured");
     expect(result.stderr).toContain("gh/notoken");
+  });
+
+  it("uses --profiles-config to read from a custom path", async () => {
+    const agentVault = join(home, "vault-custom-cfg");
+    mkdirSync(agentVault, { recursive: true });
+
+    // Write profiles.toml to a non-default location
+    const customDir = join(home, "custom-profiles-dir");
+    mkdirSync(customDir, { recursive: true });
+    const customProfilesPath = join(customDir, "my-profiles.toml");
+    writeFileSync(
+      customProfilesPath,
+      [
+        "[default]",
+        "",
+        '[profiles."gh/custom"]',
+        'GH_TOKEN = "ghp_custom_tok"',
+        "",
+      ].join("\n"),
+    );
+
+    const result = await runScript(
+      "scripts/install.ts",
+      [
+        "--out-dir",
+        outDir,
+        "--skip-cron",
+        "--profiles-config",
+        customProfilesPath,
+      ],
+      { ...env, AGENT_VAULT: agentVault },
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Deployed 1 AoE profile(s)");
+
+    // Profile deployed from custom config
+    const aoeDir = join(home, ".config", "agent-of-empires");
+    const config = readFileSync(
+      join(aoeDir, "profiles", "gh-custom", "config.toml"),
+      "utf-8",
+    );
+    expect(config).toContain("GH_TOKEN=ghp_custom_tok");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// --generate-profiles e2e tests
+// ---------------------------------------------------------------------------
+
+describe("generate-profiles e2e", () => {
+  let env: Record<string, string>;
+  let home: string;
+  let outDir: string;
+  const buildJsonPath = join(REPO_ROOT, "build.json");
+  let savedBuildJson: string | null = null;
+
+  beforeAll(async () => {
+    ({ home, outDir, env } = createIsolatedEnv());
+
+    if (existsSync(buildJsonPath)) {
+      savedBuildJson = readFileSync(buildJsonPath, "utf-8");
+    }
+
+    writeFileSync(
+      buildJsonPath,
+      JSON.stringify(DETERMINISTIC_BUILD_JSON, null, 2),
+    );
+
+    // Build once for install tests
+    const buildResult = await runScript(
+      "scripts/build.ts",
+      ["--out-dir", outDir],
+      env,
+    );
+    if (buildResult.exitCode !== 0) {
+      throw new Error(`Build failed: ${buildResult.stderr}`);
+    }
+  });
+
+  afterAll(() => {
+    rmSync(home, { recursive: true, force: true });
+    rmSync(outDir, { recursive: true, force: true });
+
+    if (savedBuildJson !== null) {
+      writeFileSync(buildJsonPath, savedBuildJson);
+    } else if (existsSync(buildJsonPath)) {
+      rmSync(buildJsonPath);
+    }
+  });
+
+  it("reports error when gh CLI is not authenticated", async () => {
+    const agentVault = join(home, "vault-gen-noauth");
+    mkdirSync(agentVault, { recursive: true });
+
+    // Ensure no profiles.toml exists at the default location
+    const profilesPath = join(home, ".config", "occonf", "profiles.toml");
+    expect(existsSync(profilesPath)).toBe(false);
+
+    const result = await runScript(
+      "scripts/install.ts",
+      ["--out-dir", outDir, "--skip-cron", "--generate-profiles"],
+      { ...env, AGENT_VAULT: agentVault },
+    );
+
+    // Should still succeed (install completes, profiles generation fails gracefully)
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain("Could not detect GitHub username");
+
+    // profiles.toml should NOT have been created
+    expect(existsSync(profilesPath)).toBe(false);
+  });
+
+  it("--generate-profiles with pre-existing profiles.toml is a no-op", async () => {
+    const agentVault = join(home, "vault-gen-exists");
+    mkdirSync(agentVault, { recursive: true });
+
+    // Create a profiles.toml before running
+    const profilesDir = join(home, ".config", "occonf");
+    mkdirSync(profilesDir, { recursive: true });
+    const profilesPath = join(profilesDir, "profiles.toml");
+    writeFileSync(profilesPath, '[profiles."gh/existing"]\nGH_TOKEN = "tok"\n');
+
+    const result = await runScript(
+      "scripts/install.ts",
+      ["--out-dir", outDir, "--skip-cron", "--generate-profiles"],
+      { ...env, AGENT_VAULT: agentVault },
+    );
+
+    expect(result.exitCode).toBe(0);
+
+    // Original content should be untouched
+    const content = readFileSync(profilesPath, "utf-8");
+    expect(content).toContain("gh/existing");
+
+    // Profile should deploy from the existing file
+    expect(result.stdout).toContain("Deployed 1 AoE profile(s)");
   });
 });
 
@@ -633,7 +777,7 @@ describe("full pipeline e2e", () => {
     // Step 2: Install with defaults, reading from temp out dir
     const installResult = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir, "--opencode-config-dir", configDir],
+      ["--out-dir", outDir, "--opencode-config-dir", configDir, "--skip-cron"],
       envFull,
     );
     expect(installResult.exitCode).toBe(0);

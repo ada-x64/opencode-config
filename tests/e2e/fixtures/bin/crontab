@@ -1,9 +1,0 @@
-#!/bin/bash
-# Mock crontab for e2e tests
-if [ "$1" = "-l" ]; then
-  echo ""  # empty crontab
-  exit 0
-fi
-# Accept stdin for crontab - (silent no-op)
-cat > /dev/null
-exit 0

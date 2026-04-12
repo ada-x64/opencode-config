@@ -4,11 +4,9 @@ import { tmpdir } from "os";
 
 /** e2e test root paths */
 export const E2E_DIR = import.meta.dir;
-export const FIXTURES_DIR = join(E2E_DIR, "fixtures");
 export const REPO_ROOT = join(E2E_DIR, "../..");
-export const MOCK_BIN_DIR = join(FIXTURES_DIR, "bin");
 
-/** Create an isolated temp HOME and out dir with mock bin on PATH */
+/** Create an isolated temp HOME and out dir */
 export function createIsolatedEnv(): {
   home: string;
   outDir: string;
@@ -23,7 +21,7 @@ export function createIsolatedEnv(): {
 
   const env: Record<string, string> = {
     HOME: home,
-    PATH: `${MOCK_BIN_DIR}:${process.env.PATH}`,
+    PATH: process.env.PATH ?? "",
     TERM: "dumb",
   };
 

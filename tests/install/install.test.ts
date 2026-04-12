@@ -11,6 +11,8 @@ import {
   resolveSecretPlaceholder,
   deployAoeProfile,
   sanitizeProfileName,
+  buildProfilesContent,
+  type ProfileDefaults,
 } from "../../scripts/install.ts";
 
 // ---------------------------------------------------------------------------
@@ -158,6 +160,14 @@ describe("loadProfiles", () => {
     );
     expect(result.GH_TOKEN).toBeUndefined();
     expect(result.SANDBOX_USER).toBeUndefined();
+  });
+
+  it("throws on malformed TOML", async () => {
+    const cfg = path.join(tmp, "profiles-malformed.toml");
+    await writeFile(cfg, "{{{{invalid toml}}}}");
+    expect(() => loadProfiles("host", cfg, vaultDir)).toThrow(
+      "Failed to parse",
+    );
   });
 });
 
@@ -314,6 +324,10 @@ describe("deployAoeProfile", () => {
     expect(existsSync(copiedGitconfig)).toBe(true);
     expect(readFileSync(copiedGitconfig, "utf-8")).toContain("[user]");
 
+    // Copied gitconfig should have 0o644 permissions (readable by container user)
+    const gitconfigMode = statSync(copiedGitconfig).mode & 0o777;
+    expect(gitconfigMode).toBe(0o644);
+
     // GITCONFIG_VOLUME resolved to the copy path
     const config = readFileSync(
       path.join(aoeDir, "profiles", "gh-alice", "config.toml"),
@@ -456,5 +470,61 @@ describe("loadProfiles mount_ssh", () => {
     await writeFile(cfg, "[default]\n");
     const result = loadProfiles("some-profile", cfg, vaultDir);
     expect(result.mount_ssh).toBeUndefined();
+  });
+});
+
+// --- buildProfilesContent ---
+
+describe("buildProfilesContent", () => {
+  const defaults: ProfileDefaults = {
+    ghUsername: "testuser",
+    ghToken: "",
+    gitconfigPath: null,
+    username: "testuser",
+    uid: "1000",
+    gid: "1000",
+  };
+
+  it("generates valid TOML with profile section", () => {
+    const content = buildProfilesContent(defaults, "/test/profiles.toml");
+    expect(content).toContain('[profiles."gh/testuser"]');
+    expect(content).toContain("mount_ssh = true");
+    expect(content).toContain('[profiles."gh/testuser".docker]');
+    expect(content).toContain('username = "testuser"');
+    expect(content).toContain("uid = 1000");
+    expect(content).toContain("gid = 1000");
+  });
+
+  it("includes GH_TOKEN when provided", () => {
+    const withToken = { ...defaults, ghToken: "ghp_test123" };
+    const content = buildProfilesContent(withToken, "/test/profiles.toml");
+    expect(content).toContain('GH_TOKEN = "ghp_test123"');
+  });
+
+  it("omits GH_TOKEN when empty", () => {
+    const content = buildProfilesContent(defaults, "/test/profiles.toml");
+    expect(content).not.toContain("GH_TOKEN");
+  });
+
+  it("includes gitconfig when path is set", () => {
+    const withGitconfig = {
+      ...defaults,
+      gitconfigPath: "/home/test/.gitconfig",
+    };
+    const content = buildProfilesContent(withGitconfig, "/test/profiles.toml");
+    expect(content).toContain('gitconfig = "/home/test/.gitconfig"');
+  });
+
+  it("omits gitconfig when path is null", () => {
+    const content = buildProfilesContent(defaults, "/test/profiles.toml");
+    expect(content).not.toContain("gitconfig");
+  });
+
+  it("includes dest path in header comment", () => {
+    const content = buildProfilesContent(
+      defaults,
+      "/custom/path/profiles.toml",
+    );
+    expect(content).toContain("# Location: /custom/path/profiles.toml");
   });
 });
