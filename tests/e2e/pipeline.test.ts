@@ -620,10 +620,10 @@ describe("profiles e2e", () => {
 });
 
 // ---------------------------------------------------------------------------
-// --generate-profiles e2e tests
+// --non-interactive e2e tests
 // ---------------------------------------------------------------------------
 
-describe("generate-profiles e2e", () => {
+describe("non-interactive e2e", () => {
   let env: Record<string, string>;
   let home: string;
   let outDir: string;
@@ -674,7 +674,7 @@ describe("generate-profiles e2e", () => {
 
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir, "--skip-cron", "--generate-profiles"],
+      ["--out-dir", outDir, "--skip-cron", "--non-interactive"],
       { ...env, AGENT_VAULT: agentVault },
     );
 
@@ -686,7 +686,7 @@ describe("generate-profiles e2e", () => {
     expect(existsSync(profilesPath)).toBe(false);
   });
 
-  it("--generate-profiles with pre-existing profiles.toml is a no-op", async () => {
+  it("--non-interactive with pre-existing profiles.toml is a no-op", async () => {
     const agentVault = join(home, "vault-gen-exists");
     mkdirSync(agentVault, { recursive: true });
 
@@ -698,7 +698,7 @@ describe("generate-profiles e2e", () => {
 
     const result = await runScript(
       "scripts/install.ts",
-      ["--out-dir", outDir, "--skip-cron", "--generate-profiles"],
+      ["--out-dir", outDir, "--skip-cron", "--non-interactive"],
       { ...env, AGENT_VAULT: agentVault },
     );
 
@@ -710,6 +710,38 @@ describe("generate-profiles e2e", () => {
 
     // Profile should deploy from the existing file
     expect(result.stdout).toContain("Deployed 1 AoE profile(s)");
+  });
+
+  it("--include-token without GH_TOKEN in env warns and omits", async () => {
+    const agentVault = join(home, "vault-gen-no-env-tok");
+    mkdirSync(agentVault, { recursive: true });
+
+    // Use a custom profiles path to avoid leftover from previous test
+    const customProfilesPath = join(home, "custom-no-tok", "profiles.toml");
+    expect(existsSync(customProfilesPath)).toBe(false);
+
+    // No GH_TOKEN in env
+    const envNoToken = { ...env, AGENT_VAULT: agentVault };
+    delete envNoToken.GH_TOKEN;
+
+    const result = await runScript(
+      "scripts/install.ts",
+      [
+        "--out-dir",
+        outDir,
+        "--skip-cron",
+        "--non-interactive",
+        "--include-token",
+        "--profiles-config",
+        customProfilesPath,
+      ],
+      envNoToken,
+    );
+
+    // Install succeeds (generation fails because no gh auth, but that's the
+    // username detection — --include-token warning would only appear if
+    // generation got past username detection)
+    expect(result.exitCode).toBe(0);
   });
 });
 

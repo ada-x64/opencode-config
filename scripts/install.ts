@@ -12,8 +12,9 @@
  *                                  override with SANDBOX_CONFIG_DIR env var).
  *   --profiles-config <path>      Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
  *                                  override with OCCONF_PROFILES env var).
- *   --generate-profiles           Non-interactively generate profiles.toml if missing.
- *   --include-token               With --generate-profiles, include GH_TOKEN.
+ *   --non-interactive              Non-interactively generate profiles.toml if missing.
+ *   --include-token               With --non-interactive, read GH_TOKEN from env
+ *                                  and include it in the generated profiles.toml.
  *   --skip-cron                   Skip vault-sync cron entry installation.
  *   --help                        Show this help message and exit.
  *
@@ -277,7 +278,7 @@ export interface ProfileDefaults {
  * Discovers GitHub username (via gh CLI), optionally captures GH_TOKEN,
  * detects gitconfig path, and reads Docker user settings (uid/gid).
  *
- * @param includeToken - Whether to capture GH_TOKEN via `gh auth token`
+ * @param includeToken - Whether to read GH_TOKEN from the environment
  * @returns Detected defaults
  * @throws If GitHub username cannot be detected
  */
@@ -304,13 +305,14 @@ export async function detectProfileDefaults(
     );
   }
 
-  // GH_TOKEN — only capture when explicitly requested
+  // GH_TOKEN — only capture from env when explicitly requested
   let ghToken = "";
   if (includeToken) {
-    try {
-      ghToken = (await $`gh auth token`.text()).trim();
-    } catch {
-      console.error("Warning: 'gh auth token' failed — omitting GH_TOKEN.");
+    ghToken = Bun.env.GH_TOKEN ?? "";
+    if (!ghToken) {
+      console.error(
+        "Warning: --include-token set but GH_TOKEN not found in environment — omitting.",
+      );
     }
   }
 
@@ -624,10 +626,10 @@ Options:
                                  override with OCCONF_PROFILES env var).
   --out-dir <path>              Output directory to read build artifacts from
                                  (default: <repo-root>/out).
-  --generate-profiles           Non-interactively generate profiles.toml if missing.
-                                 Detects GitHub username, gitconfig, Docker UID/GID.
-  --include-token               With --generate-profiles, capture GH_TOKEN via
-                                 'gh auth token' and include it in the generated file.
+  --non-interactive              Non-interactively generate profiles.toml if missing.
+                                  Detects GitHub username, gitconfig, Docker UID/GID.
+  --include-token               With --non-interactive, read GH_TOKEN from env
+                                 and include it in the generated profiles.toml.
   --skip-cron                   Skip vault-sync cron entry installation.
   --help                        Show this help message and exit.
 `;
@@ -640,7 +642,7 @@ Options:
       "sandbox-config-dir": { type: "string", default: "" },
       "profiles-config": { type: "string", default: "" },
       "out-dir": { type: "string", default: "" },
-      "generate-profiles": { type: "boolean", default: false },
+      "non-interactive": { type: "boolean", default: false },
       "include-token": { type: "boolean", default: false },
       "skip-cron": { type: "boolean", default: false },
       help: { type: "boolean", default: false },
@@ -817,7 +819,7 @@ Options:
 
     // Auto-generate profiles.toml if missing
     if (!existsSync(profilesConfigPath)) {
-      if (args["generate-profiles"]) {
+      if (args["non-interactive"]) {
         await generateProfilesNonInteractive(
           profilesConfigPath,
           args["include-token"],
