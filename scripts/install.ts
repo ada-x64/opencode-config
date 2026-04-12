@@ -3,29 +3,39 @@
  * install.ts — deploy built config from out/host/ and out/sandbox/ to target directories
  *
  * Usage:
- *   bun scripts/install.ts [--profile <name>] [--config-dir <path>] [--help]
+ *   bun scripts/install.ts [options]
  *
  * Options:
- *   --profile <name>     Profile to use (default: host). Supports slash-separated
- *                         names like "gh/username" — tries src/profiles/gh/username.env
- *                         first, then falls back to src/profiles/gh.env.
- *   --config-dir <path>  Override CONFIG_DIR from the profile.
- *   --help               Show this help message and exit.
+ *   --opencode-config-dir <path>  Host config directory (default: ~/.config/opencode,
+ *                                  override with OPENCODE_CONFIG_DIR env var).
+ *   --sandbox-config-dir <path>   Sandbox config directory (default: ~/.config/opencode-sandbox,
+ *                                  override with SANDBOX_CONFIG_DIR env var).
+ *   --profiles-config <path>      Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
+ *                                  override with OCCONF_PROFILES env var).
+ *   --help                        Show this help message and exit.
  *
  * Prerequisites:
  *   Run build first to produce the out/ directory.
  *
  * What it does:
- *   1. Loads the selected profile to set CONFIG_DIR, OPENCODE_CONFIG_SRC, and
- *      SANDBOX_CONFIG_DIR.
+ *   1. Resolves CONFIG_DIR and SANDBOX_CONFIG_DIR from CLI flags, env vars,
+ *      or defaults. Derives OPENCODE_CONFIG_SRC from the repo root.
  *   2. Verifies out/host/ exists (must run build first).
  *   3. Refuses to run if out/host/ == CONFIG_DIR (would be a no-op or destructive).
  *   4. rsyncs out/host/ contents to CONFIG_DIR.
  *   5. rsyncs out/sandbox/ contents to SANDBOX_CONFIG_DIR (if it exists).
- *   6. Deploys AoE config (resolving {{AGENT_VAULT}}, {{OPENCODE_CONFIG_SRC}},
- *      {{SANDBOX_CONFIG_DIR}}, and {{OPENCODE_DATA_DIR}}) — uses a profile-specific
- *      .aoe.toml if present, otherwise falls back to src/aoe-config.toml.
- *   7. Prints a deployment summary.
+ *   6. Deploys AoE global config from src/aoe-config.toml (resolving path
+ *      placeholders: {{AGENT_VAULT}}, {{SANDBOX_CONFIG_DIR}},
+ *      {{OPENCODE_DATA_DIR}}).
+ *   6b. If profiles.toml doesn't exist, interactively prompts the user to
+ *       generate one with defaults (GitHub username, GH_TOKEN, gitconfig,
+ *       Docker user). Skips silently in non-interactive mode.
+ *   7. Deploys AoE per-profile configs for ALL profiles listed in
+ *      profiles.toml (resolving path placeholders and per-profile
+ *      secrets: {{GH_TOKEN}}, {{NTFY_TOPIC}},
+ *      {{SANDBOX_USER}}, {{SANDBOX_GROUP}}, {{SANDBOX_UID}}, {{SANDBOX_GID}},
+ *      {{MOUNT_SSH}}, {{GITCONFIG_VOLUME}}).
+ *   8. Prints a deployment summary.
  *
  * Separation of concerns:
  *   - build:     src/ → out/host/ and out/sandbox/ + all stamping
@@ -41,166 +51,385 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
-  readdirSync,
   writeFileSync,
   statSync,
 } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { homedir } from "node:os";
 import { $ } from "bun";
+import * as p from "@clack/prompts";
 
 // ---------------------------------------------------------------------------
 // Exported utilities — importable by tests without side effects
 // ---------------------------------------------------------------------------
 
 /**
- * Parse a shell-style .env file into a key-value record.
+ * Resolve the path to profiles.toml using 3-level fallback:
+ *   1. CLI flag (--profiles-config)
+ *   2. OCCONF_PROFILES env var
+ *   3. Default: ~/.config/occonf/profiles.toml
  *
- * Supports `export` prefix, `$HOME` / `${HOME}` / `~` expansion, quoted
- * values (note: single-quoted values are still subject to variable expansion,
- * unlike POSIX shell), and forward-reference expansion of previously-parsed keys.
+ * @returns Resolved absolute path (may not exist yet — caller should handle)
  */
-export function parseEnvFile(envPath: string): Record<string, string> {
-  const result: Record<string, string> = {};
-  const home = Bun.env.HOME ?? homedir();
-  const content = readFileSync(envPath, "utf-8");
+export function resolveProfilesConfig(
+  cliFlag: string,
+  envVar: string | undefined,
+): string {
+  if (cliFlag) return resolve(cliFlag);
+  if (envVar) return resolve(envVar);
+  return join(homedir(), ".config", "occonf", "profiles.toml");
+}
 
-  for (const rawLine of content.split("\n")) {
-    let line = rawLine.trim();
+/**
+ * Profile data loaded from profiles.toml for a specific profile.
+ * undefined values mean "omit this key from deployed config".
+ */
+export interface ProfileData {
+  GH_TOKEN?: string;
+  NTFY_TOPIC?: string;
+  gitconfig?: string;
+  SANDBOX_USER?: string;
+  SANDBOX_GROUP?: string;
+  SANDBOX_UID?: string;
+  SANDBOX_GID?: string;
+}
 
-    if (!line || line.startsWith("#")) continue;
+/**
+ * Load per-profile configuration from profiles.toml.
+ *
+ * Resolution order for each key:
+ *   1. profiles."<profileName>" section
+ *   2. [default] section
+ *   3. Key-specific fallback (NTFY_TOPIC → vault cache file)
+ *   4. undefined (caller should omit the line)
+ *
+ * Docker user fields are nested under profiles."<name>".docker and
+ * mapped to SANDBOX_USER, SANDBOX_GROUP, SANDBOX_UID, SANDBOX_GID.
+ *
+ * @param profileName - The profile name (e.g. "gh/alice", "host")
+ * @param profilesConfigPath - Absolute path to profiles.toml
+ * @param agentVault - Absolute path to the agent vault (for NTFY_TOPIC fallback)
+ * @returns Resolved ProfileData — undefined fields mean "omit"
+ */
+export function loadProfiles(
+  profileName: string,
+  profilesConfigPath: string,
+  agentVault: string,
+): ProfileData {
+  const result: ProfileData = {};
 
-    if (line.startsWith("export ")) {
-      line = line.slice("export ".length);
+  let parsed: Record<string, unknown> = {};
+  if (existsSync(profilesConfigPath)) {
+    const raw = readFileSync(profilesConfigPath, "utf-8");
+    try {
+      parsed = Bun.TOML.parse(raw) as Record<string, unknown>;
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`Failed to parse ${profilesConfigPath}: ${msg}`);
     }
+  }
 
-    const eqIdx = line.indexOf("=");
-    if (eqIdx === -1) continue;
+  const defaults = (parsed["default"] ?? {}) as Record<string, unknown>;
+  const profiles = (parsed["profiles"] ?? {}) as Record<string, unknown>;
+  const profileSection = (profiles[profileName] ?? {}) as Record<
+    string,
+    unknown
+  >;
 
-    const key = line.slice(0, eqIdx).trim();
-    let value = line.slice(eqIdx + 1).trim();
-
-    // Strip outer quotes
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
+  // Simple string keys
+  for (const key of ["GH_TOKEN", "NTFY_TOPIC", "gitconfig"] as const) {
+    const val = profileSection[key] ?? defaults[key];
+    if (typeof val === "string") {
+      (result as Record<string, string>)[key] = val;
     }
+  }
 
-    // Expand $HOME / ${HOME}
-    value = value.replace(/\$HOME|\$\{HOME\}/g, home);
-
-    // Expand ~ at the start
-    if (value.startsWith("~/")) {
-      value = join(home, value.slice(2));
-    } else if (value === "~") {
-      value = home;
+  // NTFY_TOPIC fallback: read from vault cache file
+  if (result.NTFY_TOPIC === undefined && agentVault) {
+    const cachePath = join(agentVault, "_misc", "cache", "ntfy-topic.txt");
+    if (existsSync(cachePath)) {
+      const topic = readFileSync(cachePath, "utf-8").trim();
+      if (topic) {
+        result.NTFY_TOPIC = topic;
+      }
     }
+  }
 
-    // Expand other $VAR / ${VAR} references from already-parsed values
-    value = value.replace(
-      /\$\{(\w+)\}|\$(\w+)/g,
-      (_match, braced: string | undefined, plain: string | undefined) => {
-        const varName = braced ?? plain ?? "";
-        return result[varName] ?? Bun.env[varName] ?? "";
-      },
-    );
+  // Docker user fields: profiles."<name>".docker → SANDBOX_*
+  const docker = (profileSection["docker"] ?? {}) as Record<string, unknown>;
+  const defaultDocker = (defaults["docker"] ?? {}) as Record<string, unknown>;
 
-    result[key] = value;
+  const dockerMap: [string, keyof ProfileData][] = [
+    ["username", "SANDBOX_USER"],
+    ["group", "SANDBOX_GROUP"],
+    ["uid", "SANDBOX_UID"],
+    ["gid", "SANDBOX_GID"],
+  ];
+
+  for (const [tomlKey, resultKey] of dockerMap) {
+    const val = docker[tomlKey] ?? defaultDocker[tomlKey];
+    if (val !== undefined && val !== null) {
+      result[resultKey] = String(val);
+    }
   }
 
   return result;
 }
 
 /**
- * Validate a profile name against a positive allowlist.
+ * List all profile names defined in profiles.toml.
  *
- * Segments must start with an alphanumeric character, followed by word chars,
- * dots, or dashes. An optional single slash separates family/user profiles
- * (e.g. "gh/username"). Requiring a leading alphanumeric rejects all-dot
- * segments (".", "..") which would cause path traversal via join()
- * normalization. Also inherently blocks null bytes, backslashes, and
- * multi-depth paths.
- *
- * @throws {Error} if the name is invalid (caught in main block → process.exit)
+ * @param profilesConfigPath - Absolute path to profiles.toml
+ * @returns Array of profile names (e.g. ["gh/alice", "gh/bob"])
  */
-export function assertSafeProfileName(name: string): void {
-  if (
-    !/^[a-zA-Z0-9][a-zA-Z0-9._-]*(\/[a-zA-Z0-9][a-zA-Z0-9._-]*)?$/.test(name)
-  ) {
-    throw new Error(
-      `Unsafe or malformed profile name: ${name}\n` +
-        "Profile names must match <name> or <family>/<name>. Each segment must\n" +
-        "start with an alphanumeric character and contain only [a-zA-Z0-9._-].",
+export function listProfileNames(profilesConfigPath: string): string[] {
+  if (!existsSync(profilesConfigPath)) return [];
+  const raw = readFileSync(profilesConfigPath, "utf-8");
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = Bun.TOML.parse(raw) as Record<string, unknown>;
+  } catch {
+    return [];
+  }
+  const profiles = (parsed["profiles"] ?? {}) as Record<string, unknown>;
+  return Object.keys(profiles);
+}
+
+/**
+ * Interactively generate a default profiles.toml.
+ *
+ * Detects GitHub username, optionally captures GH_TOKEN (with user
+ * confirmation), detects gitconfig path and Docker user settings from
+ * the current environment.
+ *
+ * @param destPath - Where to write the generated file
+ * @returns true if a file was generated, false if skipped
+ */
+export async function generateDefaultProfiles(
+  destPath: string,
+): Promise<boolean> {
+  if (!process.stdin.isTTY) {
+    console.error(
+      `No profiles.toml found. Copy src/profiles/profiles.toml.example to ${destPath} and edit it.`,
     );
+    return false;
   }
+
+  p.intro("profiles.toml setup");
+
+  const shouldGenerate = await p.confirm({
+    message: `No profiles.toml found at ${destPath}. Generate one with defaults?`,
+  });
+  if (p.isCancel(shouldGenerate) || !shouldGenerate) {
+    p.cancel("Skipping profiles.toml generation.");
+    return false;
+  }
+
+  // Detect GitHub username
+  let ghUsername = "";
+  const s = p.spinner();
+  s.start("Detecting GitHub username...");
+  try {
+    ghUsername = (await $`gh api user -q .login 2>/dev/null`.text()).trim();
+  } catch {
+    try {
+      const status = await $`gh auth status 2>&1`.text();
+      const match = status.match(/Logged in to github\.com account (\S+)/);
+      if (match) ghUsername = match[1]!;
+    } catch {
+      // No gh CLI available
+    }
+  }
+
+  if (!ghUsername) {
+    s.stop("Could not detect GitHub username.");
+    p.cancel("Is gh CLI installed and authenticated?");
+    return false;
+  }
+  s.stop(`GitHub username: ${ghUsername}`);
+
+  // GH_TOKEN — prompt before capturing
+  let ghToken = "";
+  const includeToken = await p.confirm({
+    message: "Include GH_TOKEN? This will run 'gh auth token'.",
+    initialValue: true,
+  });
+  if (!p.isCancel(includeToken) && includeToken) {
+    try {
+      ghToken = (await $`gh auth token`.text()).trim();
+    } catch {
+      p.log.warn("'gh auth token' failed — omitting GH_TOKEN.");
+    }
+  }
+
+  // Detect gitconfig
+  const gitconfigPath = join(homedir(), ".gitconfig");
+  const hasGitconfig = existsSync(gitconfigPath);
+
+  // Detect Docker user settings
+  const username = Bun.env.USER ?? "agent";
+  let uid = "1000";
+  let gid = "1000";
+  try {
+    uid = (await $`id -u`.text()).trim();
+    gid = (await $`id -g`.text()).trim();
+  } catch {
+    // Use defaults
+  }
+
+  // Build TOML content
+  const lines: string[] = [
+    `# Auto-generated by install.ts on ${new Date().toISOString().slice(0, 10)}`,
+    "# Edit this file to customize per-profile sandbox settings.",
+    "# See src/profiles/profiles.toml.example for full documentation.",
+    "#",
+    `# Location: ${destPath}`,
+    "# Permissions: 600 (contains tokens)",
+    "",
+    "[default]",
+    "",
+    `[profiles."gh/${ghUsername}"]`,
+  ];
+
+  if (ghToken) {
+    lines.push(`GH_TOKEN = "${ghToken}"`);
+  }
+  if (hasGitconfig) {
+    lines.push(`gitconfig = "${gitconfigPath}"`);
+  }
+
+  lines.push("");
+  lines.push(`[profiles."gh/${ghUsername}".docker]`);
+  lines.push(`username = "${username}"`);
+  lines.push(`uid = ${uid}`);
+  lines.push(`gid = ${gid}`);
+  lines.push("");
+
+  const content = lines.join("\n");
+
+  mkdirSync(dirname(destPath), { recursive: true });
+  writeFileSync(destPath, content, { mode: 0o600 });
+
+  p.note(
+    [
+      `Profile:     gh/${ghUsername}`,
+      `GH_TOKEN:    ${ghToken ? "included" : "omitted"}`,
+      `gitconfig:   ${hasGitconfig ? gitconfigPath : "none"}`,
+      `Docker user: ${username} (${uid}:${gid})`,
+    ].join("\n"),
+    `Generated ${destPath}`,
+  );
+
+  p.outro("profiles.toml ready");
+  return true;
 }
 
 /**
- * Resolve a profile .env file using 2-level fallback:
- *   1. Exact: profilesDir/<profileName>.env
- *   2. Base:  profilesDir/<family>.env (for "family/user" names)
+ * Resolve a single secret placeholder in AoE config content.
  *
- * @param profileName - The profile name (e.g. "host", "gh/username")
- * @param profilesDir - The directory containing profile .env files
- * @returns The resolved file path, or null if not found
+ * If value is defined: replaces `{{KEY}}` with the value.
+ * If value is undefined: removes the entire line containing `{{KEY}}`,
+ * plus any immediately preceding comment line that mentions KEY.
  */
-export function resolveProfileFile(
-  profileName: string,
-  profilesDir: string,
-): string | null {
-  const exact = join(profilesDir, `${profileName}.env`);
-  if (existsSync(exact)) return exact;
-
-  // Fall back to base: "gh/username" → "gh"
-  const slashIdx = profileName.indexOf("/");
-  if (slashIdx !== -1) {
-    const base = profileName.slice(0, slashIdx);
-    const basePath = join(profilesDir, `${base}.env`);
-    if (existsSync(basePath)) return basePath;
+export function resolveSecretPlaceholder(
+  content: string,
+  key: string,
+  value: string | undefined,
+): string {
+  if (value !== undefined) {
+    return content.replaceAll(`{{${key}}}`, value);
   }
 
-  return null;
+  // Remove the line containing the placeholder, and any preceding comment
+  // line that references the key name
+  const lines = content.split("\n");
+  const filtered: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (line.includes(`{{${key}}}`)) {
+      // Also remove a preceding comment line if it mentions the key
+      if (
+        filtered.length > 0 &&
+        filtered[filtered.length - 1]!.trimStart().startsWith("#") &&
+        filtered[filtered.length - 1]!.includes(key)
+      ) {
+        filtered.pop();
+      }
+      continue;
+    }
+    filtered.push(line);
+  }
+  return filtered.join("\n");
 }
 
 /**
- * Resolve an AoE config template using 3-level fallback:
- *   1. Exact:   profilesDir/<profileName>.aoe.toml
- *   2. Base:    profilesDir/<family>.aoe.toml (for "family/user" names)
- *   3. Default: defaultConfigPath
+ * Deploy an AoE per-profile config from the profile template.
  *
- * The extra default level (vs. 2 for .env) ensures a valid AoE config is
- * always found, even for profiles that don't define a custom one. The .env
- * resolution intentionally stops at 2 levels because there is no meaningful
- * "default .env" — every profile must explicitly declare its directory paths.
+ * Resolves all placeholders in the profile template using the provided
+ * ProfileData, then writes the config.toml to the AoE profile directory.
+ * If a gitconfig path is specified, copies it into the profile directory
+ * and resolves the GITCONFIG_VOLUME placeholder.
  *
- * @param profileName - The profile name (e.g. "host", "gh/username")
- * @param profilesDir - The directory containing profile .aoe.toml files
- * @param defaultConfigPath - Fallback path (e.g. src/aoe-config.toml)
- * @returns The resolved file path, or null if not found at any level
+ * @param profileName - Original profile name (e.g. "gh/alice")
+ * @param profileData - Resolved profile data from loadProfiles()
+ * @param profileTemplatePath - Path to src/aoe-profile.toml
+ * @param aoeDir - AoE app directory (e.g. ~/.config/agent-of-empires)
  */
-export function resolveAoeConfig(
+export function deployAoeProfile(
   profileName: string,
-  profilesDir: string,
-  defaultConfigPath: string,
-): string | null {
-  // Exact: profilesDir/gh/username.aoe.toml (or profilesDir/host.aoe.toml)
-  const exact = join(profilesDir, `${profileName}.aoe.toml`);
-  if (existsSync(exact)) return exact;
+  profileData: ProfileData,
+  profileTemplatePath: string,
+  aoeDir: string,
+): void {
+  // Convert profile name for AoE directory: gh/alice → gh-alice
+  const aoeName = profileName.replace(/\//g, "-");
+  const aoeProfileDir = join(aoeDir, "profiles", aoeName);
+  mkdirSync(aoeProfileDir, { recursive: true });
 
-  // Base: "gh/username" → profilesDir/gh.aoe.toml
-  const slashIdx = profileName.indexOf("/");
-  if (slashIdx !== -1) {
-    const base = profileName.slice(0, slashIdx);
-    const basePath = join(profilesDir, `${base}.aoe.toml`);
-    if (existsSync(basePath)) return basePath;
+  let content = readFileSync(profileTemplatePath, "utf-8");
+
+  // Resolve mount_ssh: true for gh/* profiles, false otherwise
+  const isGhProfile = profileName.startsWith("gh/");
+  content = content.replaceAll("{{MOUNT_SSH}}", isGhProfile ? "true" : "false");
+
+  // Resolve secret placeholders
+  const secretKeys: (keyof ProfileData)[] = [
+    "GH_TOKEN",
+    "NTFY_TOPIC",
+    "SANDBOX_USER",
+    "SANDBOX_GROUP",
+    "SANDBOX_UID",
+    "SANDBOX_GID",
+  ];
+  for (const key of secretKeys) {
+    content = resolveSecretPlaceholder(content, key, profileData[key]);
   }
 
-  // Default
-  if (existsSync(defaultConfigPath)) return defaultConfigPath;
+  // Resolve gitconfig volume
+  if (profileData.gitconfig) {
+    // Copy gitconfig into the AoE profile directory
+    const destGitconfig = join(aoeProfileDir, "gitconfig");
+    copyFileSync(profileData.gitconfig, destGitconfig);
+    // chmod 644 — readable by container user
+    chmodSync(destGitconfig, 0o644);
 
-  return null;
+    content = resolveSecretPlaceholder(
+      content,
+      "GITCONFIG_VOLUME",
+      `${destGitconfig}:/etc/gitconfig:ro`,
+    );
+    console.log(
+      `  Copied gitconfig: ${profileData.gitconfig} → ${destGitconfig}`,
+    );
+  } else {
+    // No gitconfig — remove the volume line
+    content = resolveSecretPlaceholder(content, "GITCONFIG_VOLUME", undefined);
+  }
+
+  // Write profile config with restricted permissions
+  const profileConfigPath = join(aoeProfileDir, "config.toml");
+  writeFileSync(profileConfigPath, content, { mode: 0o600 });
+  console.log(`  AoE profile config: ${profileConfigPath}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -212,7 +441,7 @@ if (import.meta.main) {
   const HELP_TEXT = `install.ts — deploy built config from out/host/ and out/sandbox/ to target directories
 
 Usage:
-  bun scripts/install.ts [--profile <name>] [--config-dir <path>] [--out-dir <path>] [--help]
+  bun scripts/install.ts [options]
 
 Options:
   --profile <name>     Profile to use (default: host). Supports slash-separated
@@ -220,6 +449,13 @@ Options:
                        then falls back to the base (e.g. gh.env for gh/*).
   --config-dir <path>  Override CONFIG_DIR from the profile.
   --out-dir <path>     Override the build output directory (default: <repo>/out).
+  --config-dir <path>  Override CONFIG_DIR from the profile.
+  --opencode-config-dir <path>  Host config directory (default: ~/.config/opencode,
+                                 override with OPENCODE_CONFIG_DIR env var).
+  --sandbox-config-dir <path>   Sandbox config directory (default: ~/.config/opencode-sandbox,
+                                 override with SANDBOX_CONFIG_DIR env var).
+  --profiles-config <path>      Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
+                                 override with OCCONF_PROFILES env var).
   --help               Show this help message and exit.
 `;
 
@@ -227,8 +463,9 @@ Options:
   const { values: args } = parseArgs({
     args: Bun.argv.slice(2),
     options: {
-      profile: { type: "string", default: "host" },
-      "config-dir": { type: "string", default: "" },
+      "opencode-config-dir": { type: "string", default: "" },
+      "sandbox-config-dir": { type: "string", default: "" },
+      "profiles-config": { type: "string", default: "" },
       "out-dir": { type: "string", default: "" },
       help: { type: "boolean", default: false },
     },
@@ -250,65 +487,6 @@ Options:
     : join(repoRoot, "out");
   const outHostDir = join(outDir, "host");
   const outSandboxDir = join(outDir, "sandbox");
-  const profilesDir = join(srcDir, "profiles");
-
-  const profile = args.profile!;
-  const configDirOverride = args["config-dir"]!;
-
-  // --- Validate profile name ---
-  try {
-    assertSafeProfileName(profile);
-  } catch (e: unknown) {
-    console.error(`Error: ${(e as Error).message}`);
-    process.exit(1);
-  }
-
-  // --- Load profile ---
-  const profileFile = resolveProfileFile(profile, profilesDir);
-  if (!profileFile) {
-    const slashIdx = profile.indexOf("/");
-    console.error(`Error: profile not found for: ${profile}`);
-    console.error(
-      `  Tried: src/profiles/${profile}.env` +
-        (slashIdx !== -1
-          ? `, src/profiles/${profile.slice(0, slashIdx)}.env`
-          : ""),
-    );
-    console.error("Available profiles:");
-    if (existsSync(profilesDir)) {
-      const entries = readdirSync(profilesDir)
-        .filter((f) => f.endsWith(".env"))
-        .sort();
-      for (const p of entries) {
-        console.error(`  ${p.replace(/\.env$/, "")}`);
-      }
-    }
-    process.exit(1);
-  }
-
-  const envVars = parseEnvFile(profileFile);
-
-  let configDirStr: string = envVars["CONFIG_DIR"] ?? "";
-  let opencodeConfigSrc: string = envVars["OPENCODE_CONFIG_SRC"] ?? "";
-  let agentVault: string = envVars["AGENT_VAULT"] ?? Bun.env.AGENT_VAULT ?? "";
-  let sandboxConfigDirStr: string =
-    envVars["SANDBOX_CONFIG_DIR"] ??
-    join(homedir(), ".config", "opencode-sandbox");
-
-  if (!configDirStr) {
-    console.error("Error: CONFIG_DIR not set in profile.");
-    process.exit(1);
-  }
-
-  if (!opencodeConfigSrc) {
-    console.error("Error: OPENCODE_CONFIG_SRC not set in profile.");
-    process.exit(1);
-  }
-
-  // --- Apply --config-dir override ---
-  if (configDirOverride) {
-    configDirStr = configDirOverride;
-  }
 
   // --- Expand ~ and resolve ---
   function expandHome(p: string): string {
@@ -318,12 +496,26 @@ Options:
     return p;
   }
 
-  const configDir = resolve(expandHome(configDirStr));
-  opencodeConfigSrc = expandHome(opencodeConfigSrc);
-  const sandboxConfigDir = resolve(expandHome(sandboxConfigDirStr));
+  // --- Resolve paths: CLI flag → env var → default ---
+  const configDir = resolve(
+    expandHome(
+      args["opencode-config-dir"] ||
+        Bun.env.OPENCODE_CONFIG_DIR ||
+        "~/.config/opencode",
+    ),
+  );
+  const opencodeConfigSrc = repoRoot;
+  const sandboxConfigDir = resolve(
+    expandHome(
+      args["sandbox-config-dir"] ||
+        Bun.env.SANDBOX_CONFIG_DIR ||
+        "~/.config/opencode-sandbox",
+    ),
+  );
   const opencodeDataDir = resolve(
     expandHome("~/.local/share/opencode-sandbox-data"),
   );
+  let agentVault: string = Bun.env.AGENT_VAULT ?? "";
 
   // --- Check out/host/ exists ---
   if (!existsSync(outHostDir) || !statSync(outHostDir).isDirectory()) {
@@ -344,14 +536,13 @@ Options:
     console.error(`  CONFIG_DIR: ${resolvedConfig}`);
     console.error("");
     console.error(
-      "Rsyncing out/host/ onto itself would be destructive. Check your profile.",
+      "Rsyncing out/host/ onto itself would be destructive. Check --opencode-config-dir.",
     );
     process.exit(1);
   }
 
   // --- Rsync out/host/ to CONFIG_DIR ---
   console.log(`Deploying host config to: ${configDir}`);
-  console.log(`Profile:      ${profile} (${profileFile})`);
   console.log(`Source:       ${outHostDir}`);
   console.log();
 
@@ -378,7 +569,7 @@ Options:
       console.error(`  SANDBOX_CONFIG_DIR: ${resolvedSandbox}`);
       console.error("");
       console.error(
-        "Rsyncing out/sandbox/ onto itself would be destructive. Check your profile.",
+        "Rsyncing out/sandbox/ onto itself would be destructive. Check --sandbox-config-dir.",
       );
       process.exit(1);
     }
@@ -436,81 +627,116 @@ Options:
   }
 
   // --- Deploy AoE config ---
-  const aoeSrc = resolveAoeConfig(
-    profile,
-    profilesDir,
-    join(srcDir, "aoe-config.toml"),
-  );
-  const aoeDest = join(homedir(), ".config", "agent-of-empires", "config.toml");
+  const aoeDir = join(homedir(), ".config", "agent-of-empires");
 
-  if (aoeSrc) {
-    if (agentVault) {
-      console.log(`Ensuring opencode data directory: ${opencodeDataDir}`);
-      ensureOpencodeDataDir(opencodeDataDir);
-      mkdirSync(dirname(aoeDest), { recursive: true });
-      let content = readFileSync(aoeSrc, "utf-8");
-      content = content.replaceAll("{{AGENT_VAULT}}", agentVault);
-      content = content.replaceAll(
-        "{{OPENCODE_CONFIG_SRC}}",
-        opencodeConfigSrc,
+  if (agentVault) {
+    console.log(`Ensuring opencode data directory: ${opencodeDataDir}`);
+    ensureOpencodeDataDir(opencodeDataDir);
+
+    // Load profiles.toml
+    const profilesConfigPath = resolveProfilesConfig(
+      args["profiles-config"]!,
+      Bun.env.OCCONF_PROFILES,
+    );
+
+    // Auto-generate profiles.toml if missing
+    if (!existsSync(profilesConfigPath)) {
+      await generateDefaultProfiles(profilesConfigPath);
+    }
+
+    // Deploy global AoE config
+    const globalAoeSrc = join(srcDir, "aoe-config.toml");
+    const globalAoeDest = join(aoeDir, "config.toml");
+    mkdirSync(aoeDir, { recursive: true });
+
+    let globalContent = readFileSync(globalAoeSrc, "utf-8");
+    globalContent = globalContent.replaceAll("{{AGENT_VAULT}}", agentVault);
+    globalContent = globalContent.replaceAll(
+      "{{SANDBOX_CONFIG_DIR}}",
+      sandboxConfigDir,
+    );
+    globalContent = globalContent.replaceAll(
+      "{{OPENCODE_DATA_DIR}}",
+      opencodeDataDir,
+    );
+    writeFileSync(globalAoeDest, globalContent, "utf-8");
+    console.log(`AoE global config deployed to: ${globalAoeDest}`);
+
+    // Deploy AoE profiles for ALL profiles listed in profiles.toml
+    const profileTemplatePath = join(srcDir, "aoe-profile.toml");
+    const allProfileNames = listProfileNames(profilesConfigPath);
+
+    if (!existsSync(profileTemplatePath)) {
+      console.log(
+        "No AoE profile template found — skipping per-profile deployment.",
       );
-      content = content.replaceAll("{{SANDBOX_CONFIG_DIR}}", sandboxConfigDir);
-      content = content.replaceAll("{{OPENCODE_DATA_DIR}}", opencodeDataDir);
-      writeFileSync(aoeDest, content, "utf-8");
-      console.log(`AoE config deployed to: ${aoeDest}`);
-      console.log(`  Source: ${aoeSrc}`);
+    } else if (allProfileNames.length === 0) {
+      console.log(
+        "No profiles defined in profiles.toml — skipping AoE profile deployment.",
+      );
     } else {
-      console.error(
-        "Warning: AGENT_VAULT not set — skipping AoE config deployment.",
-      );
+      for (const name of allProfileNames) {
+        console.log(`Deploying AoE profile: ${name}`);
+        const data = loadProfiles(name, profilesConfigPath, agentVault);
+
+        if (!data.GH_TOKEN) {
+          console.error(
+            `  Warning: GH_TOKEN not configured for profile "${name}" — sandbox will have no GitHub authentication.`,
+          );
+        }
+
+        deployAoeProfile(name, data, profileTemplatePath, aoeDir);
+      }
+      console.log(`Deployed ${allProfileNames.length} AoE profile(s).`);
+    }
+
+    // --- Deploy vault-sync cron script ---
+    const vaultSyncSrc = join(srcDir, "..", "scripts", "vault-sync.sh");
+    const localBinDir = join(homedir(), ".local", "bin");
+    const localLogDir = join(homedir(), ".local", "log");
+    const vaultSyncDest = join(localBinDir, "vault-sync");
+
+    if (existsSync(vaultSyncSrc)) {
+      mkdirSync(localBinDir, { recursive: true });
+      mkdirSync(localLogDir, { recursive: true });
+      copyFileSync(vaultSyncSrc, vaultSyncDest);
+      // Make executable
+      chmodSync(vaultSyncDest, 0o755);
+      console.log(`vault-sync deployed to: ${vaultSyncDest}`);
+
+      // Install cron entry if not already present
+      try {
+        const existingCron =
+          (await $`crontab -l 2>/dev/null`.text()).trim() || "";
+        if (!existingCron.includes("vault-sync")) {
+          const cronLine = `*/15 * * * * AGENT_VAULT="${agentVault}" ${vaultSyncDest} >> ${localLogDir}/vault-sync.log 2>&1`;
+          const newCron = existingCron
+            ? `${existingCron}\n${cronLine}\n`
+            : `${cronLine}\n`;
+          await $`echo ${newCron} | crontab -`;
+          console.log("Installed vault-sync cron (every 15 minutes).");
+        } else {
+          console.log("vault-sync cron already installed — skipping.");
+        }
+      } catch {
+        console.error(
+          "Warning: could not install cron entry — install manually.",
+        );
+        console.error(
+          `  */15 * * * * AGENT_VAULT="${agentVault}" ${vaultSyncDest} >> ${localLogDir}/vault-sync.log 2>&1`,
+        );
+      }
     }
   } else {
-    console.error("Warning: no AoE config template found — skipping.");
-  }
-
-  // --- Deploy vault-sync cron script ---
-  const vaultSyncSrc = join(srcDir, "..", "scripts", "vault-sync.sh");
-  const localBinDir = join(homedir(), ".local", "bin");
-  const localLogDir = join(homedir(), ".local", "log");
-  const vaultSyncDest = join(localBinDir, "vault-sync");
-
-  if (existsSync(vaultSyncSrc)) {
-    mkdirSync(localBinDir, { recursive: true });
-    mkdirSync(localLogDir, { recursive: true });
-    copyFileSync(vaultSyncSrc, vaultSyncDest);
-    // Make executable
-    chmodSync(vaultSyncDest, 0o755);
-    console.log(`vault-sync deployed to: ${vaultSyncDest}`);
-
-    // Install cron entry if not already present
-    try {
-      const existingCron =
-        (await $`crontab -l 2>/dev/null`.text()).trim() || "";
-      if (!existingCron.includes("vault-sync")) {
-        const cronLine = `*/15 * * * * AGENT_VAULT="${agentVault}" ${vaultSyncDest} >> ${localLogDir}/vault-sync.log 2>&1`;
-        const newCron = existingCron
-          ? `${existingCron}\n${cronLine}\n`
-          : `${cronLine}\n`;
-        await $`echo ${newCron} | crontab -`;
-        console.log("Installed vault-sync cron (every 15 minutes).");
-      } else {
-        console.log("vault-sync cron already installed — skipping.");
-      }
-    } catch {
-      console.error(
-        "Warning: could not install cron entry — install manually.",
-      );
-      console.error(
-        `  */15 * * * * AGENT_VAULT="${agentVault}" ${vaultSyncDest} >> ${localLogDir}/vault-sync.log 2>&1`,
-      );
-    }
+    console.error(
+      "Warning: AGENT_VAULT not set — skipping AoE config and vault-sync deployment.",
+    );
   }
 
   // --- Summary ---
   console.log();
   console.log("Done.");
   console.log();
-  console.log(`  Profile:             ${profile}`);
   console.log(`  Host source:         ${outHostDir}`);
   console.log(`  Host target:         ${configDir}`);
   console.log(`  Sandbox source:      ${outSandboxDir}`);

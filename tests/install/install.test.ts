@@ -4,10 +4,10 @@ import { tmpdir, homedir } from "os";
 import path from "path";
 
 import {
-  assertSafeProfileName,
-  parseEnvFile,
-  resolveProfileFile,
-  resolveAoeConfig,
+  resolveProfilesConfig,
+  loadProfiles,
+  listProfileNames,
+  resolveSecretPlaceholder,
 } from "../../scripts/install.ts";
 
 // ---------------------------------------------------------------------------
@@ -64,7 +64,7 @@ describe("assertSafeProfileName", () => {
     ];
 
     for (const [name, desc] of invalid) {
-      it(`rejects ${desc}: "${name.replace("\u{0}", "\\x00")}"`, () => {
+      it(`rejects ${desc}: "${name.replace(/\x00/g, "\\x00")}"`, () => {
         expect(() => assertSafeProfileName(name)).toThrow();
       });
     }
@@ -76,200 +76,179 @@ describe("assertSafeProfileName", () => {
 // ---------------------------------------------------------------------------
 
 let tmp: string;
-let profilesDir: string;
-let defaultAoeConfig: string;
 
 beforeAll(async () => {
   tmp = await mkdtemp(path.join(tmpdir(), "install-test-"));
-  profilesDir = path.join(tmp, "profiles");
-
-  // Create directory structure:
-  //   profiles/host.env
-  //   profiles/gh.env
-  //   profiles/gh/specific.env
-  //   profiles/gh.aoe.toml
-  //   profiles/gh/specific.aoe.toml
-  //   aoe-config.toml (default)
-  await mkdir(path.join(profilesDir, "gh"), { recursive: true });
-
-  await writeFile(
-    path.join(profilesDir, "host.env"),
-    'CONFIG_DIR="/tmp/config"\nOPENCODE_CONFIG_SRC="/tmp/config"\nSANDBOX_CONFIG_DIR="/tmp/sandbox"\n',
-  );
-
-  await writeFile(
-    path.join(profilesDir, "gh.env"),
-    'CONFIG_DIR="/tmp/gh-config"\nOPENCODE_CONFIG_SRC="/tmp/gh-config"\nSANDBOX_CONFIG_DIR="/tmp/gh-sandbox"\n',
-  );
-
-  await writeFile(
-    path.join(profilesDir, "gh", "specific.env"),
-    'CONFIG_DIR="/tmp/specific-config"\nOPENCODE_CONFIG_SRC="/tmp/specific-config"\nSANDBOX_CONFIG_DIR="/tmp/specific-sandbox"\n',
-  );
-
-  await writeFile(
-    path.join(profilesDir, "gh.aoe.toml"),
-    "[sandbox]\nmount_ssh = true\n",
-  );
-
-  await writeFile(
-    path.join(profilesDir, "gh", "specific.aoe.toml"),
-    "[sandbox]\nmount_ssh = true\ncustom = true\n",
-  );
-
-  defaultAoeConfig = path.join(tmp, "aoe-config.toml");
-  await writeFile(defaultAoeConfig, "[sandbox]\nmount_ssh = false\n");
 });
 
 afterAll(async () => {
   await rm(tmp, { recursive: true, force: true });
 });
 
-// --- parseEnvFile ---
+// --- resolveProfilesConfig ---
 
-describe("parseEnvFile", () => {
-  it("parses simple KEY=VALUE pairs", () => {
-    const result = parseEnvFile(path.join(profilesDir, "host.env"));
-    expect(result["CONFIG_DIR"]).toBe("/tmp/config");
-    expect(result["OPENCODE_CONFIG_SRC"]).toBe("/tmp/config");
-    expect(result["SANDBOX_CONFIG_DIR"]).toBe("/tmp/sandbox");
+describe("resolveProfilesConfig", () => {
+  it("returns CLI flag when provided", () => {
+    const result = resolveProfilesConfig("/custom/path.toml", undefined);
+    expect(result).toBe("/custom/path.toml");
   });
 
-  it("strips double quotes from values", async () => {
-    const envFile = path.join(tmp, "quoted.env");
-    await writeFile(envFile, "FOO=\"bar\"\nBAZ='qux'\n");
-    const result = parseEnvFile(envFile);
-    expect(result["FOO"]).toBe("bar");
-    expect(result["BAZ"]).toBe("qux");
+  it("returns env var when CLI flag is empty", () => {
+    const result = resolveProfilesConfig("", "/env/path.toml");
+    expect(result).toBe("/env/path.toml");
   });
 
-  it("skips comments and blank lines", async () => {
-    const envFile = path.join(tmp, "comments.env");
-    await writeFile(envFile, "# comment\n\nKEY=value\n  # indented comment\n");
-    const result = parseEnvFile(envFile);
-    expect(Object.keys(result)).toEqual(["KEY"]);
-    expect(result["KEY"]).toBe("value");
-  });
-
-  it("handles export prefix", async () => {
-    const envFile = path.join(tmp, "export.env");
-    await writeFile(envFile, "export MY_VAR=hello\n");
-    const result = parseEnvFile(envFile);
-    expect(result["MY_VAR"]).toBe("hello");
-  });
-
-  it("expands $HOME in values", async () => {
-    const envFile = path.join(tmp, "home.env");
-    await writeFile(envFile, "DIR=$HOME/.config\n");
-    const result = parseEnvFile(envFile);
+  it("returns default when both are empty/undefined", () => {
+    const result = resolveProfilesConfig("", undefined);
     const home = Bun.env.HOME ?? homedir();
-    expect(result["DIR"]).toBe(path.join(home, ".config"));
+    expect(result).toBe(path.join(home, ".config", "occonf", "profiles.toml"));
   });
 
-  it("expands ${HOME} (brace form) in values", async () => {
-    const envFile = path.join(tmp, "home-brace.env");
-    await writeFile(envFile, "DIR=${HOME}/.config\n");
-    const result = parseEnvFile(envFile);
-    const home = Bun.env.HOME ?? homedir();
-    expect(result["DIR"]).toBe(path.join(home, ".config"));
-  });
-
-  it("expands ~ at the start of values", async () => {
-    const envFile = path.join(tmp, "tilde.env");
-    await writeFile(envFile, "DIR=~/.config\n");
-    const result = parseEnvFile(envFile);
-    const home = Bun.env.HOME ?? homedir();
-    expect(result["DIR"]).toBe(path.join(home, ".config"));
-  });
-
-  it("expands bare ~ to home directory", async () => {
-    const envFile = path.join(tmp, "bare-tilde.env");
-    await writeFile(envFile, "DIR=~\n");
-    const result = parseEnvFile(envFile);
-    const home = Bun.env.HOME ?? homedir();
-    expect(result["DIR"]).toBe(home);
-  });
-
-  it("expands forward-references to earlier keys", async () => {
-    const envFile = path.join(tmp, "forward-ref.env");
-    await writeFile(envFile, "BASE=/opt\nSUB=$BASE/sub\n");
-    const result = parseEnvFile(envFile);
-    expect(result["BASE"]).toBe("/opt");
-    expect(result["SUB"]).toBe("/opt/sub");
+  it("prefers CLI flag over env var", () => {
+    const result = resolveProfilesConfig("/cli/path.toml", "/env/path.toml");
+    expect(result).toBe("/cli/path.toml");
   });
 });
 
-// --- resolveProfileFile ---
+// --- listProfileNames ---
 
-describe("resolveProfileFile", () => {
-  it("finds exact match for simple profile name", () => {
-    const result = resolveProfileFile("host", profilesDir);
-    expect(result).toBe(path.join(profilesDir, "host.env"));
+describe("listProfileNames", () => {
+  it("returns profile names from profiles.toml", async () => {
+    const cfg = path.join(tmp, "list-profiles-1.toml");
+    await writeFile(
+      cfg,
+      '[profiles."gh/alice"]\nGH_TOKEN = "tok"\n\n[profiles."gh/bob"]\nGH_TOKEN = "tok2"\n',
+    );
+    expect(listProfileNames(cfg)).toEqual(["gh/alice", "gh/bob"]);
   });
 
-  it("finds exact match for family/user profile", () => {
-    const result = resolveProfileFile("gh/specific", profilesDir);
-    expect(result).toBe(path.join(profilesDir, "gh", "specific.env"));
+  it("returns empty array when file does not exist", () => {
+    expect(listProfileNames(path.join(tmp, "nonexistent.toml"))).toEqual([]);
   });
 
-  it("falls back to base .env for unknown family member", () => {
-    const result = resolveProfileFile("gh/unknown", profilesDir);
-    expect(result).toBe(path.join(profilesDir, "gh.env"));
+  it("returns empty array when no profiles section", async () => {
+    const cfg = path.join(tmp, "list-profiles-2.toml");
+    await writeFile(cfg, "[default]\n");
+    expect(listProfileNames(cfg)).toEqual([]);
   });
 
-  it("returns null for nonexistent profile", () => {
-    const result = resolveProfileFile("nonexistent", profilesDir);
-    expect(result).toBeNull();
-  });
-
-  it("returns null for nonexistent family", () => {
-    const result = resolveProfileFile("nope/user", profilesDir);
-    expect(result).toBeNull();
+  it("returns empty array on malformed TOML", async () => {
+    const cfg = path.join(tmp, "list-profiles-3.toml");
+    await writeFile(cfg, "{{{{invalid toml}}}}");
+    expect(listProfileNames(cfg)).toEqual([]);
   });
 });
 
-// --- resolveAoeConfig ---
+// --- loadProfiles ---
 
-describe("resolveAoeConfig", () => {
-  it("finds exact profile .aoe.toml for family/user", () => {
-    const result = resolveAoeConfig(
-      "gh/specific",
-      profilesDir,
-      defaultAoeConfig,
+describe("loadProfiles", () => {
+  let profilesConfig: string;
+  let vaultDir: string;
+
+  beforeAll(async () => {
+    vaultDir = path.join(tmp, "profiles-vault");
+    await mkdir(path.join(vaultDir, "_misc", "cache"), { recursive: true });
+  });
+
+  it("reads GH_TOKEN from profile section", async () => {
+    profilesConfig = path.join(tmp, "profiles-1.toml");
+    await writeFile(
+      profilesConfig,
+      '[default]\nGH_TOKEN = "default-token"\n\n[profiles."gh/alice"]\nGH_TOKEN = "alice-token"\n',
     );
-    expect(result).toBe(path.join(profilesDir, "gh", "specific.aoe.toml"));
+    const result = loadProfiles("gh/alice", profilesConfig, vaultDir);
+    expect(result.GH_TOKEN).toBe("alice-token");
   });
 
-  it("falls back to base family .aoe.toml for unknown member", () => {
-    const result = resolveAoeConfig(
-      "gh/unknown",
-      profilesDir,
-      defaultAoeConfig,
+  it("falls back to default section", async () => {
+    profilesConfig = path.join(tmp, "profiles-2.toml");
+    await writeFile(profilesConfig, '[default]\nGH_TOKEN = "default-token"\n');
+    const result = loadProfiles("gh/bob", profilesConfig, vaultDir);
+    expect(result.GH_TOKEN).toBe("default-token");
+  });
+
+  it("returns undefined when key not in file", async () => {
+    profilesConfig = path.join(tmp, "profiles-3.toml");
+    await writeFile(profilesConfig, "[default]\n");
+    const result = loadProfiles("gh/bob", profilesConfig, vaultDir);
+    expect(result.GH_TOKEN).toBeUndefined();
+  });
+
+  it("falls back to vault cache for NTFY_TOPIC", async () => {
+    profilesConfig = path.join(tmp, "profiles-4.toml");
+    await writeFile(profilesConfig, "[default]\n");
+    await writeFile(
+      path.join(vaultDir, "_misc", "cache", "ntfy-topic.txt"),
+      "cached-topic\n",
     );
-    expect(result).toBe(path.join(profilesDir, "gh.aoe.toml"));
+    const result = loadProfiles("host", profilesConfig, vaultDir);
+    expect(result.NTFY_TOPIC).toBe("cached-topic");
   });
 
-  it("falls back to default for profile without .aoe.toml", () => {
-    const result = resolveAoeConfig("host", profilesDir, defaultAoeConfig);
-    expect(result).toBe(defaultAoeConfig);
-  });
-
-  it("returns null when nothing exists at any level", async () => {
-    const emptyDir = path.join(tmp, "empty-profiles");
-    await mkdir(emptyDir, { recursive: true });
-    const noDefault = path.join(tmp, "nonexistent-default.toml");
-    const result = resolveAoeConfig("anything", emptyDir, noDefault);
-    expect(result).toBeNull();
-  });
-
-  it("prefers base over default", () => {
-    // gh/unknown has no exact but has base — should return base, not default
-    const result = resolveAoeConfig(
-      "gh/unknown",
-      profilesDir,
-      defaultAoeConfig,
+  it("reads docker user fields from profile", async () => {
+    profilesConfig = path.join(tmp, "profiles-5.toml");
+    await writeFile(
+      profilesConfig,
+      '[profiles."gh/alice".docker]\nusername = "alice"\ngroup = "agents"\nuid = 1000\ngid = 1000\n',
     );
-    expect(result).toBe(path.join(profilesDir, "gh.aoe.toml"));
-    expect(result).not.toBe(defaultAoeConfig);
+    const result = loadProfiles("gh/alice", profilesConfig, vaultDir);
+    expect(result.SANDBOX_USER).toBe("alice");
+    expect(result.SANDBOX_GROUP).toBe("agents");
+    expect(result.SANDBOX_UID).toBe("1000");
+    expect(result.SANDBOX_GID).toBe("1000");
+  });
+
+  it("reads gitconfig from profile", async () => {
+    profilesConfig = path.join(tmp, "profiles-6.toml");
+    await writeFile(
+      profilesConfig,
+      '[profiles."gh/alice"]\ngitconfig = "/home/alice/.gitconfig"\n',
+    );
+    const result = loadProfiles("gh/alice", profilesConfig, vaultDir);
+    expect(result.gitconfig).toBe("/home/alice/.gitconfig");
+  });
+
+  it("returns all undefined when profiles.toml does not exist", () => {
+    const result = loadProfiles(
+      "host",
+      path.join(tmp, "nonexistent.toml"),
+      vaultDir,
+    );
+    expect(result.GH_TOKEN).toBeUndefined();
+    expect(result.SANDBOX_USER).toBeUndefined();
+  });
+});
+
+// --- resolveSecretPlaceholder ---
+
+describe("resolveSecretPlaceholder", () => {
+  it("replaces placeholder when value is defined", () => {
+    const content = '    "GH_TOKEN={{GH_TOKEN}}",\n    "OTHER=value",\n';
+    const result = resolveSecretPlaceholder(content, "GH_TOKEN", "my-token");
+    expect(result).toContain('"GH_TOKEN=my-token"');
+    expect(result).not.toContain("{{GH_TOKEN}}");
+  });
+
+  it("removes the line when value is undefined", () => {
+    const content =
+      '    "KEY1=val1",\n    "GH_TOKEN={{GH_TOKEN}}",\n    "KEY2=val2",\n';
+    const result = resolveSecretPlaceholder(content, "GH_TOKEN", undefined);
+    expect(result).not.toContain("GH_TOKEN");
+    expect(result).toContain("KEY1");
+    expect(result).toContain("KEY2");
+  });
+
+  it("removes preceding comment line that mentions the key", () => {
+    const content =
+      '    # GH_TOKEN: resolved at install time\n    "GH_TOKEN={{GH_TOKEN}}",\n    "OTHER=val",\n';
+    const result = resolveSecretPlaceholder(content, "GH_TOKEN", undefined);
+    expect(result).not.toContain("GH_TOKEN");
+    expect(result).toContain("OTHER");
+  });
+
+  it("handles multiple occurrences when value is defined", () => {
+    const content = "a={{GH_TOKEN}}\nb={{GH_TOKEN}}\n";
+    const result = resolveSecretPlaceholder(content, "GH_TOKEN", "tok");
+    expect(result).toBe("a=tok\nb=tok\n");
   });
 });
