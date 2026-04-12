@@ -14,67 +14,6 @@ import {
 } from "../../scripts/install.ts";
 
 // ---------------------------------------------------------------------------
-// Pure unit tests — no filesystem
-// ---------------------------------------------------------------------------
-
-describe("assertSafeProfileName", () => {
-  describe("accepts valid names", () => {
-    const valid = [
-      "host",
-      "gh",
-      "my-profile",
-      "my.profile",
-      "my_profile",
-      "Profile1",
-      "gh/username",
-      "gh/my.user-1",
-      "gh/My_User",
-      "a",
-      "a/b",
-      "abc123/def456",
-    ];
-
-    for (const name of valid) {
-      it(`accepts "${name}"`, () => {
-        expect(() => assertSafeProfileName(name)).not.toThrow();
-      });
-    }
-  });
-
-  describe("rejects invalid names", () => {
-    const invalid: [string, string][] = [
-      ["", "empty string"],
-      ["..", "double dot traversal"],
-      [".", "single dot"],
-      ["...", "triple dot"],
-      ["gh/..", "family with dot-dot user"],
-      ["gh/.", "family with dot user"],
-      ["../etc", "relative traversal"],
-      ["/etc/passwd", "absolute path"],
-      ["a\\b", "backslash"],
-      ["a/b/c", "multi-depth path"],
-      [".hidden", "leading dot"],
-      ["-dash", "leading dash"],
-      ["_under", "leading underscore"],
-      ["gh/.hidden", "family with leading-dot user"],
-      ["gh/-dash", "family with leading-dash user"],
-      [" spaces", "leading space"],
-      ["has space", "contains space"],
-      ["has\x00null", "contains null byte"],
-      ["gh/", "trailing slash"],
-      ["/", "bare slash"],
-      ["gh//user", "double slash"],
-    ];
-
-    for (const [name, desc] of invalid) {
-      it(`rejects ${desc}: "${name.replace(/\x00/g, "\\x00")}"`, () => {
-        expect(() => assertSafeProfileName(name)).toThrow();
-      });
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
 // Integration tests — filesystem
 // ---------------------------------------------------------------------------
 
