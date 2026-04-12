@@ -13,14 +13,12 @@ export async function wtDetect(
   p: string,
 ): Promise<"clone" | "worktree" | "bare" | "unknown"> {
   try {
-    const gitStat = await stat(path.join(p, ".git")).catch(() => null);
+    let res = await $`git -C ${p} rev-parse --is-bare-repository 2>&1`;
+    if (res.text() === "true\n") return "bare";
+
+    let gitStat = await stat(path.join(p, ".git")).catch(() => null);
     if (gitStat?.isDirectory()) return "clone";
     if (gitStat?.isFile()) return "worktree";
-
-    // needs to check if a subdirectory (typically '.bare') contains these files
-    if ((await $`git rev-parse --is-bare-repository`).text() === "true")
-      return "bare";
-
     return "unknown";
   } catch {
     return "unknown";

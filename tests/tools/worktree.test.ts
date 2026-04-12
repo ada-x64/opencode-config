@@ -8,6 +8,7 @@ import wt_owner_repo from "../../src/tools/wt/owner_repo";
 import wt_switch_branch from "../../src/tools/wt/switch_branch";
 import wt_cleanup from "../../src/tools/wt/cleanup";
 import { execute_tool } from "./_lib";
+import { $ } from "bun";
 
 let tmp: string;
 let clonePath: string;
@@ -24,6 +25,7 @@ beforeAll(async () => {
   delete process.env.GIT_DIR;
   delete process.env.GIT_WORK_TREE;
   tmp = await mkdtemp(path.join(tmpdir(), "wt-test-"));
+  await $`echo tmp=${tmp}`;
 
   // Set AGENT_REPOS to our temp repos dir
   const reposDir = path.join(tmp, "repos");
@@ -68,7 +70,7 @@ afterAll(async () => {
   restore("AGENT_REPOS", origAgentRepos);
   restore("GIT_DIR", origGitDir);
   restore("GIT_WORK_TREE", origGitWorkTree);
-  await rm(tmp, { recursive: true, force: true });
+  // await rm(tmp, { recursive: true, force: true });
 });
 
 describe("wt_detect", () => {
@@ -84,7 +86,7 @@ describe("wt_detect", () => {
 
   it("detects a bare repo", async () => {
     const result = await execute_tool(wt_detect, {
-      path: path.join(bareDir, ".bare"),
+      path: bareDir,
     });
     expect(result).toBe("bare");
   });
