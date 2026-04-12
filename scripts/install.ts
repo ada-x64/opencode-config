@@ -432,8 +432,14 @@ export async function generateProfilesNonInteractive(
 /**
  * Interactively generate a default profiles.toml.
  *
- * Uses @clack/prompts for a TUI experience. Falls back to
- * non-interactive generation if stdin is not a TTY.
+ * Uses @clack/prompts for a TUI experience. Detects GitHub username
+ * via the gh CLI, then offers four strategies for GH_TOKEN:
+ *   1. Use GH_TOKEN from environment (if set)
+ *   2. Capture via `gh auth token`
+ *   3. Enter manually (password-masked)
+ *   4. Skip
+ *
+ * Falls back to a non-TTY error message if stdin is not a TTY.
  *
  * @param destPath - Where to write the generated file
  * @returns true if a file was generated, false if skipped
@@ -459,25 +465,79 @@ export async function generateDefaultProfiles(
   }
 
   const s = p.spinner();
-  s.start("Detecting GitHub username...");
+  s.start("Detecting environment...");
 
   let defaults: ProfileDefaults;
   try {
-    // Prompt for token inclusion
-    s.stop("Detected environment.");
-    const includeToken = await p.confirm({
-      message: "Include GH_TOKEN? This will run 'gh auth token'.",
-      initialValue: true,
-    });
-    const wantToken = !p.isCancel(includeToken) && includeToken;
-
-    s.start("Gathering defaults...");
-    defaults = await detectProfileDefaults(wantToken);
+    defaults = await detectProfileDefaults(false);
     s.stop(`GitHub username: ${defaults.ghUsername}`);
   } catch {
     s.stop("Could not detect GitHub username.");
     p.cancel("Is gh CLI installed and authenticated?");
     return false;
+  }
+
+  // --- GH_TOKEN acquisition ---
+  const envToken = Bun.env.GH_TOKEN ?? "";
+  type TokenStrategy = "env" | "gh-auth" | "manual" | "skip";
+  const tokenOptions: { value: TokenStrategy; label: string; hint?: string }[] =
+    [];
+  if (envToken) {
+    tokenOptions.push({
+      value: "env",
+      label: "Use GH_TOKEN from environment",
+      hint: `${envToken.slice(0, 8)}…`,
+    });
+  }
+  tokenOptions.push(
+    {
+      value: "gh-auth",
+      label: "Capture via gh auth token",
+    },
+    { value: "manual", label: "Enter manually" },
+    { value: "skip", label: "Skip (no token)" },
+  );
+
+  const tokenChoice = await p.select<TokenStrategy>({
+    message: "How should GH_TOKEN be configured?",
+    options: tokenOptions,
+    initialValue: envToken ? "env" : "gh-auth",
+  });
+
+  if (p.isCancel(tokenChoice)) {
+    p.cancel("Skipping profiles.toml generation.");
+    return false;
+  }
+
+  switch (tokenChoice) {
+    case "env":
+      defaults.ghToken = envToken;
+      break;
+    case "gh-auth": {
+      s.start("Running gh auth token...");
+      try {
+        defaults.ghToken = (await $`gh auth token 2>/dev/null`.text()).trim();
+        s.stop(defaults.ghToken ? "Token captured." : "No token returned.");
+      } catch {
+        s.stop("gh auth token failed — skipping.");
+        defaults.ghToken = "";
+      }
+      break;
+    }
+    case "manual": {
+      const entered = await p.password({
+        message: "Paste your GitHub token:",
+      });
+      if (p.isCancel(entered)) {
+        p.cancel("Skipping profiles.toml generation.");
+        return false;
+      }
+      defaults.ghToken = entered;
+      break;
+    }
+    case "skip":
+      defaults.ghToken = "";
+      break;
   }
 
   const content = buildProfilesContent(defaults, destPath);
