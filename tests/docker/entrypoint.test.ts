@@ -8,12 +8,14 @@ import { describe, it, expect } from "bun:test";
  * different environment configurations.
  */
 
+const ENTRYPOINT = "/usr/local/bin/entrypoint.sh";
+
 /** Run entrypoint.sh with given env and command, return stdout/stderr/exitCode */
 async function runEntrypoint(
   env: Record<string, string>,
   cmd: string[],
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  const proc = Bun.spawn(["entrypoint.sh", ...cmd], {
+  const proc = Bun.spawn([ENTRYPOINT, ...cmd], {
     env: { ...process.env, ...env },
     stdout: "pipe",
     stderr: "pipe",

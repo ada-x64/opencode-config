@@ -7,6 +7,8 @@ import { describe, it, expect } from "bun:test";
  * expected tools are installed, on PATH, and executable.
  */
 
+const ENTRYPOINT = "/usr/local/bin/entrypoint.sh";
+
 /** Run a command and return stdout/stderr/exitCode */
 async function run(
   cmd: string[],
@@ -25,6 +27,12 @@ async function run(
 
   const exitCode = await proc.exited;
   return { stdout, stderr, exitCode };
+}
+
+/** Read an environment variable via subprocess to get the container's env */
+async function getEnv(name: string): Promise<string> {
+  const result = await run(["printenv", name]);
+  return result.stdout.trim();
 }
 
 describe("tool availability", () => {
@@ -78,24 +86,24 @@ describe("tool version checks", () => {
 });
 
 describe("environment variables", () => {
-  it("BUN_INSTALL is /opt/bun", () => {
-    expect(process.env.BUN_INSTALL).toBe("/opt/bun");
+  it("BUN_INSTALL is /opt/bun", async () => {
+    expect(await getEnv("BUN_INSTALL")).toBe("/opt/bun");
   });
 
-  it("CARGO_HOME is /opt/cargo", () => {
-    expect(process.env.CARGO_HOME).toBe("/opt/cargo");
+  it("CARGO_HOME is /opt/cargo", async () => {
+    expect(await getEnv("CARGO_HOME")).toBe("/opt/cargo");
   });
 
-  it("RUSTUP_HOME is /opt/rustup", () => {
-    expect(process.env.RUSTUP_HOME).toBe("/opt/rustup");
+  it("RUSTUP_HOME is /opt/rustup", async () => {
+    expect(await getEnv("RUSTUP_HOME")).toBe("/opt/rustup");
   });
 
-  it("PATH includes /opt/bun/bin", () => {
-    expect(process.env.PATH).toContain("/opt/bun/bin");
+  it("PATH includes /opt/bun/bin", async () => {
+    expect(await getEnv("PATH")).toContain("/opt/bun/bin");
   });
 
-  it("PATH includes /opt/cargo/bin", () => {
-    expect(process.env.PATH).toContain("/opt/cargo/bin");
+  it("PATH includes /opt/cargo/bin", async () => {
+    expect(await getEnv("PATH")).toContain("/opt/cargo/bin");
   });
 });
 
@@ -140,7 +148,7 @@ describe("tools work for non-root user", () => {
     it(`${tool} works via gosu as non-root`, async () => {
       // Use entrypoint.sh to create a user and run as them
       const result = await run(
-        ["entrypoint.sh", tool!, ...args],
+        [ENTRYPOINT, tool!, ...args],
         {
           SANDBOX_USER: "tooltest",
           SANDBOX_UID: "4000",
