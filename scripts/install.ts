@@ -432,12 +432,17 @@ export async function generateProfilesNonInteractive(
 /**
  * Interactively generate a default profiles.toml.
  *
- * Uses @clack/prompts for a TUI experience. Detects GitHub username
- * via the gh CLI, then offers four strategies for GH_TOKEN:
- *   1. Use GH_TOKEN from environment (if set)
- *   2. Capture via `gh auth token`
- *   3. Enter manually (password-masked)
- *   4. Skip
+ * Uses @clack/prompts for a TUI experience. Each step is resilient to
+ * failure — if auto-detection fails, the user is prompted for manual input.
+ *
+ * Steps:
+ *   1. Detect GitHub username via gh CLI, or prompt for manual entry
+ *   2. Select GH_TOKEN strategy:
+ *      - Use GH_TOKEN from environment (if set)
+ *      - Capture via `gh auth token`
+ *      - Enter manually (password-masked)
+ *      - Skip
+ *   3. Detect gitconfig path and Docker user (uid/gid)
  *
  * Falls back to a non-TTY error message if stdin is not a TTY.
  *
@@ -465,19 +470,42 @@ export async function generateDefaultProfiles(
   }
 
   const s = p.spinner();
-  s.start("Detecting environment...");
 
-  let defaults: ProfileDefaults;
+  // --- GitHub username ---
+  s.start("Detecting GitHub username...");
+  let ghUsername = "";
   try {
-    defaults = await detectProfileDefaults(false);
-    s.stop(`GitHub username: ${defaults.ghUsername}`);
+    ghUsername = (await $`gh api user -q .login 2>/dev/null`.text()).trim();
   } catch {
-    s.stop("Could not detect GitHub username.");
-    p.cancel("Is gh CLI installed and authenticated?");
-    return false;
+    try {
+      const status = await $`gh auth status 2>&1`.text();
+      const match = status.match(/Logged in to github\.com account (\S+)/);
+      if (match) ghUsername = match[1]!;
+    } catch {
+      // gh CLI not available or not authenticated
+    }
   }
 
-  // --- GH_TOKEN acquisition ---
+  if (ghUsername) {
+    s.stop(`GitHub username: ${ghUsername}`);
+  } else {
+    s.stop("Could not detect GitHub username.");
+    const entered = await p.text({
+      message: "Enter your GitHub username:",
+      placeholder: "username",
+      validate: (v) => {
+        if (!v?.trim()) return "Username is required.";
+        return undefined;
+      },
+    });
+    if (p.isCancel(entered)) {
+      p.cancel("Skipping profiles.toml generation.");
+      return false;
+    }
+    ghUsername = entered.trim();
+  }
+
+  // --- GH_TOKEN ---
   const envToken = Bun.env.GH_TOKEN ?? "";
   type TokenStrategy = "env" | "gh-auth" | "manual" | "skip";
   const tokenOptions: { value: TokenStrategy; label: string; hint?: string }[] =
@@ -509,18 +537,18 @@ export async function generateDefaultProfiles(
     return false;
   }
 
+  let ghToken = "";
   switch (tokenChoice) {
     case "env":
-      defaults.ghToken = envToken;
+      ghToken = envToken;
       break;
     case "gh-auth": {
       s.start("Running gh auth token...");
       try {
-        defaults.ghToken = (await $`gh auth token 2>/dev/null`.text()).trim();
-        s.stop(defaults.ghToken ? "Token captured." : "No token returned.");
+        ghToken = (await $`gh auth token 2>/dev/null`.text()).trim();
+        s.stop(ghToken ? "Token captured." : "No token returned.");
       } catch {
         s.stop("gh auth token failed — skipping.");
-        defaults.ghToken = "";
       }
       break;
     }
@@ -532,13 +560,34 @@ export async function generateDefaultProfiles(
         p.cancel("Skipping profiles.toml generation.");
         return false;
       }
-      defaults.ghToken = entered;
+      ghToken = entered;
       break;
     }
     case "skip":
-      defaults.ghToken = "";
       break;
   }
+
+  // --- Remaining defaults (gitconfig, Docker user) ---
+  const gitconfigPath = join(homedir(), ".gitconfig");
+  const hasGitconfig = existsSync(gitconfigPath);
+  const username = Bun.env.USER ?? "agent";
+  let uid = "1000";
+  let gid = "1000";
+  try {
+    uid = (await $`id -u`.text()).trim();
+    gid = (await $`id -g`.text()).trim();
+  } catch {
+    // Use defaults
+  }
+
+  const defaults: ProfileDefaults = {
+    ghUsername,
+    ghToken,
+    gitconfigPath: hasGitconfig ? gitconfigPath : null,
+    username,
+    uid,
+    gid,
+  };
 
   const content = buildProfilesContent(defaults, destPath);
   writeProfilesFile(destPath, content);
