@@ -28,7 +28,7 @@ jobs:
           docker run --rm
           -v ${{ github.workspace }}:/workspace
           occonf-test
-          bun test tests/docker/
+          sh -c "bun i && bun test tests/docker"
 
   build-and-push:
     name: Build & Push
