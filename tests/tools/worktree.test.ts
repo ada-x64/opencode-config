@@ -59,6 +59,31 @@ beforeAll(async () => {
   // Create the main worktree
   await Bun.$`git -C ${bareDir}/.bare worktree add ${bareDir}/main main`.quiet();
   mainWt = path.join(bareDir, "main");
+
+  // --- Remote-ahead branch setup for sync tests ---
+  // Create a separate upstream bare repo to act as origin
+  const upstream = path.join(tmp, "upstream.git");
+  await Bun.$`git clone --bare ${bareDir}/.bare ${upstream}`.quiet();
+
+  // Add origin remote to our bare repo pointing to the upstream
+  await Bun.$`git -C ${bareDir}/.bare remote add origin ${upstream}`.quiet();
+  await Bun.$`git -C ${bareDir}/.bare fetch origin`.quiet();
+
+  // Clone upstream, create a branch with extra commits, push it back.
+  // This simulates a remote that's ahead of the local branch.
+  const advancer = path.join(tmp, "advancer");
+  await Bun.$`git clone ${upstream} ${advancer}`.quiet();
+  await Bun.$`git -C ${advancer} ${gc} checkout -b remote-test`.quiet();
+  await Bun.$`git -C ${advancer} ${gc} commit --allow-empty -m "remote-ahead-1"`.quiet();
+  await Bun.$`git -C ${advancer} ${gc} commit --allow-empty -m "remote-ahead-2"`.quiet();
+  await Bun.$`git -C ${advancer} push origin remote-test`.quiet();
+  await rm(advancer, { recursive: true, force: true });
+
+  // Create a stale local branch "remote-test" in the bare repo that's behind
+  // (points to the initial commit, not the two extra ones)
+  await Bun.$`git -C ${bareDir}/.bare branch remote-test HEAD`
+    .quiet()
+    .nothrow();
 });
 
 afterAll(async () => {
@@ -161,6 +186,60 @@ describe("wt_switch_branch", () => {
       await Bun.$`git -C ${clonePath} branch --show-current`.text();
     expect(branch.trim()).toBe("test-branch");
   });
+
+  it("syncs new worktree to remote tracking branch", async () => {
+    const result = await execute_tool(wt_switch_branch, {
+      repo_path: mainWt,
+      branch: "remote-test",
+    });
+
+    const wtPath = path.join(bareDir, "remote-test");
+    expect(result).toBe(wtPath);
+
+    // Verify the worktree is at the remote HEAD (has "remote-ahead-2" commit)
+    const log = await Bun.$`git -C ${wtPath} log --oneline -1`.text();
+    expect(log).toContain("remote-ahead-2");
+  });
+
+  it("syncs existing worktree to remote when called again", async () => {
+    const wtPath = path.join(bareDir, "remote-test");
+
+    // Reset the worktree back to simulate staleness
+    await Bun.$`git -C ${wtPath} reset --hard HEAD~2`.quiet();
+    const staleSha = (
+      await Bun.$`git -C ${wtPath} rev-parse HEAD`.text()
+    ).trim();
+
+    // Call wt_switch_branch again — should sync to remote
+    const result = await execute_tool(wt_switch_branch, {
+      repo_path: mainWt,
+      branch: "remote-test",
+    });
+    expect(result).toBe(wtPath);
+
+    const freshSha = (
+      await Bun.$`git -C ${wtPath} rev-parse HEAD`.text()
+    ).trim();
+    expect(freshSha).not.toBe(staleSha);
+
+    const log = await Bun.$`git -C ${wtPath} log --oneline -1`.text();
+    expect(log).toContain("remote-ahead-2");
+  });
+
+  it("does not reset a branch with no remote tracking", async () => {
+    const result = await execute_tool(wt_switch_branch, {
+      repo_path: mainWt,
+      branch: "local-only-test",
+    });
+
+    const wtPath = path.join(bareDir, "local-only-test");
+    expect(result).toBe(wtPath);
+
+    // Should be on the branch, at the same commit as main (since it was
+    // branched from main and has no remote)
+    const branch = await Bun.$`git -C ${wtPath} branch --show-current`.text();
+    expect(branch.trim()).toBe("local-only-test");
+  });
 });
 
 describe("wt_cleanup", () => {
@@ -172,6 +251,20 @@ describe("wt_cleanup", () => {
     const result = await execute_tool(wt_cleanup, { worktree_path: wtPath });
     expect(result).toBeTruthy();
     expect(existsSync(wtPath)).toBe(false);
+  });
+
+  it("removes the remote-test worktree", async () => {
+    const wtPath = path.join(bareDir, "remote-test");
+    if (existsSync(wtPath)) {
+      await execute_tool(wt_cleanup, { worktree_path: wtPath });
+    }
+  });
+
+  it("removes the local-only-test worktree", async () => {
+    const wtPath = path.join(bareDir, "local-only-test");
+    if (existsSync(wtPath)) {
+      await execute_tool(wt_cleanup, { worktree_path: wtPath });
+    }
   });
 
   it("is a no-op for non-worktree paths", async () => {
