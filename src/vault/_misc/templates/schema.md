@@ -11,6 +11,8 @@ Every schema starts with YAML frontmatter followed by an H1 title:
 ```markdown
 ---
 repo: <owner>/<repo>
+tags: [<category tags>]
+estimate: <XS|S|M|L|XL>
 issue: <link or blank>
 branch: <branch-name>
 status: 📋 todo
@@ -26,7 +28,9 @@ date: YYYY-MM-DD
 
 | Field      | Description                                                                      |
 | ---------- | -------------------------------------------------------------------------------- |
-| `repo`     | `<owner>/<repo>` identifier                                                      |
+| `repo`     | `<owner>/<repo>` identifier. Also accepts flow array `[owner/repo1, owner/repo2]` for multi-repo tasks. |
+| `tags`     | Category tags as flow array (e.g. `[ci, bug]`). Known: ci, bug, feature, enhancement, refactor, docs, tooling, infra, test, security, release. Custom tags allowed. |
+| `estimate` | Effort estimate: `XS`, `S`, `M`, `L`, `XL`.                                     |
 | `issue`    | GitHub issue link (e.g. `[#1](https://github.com/owner/repo/issues/1)`) or blank |
 | `branch`   | Target branch name                                                               |
 | `status`   | `📋 todo` / `🔨 in-progress` / `🔍 in-review` / `✅ complete` / `🚫 closed`      |
