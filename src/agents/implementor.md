@@ -184,3 +184,5 @@ post-work steps are **mandatory**:
 -->
 
 {{include:agents/_shared/triage.md}}
+
+{{include:agents/_shared/env-issues.md}}

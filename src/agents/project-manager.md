@@ -184,6 +184,8 @@ follow its **Write Mode** instructions. The two post-work steps are
 > **For cross-repo operations:** If no per-task directory exists, write to
 > `$AGENT_VAULT/_misc/activity/` instead.
 
+{{include:agents/_shared/env-issues.md}}
+
 ## What you MUST NOT do
 
 - Edit source files in any repository

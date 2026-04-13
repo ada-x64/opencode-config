@@ -118,6 +118,8 @@ is no task directory for the current work, write the triage entry to
 `$AGENT_VAULT/_misc/activity/` (create if absent) and use `designer`
 as the task name.
 
+{{include:agents/_shared/env-issues.md}}
+
 ## What you MUST NOT do
 
 - Write to any path outside `designs/` and `drafts/` in the vault

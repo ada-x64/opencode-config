@@ -214,6 +214,8 @@ Severity uses **roadmap-priority semantics** — a critical audit finding means
 notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Audit Complete", body: "• 0 high findings\n• 2 medium warnings", icon: "auditor", emoji: "clean" })
 ```
 
+{{include:agents/_shared/env-issues.md}}
+
 ## What you MUST NOT do
 
 - Run `cargo build`, `npm install`, `pip install`, or any command that modifies
