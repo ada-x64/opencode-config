@@ -159,11 +159,12 @@ The handoff point is the moment `@planner` writes the issue URL into the schema 
 
 ## Label Setup (one-time per repo)
 
-The `in-progress` and `review-ready` labels must exist on each repo before implementors can apply them. PM creates them as a one-time setup:
+The `in-progress`, `local-review`, and `peer-review` labels must exist on each repo before implementors can apply them. PM creates them as a one-time setup:
 
 ```bash
 gh label create "in-progress" --color "fbca04" -R <owner>/<repo> 2>/dev/null || true
-gh label create "review-ready" --color "0075ca" -R <owner>/<repo> 2>/dev/null || true
+gh label create "local-review" --color "0075ca" -R <owner>/<repo> 2>/dev/null || true
+gh label create "peer-review" --color "5319e7" -R <owner>/<repo> 2>/dev/null || true
 ```
 
 ## Triage & Notifications
@@ -194,5 +195,5 @@ follow its **Write Mode** instructions. The two post-work steps are
 - Operate on any repo not present in `$vault/tasks/` or `$vault/notes/`
 - Execute bulk operations without presenting a summary and receiving explicit user confirmation
 - Write project status documents outside `$vault/projects/`
-- Apply `in-progress` or `review-ready` labels — that is the implementors' job; PM creates the labels, implementors apply them
+- Apply `in-progress`, `local-review`, or `peer-review` labels — that is the implementors' job; PM creates the labels, implementors apply them
 - Use `gh api` to perform operations that are otherwise hard-denied (e.g., do not use `gh api` to merge PRs, push code, or create repositories)
