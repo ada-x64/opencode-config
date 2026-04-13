@@ -192,6 +192,30 @@ at `/root/.config/opencode`, sets up: sandbox-by-default, custom image,
 vault bind-mount (RW), credential passthrough (`GH_TOKEN`, `GIT_CONFIG_COUNT`),
 and resource limits (4 CPU / 8 GB RAM).
 
+### SSH agent in containers
+
+Sandbox containers require access to the host SSH agent for commit signing
+and SSH-based git operations (push, fetch, rebase). The AoE config handles
+this via two mechanisms:
+
+1. **`mount_ssh = true`** — mounts the host SSH agent socket file into the
+   container (handled by AoE).
+2. **`SSH_AUTH_SOCK` passthrough** — the env var is passed from the host so
+   processes inside the container can locate the socket.
+
+Both are configured in the AoE config templates (`src/aoe-config.toml` and
+`src/aoe-profile.toml`).
+
+**Troubleshooting:** If git operations fail with `ssh_askpass: exec(...): No
+such file or directory`, verify:
+
+1. The SSH agent is running on the host: `ssh-add -l` should list at least
+   one key.
+2. `SSH_AUTH_SOCK` is set on the host: `echo $SSH_AUTH_SOCK` should print a
+   socket path.
+3. The socket file exists: `ls -la $SSH_AUTH_SOCK` should show a socket.
+4. Inside the container, `SSH_AUTH_SOCK` is set and the socket is accessible.
+
 ---
 
 ## Conventions

@@ -26,6 +26,9 @@ environment = [
     "GH_TOKEN={{GH_TOKEN}}",
     # NTFY_TOPIC: per-profile ntfy topic from profiles.toml
     "NTFY_TOPIC={{NTFY_TOPIC}}",
+    # SSH_AUTH_SOCK (bare key = passthrough from host): ensures the container
+    # can reach the host SSH agent for commit signing and SSH git operations.
+    "SSH_AUTH_SOCK",
     # SANDBOX_USER/GROUP/UID/GID: Docker user configuration from profiles.toml
     "SANDBOX_USER={{SANDBOX_USER}}",
     "SANDBOX_GROUP={{SANDBOX_GROUP}}",
