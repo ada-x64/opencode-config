@@ -176,6 +176,49 @@ describe("resolveIncludes", () => {
     const result = await readFile(path.join(dir, "agent.md"), "utf-8");
     expect(result).toBe(content);
   });
+
+  it("resolves tone-indicators include in agent and prompt files", async () => {
+    const dir = path.join(tmp, "includes-tone");
+    const srcDir = path.join(tmp, "includes-tone-src");
+    const sharedDir = path.join(srcDir, "agents", "_shared");
+    const agentsDir = path.join(dir, "agents");
+    const promptsDir = path.join(dir, "prompts");
+    await mkdir(sharedDir, { recursive: true });
+    await mkdir(agentsDir, { recursive: true });
+    await mkdir(promptsDir, { recursive: true });
+
+    await writeFile(
+      path.join(sharedDir, "tone-indicators.md"),
+      "## Tone Indicators\n\n| `/s` | sarcastic |\n",
+    );
+
+    await writeFile(
+      path.join(agentsDir, "agent.md"),
+      "# Agent\n\n{{include:agents/_shared/tone-indicators.md}}\n",
+    );
+    await writeFile(
+      path.join(promptsDir, "build.md"),
+      "# Build\n\n{{include:agents/_shared/tone-indicators.md}}\n",
+    );
+
+    resolveIncludes(dir, srcDir);
+
+    const agentResult = await readFile(
+      path.join(agentsDir, "agent.md"),
+      "utf-8",
+    );
+    expect(agentResult).toContain("## Tone Indicators");
+    expect(agentResult).toContain("sarcastic");
+    expect(agentResult).not.toContain("{{include:");
+
+    const promptResult = await readFile(
+      path.join(promptsDir, "build.md"),
+      "utf-8",
+    );
+    expect(promptResult).toContain("## Tone Indicators");
+    expect(promptResult).toContain("sarcastic");
+    expect(promptResult).not.toContain("{{include:");
+  });
 });
 
 // ---------------------------------------------------------------------------

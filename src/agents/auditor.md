@@ -186,6 +186,8 @@ After writing the audit report, load the `vault-triage` skill and follow its
 - Audit report completed (type: `activity` — include critical/high finding counts and top recommendation)
 -->
 
+{{include:agents/_shared/tone-indicators.md}}
+
 {{include:agents/_shared/triage.md}}
 
 > **For audits:** If no task directory exists for the audited repo, write to

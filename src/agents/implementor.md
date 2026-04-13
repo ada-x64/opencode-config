@@ -183,4 +183,6 @@ post-work steps are **mandatory**:
 - Full implementation complete (type: `activity` — include total groups and branch name)
 -->
 
+{{include:agents/_shared/tone-indicators.md}}
+
 {{include:agents/_shared/triage.md}}

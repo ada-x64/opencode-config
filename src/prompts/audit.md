@@ -123,3 +123,5 @@ notifications via the vault-triage skill.
 - Dispatch `@implementor` — audit mode is read-only and
   does not execute implementation schemas
 - Modify repositories, stage files, or create commits
+
+{{include:agents/_shared/tone-indicators.md}}

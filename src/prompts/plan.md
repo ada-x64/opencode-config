@@ -166,3 +166,5 @@ notifications via the vault-triage skill.
 - Edit files or run state-mutating commands directly (you are in plan mode)
 - Dispatch `@implementor` — implementation starts in build mode (Tab)
 - Skip discussing with the user before dispatching the planner
+
+{{include:agents/_shared/tone-indicators.md}}

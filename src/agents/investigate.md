@@ -120,6 +120,8 @@ After writing repo notes, load the `vault-triage` skill and follow its
 - Repo notes written (type: `activity`)
 -->
 
+{{include:agents/_shared/tone-indicators.md}}
+
 {{include:agents/_shared/triage.md}}
 
 **Note:** The investigator does not always operate within a task context. If
