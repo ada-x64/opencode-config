@@ -26,17 +26,17 @@ date: YYYY-MM-DD
 
 ### Frontmatter fields
 
-| Field      | Description                                                                      |
-| ---------- | -------------------------------------------------------------------------------- |
-| `repo`     | `<owner>/<repo>` identifier. Also accepts flow array `[owner/repo1, owner/repo2]` for multi-repo tasks. |
+| Field      | Description                                                                                                                                                         |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `repo`     | `<owner>/<repo>` identifier. Also accepts flow array `[owner/repo1, owner/repo2]` for multi-repo tasks.                                                             |
 | `tags`     | Category tags as flow array (e.g. `[ci, bug]`). Known: ci, bug, feature, enhancement, refactor, docs, tooling, infra, test, security, release. Custom tags allowed. |
-| `estimate` | Effort estimate: `XS`, `S`, `M`, `L`, `XL`.                                     |
-| `issue`    | GitHub issue link (e.g. `[#1](https://github.com/owner/repo/issues/1)`) or blank |
-| `branch`   | Target branch name                                                               |
-| `status`   | `📋 todo` / `🔨 in-progress` / `🔍 in-review` / `✅ complete` / `🚫 closed`      |
-| `task`     | Task name (kebab-case, matches directory name under `tasks/`)                    |
-| `priority` | `🔥 critical` / `🔴 high` / `🟡 medium` / `🟢 low` / `🟣 non-work`               |
-| `date`     | Creation date (YYYY-MM-DD)                                                       |
+| `estimate` | Effort estimate: `XS`, `S`, `M`, `L`, `XL`.                                                                                                                         |
+| `issue`    | GitHub issue link (e.g. `[#1](https://github.com/owner/repo/issues/1)`) or blank                                                                                    |
+| `branch`   | Target branch name                                                                                                                                                  |
+| `status`   | `📋 todo` / `🔨 in-progress` / `🔍 in-review` / `✅ complete` / `🚫 closed`                                                                                         |
+| `task`     | Task name (kebab-case, matches directory name under `tasks/`)                                                                                                       |
+| `priority` | `🔥 critical` / `🔴 high` / `🟡 medium` / `🟢 low` / `🟣 non-work`                                                                                                  |
+| `date`     | Creation date (YYYY-MM-DD)                                                                                                                                          |
 
 ## Problem
 

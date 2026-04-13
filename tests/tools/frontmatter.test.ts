@@ -494,11 +494,7 @@ describe("validateFmValue for repo", () => {
 
   it("rejects repo with spaces", () => {
     expect(
-      validateFmValue(
-        `${vaultTmp}/tasks/t/schema.md`,
-        "repo",
-        "owner/ repo",
-      ),
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "repo", "owner/ repo"),
     ).toMatch(/invalid repo/);
   });
 });
