@@ -16,6 +16,8 @@ const VALID_SCHEMA = `---
 status: 📋 todo
 repo: lint-owner/lint-repo
 task: task-valid
+tags: [ci, bug]
+estimate: M
 date: 2026-01-01
 priority: 🟡 medium
 issue: "[#1](https://github.com/lint-owner/lint-repo/issues/1)"

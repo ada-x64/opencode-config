@@ -2,7 +2,14 @@
 import { tool } from "@opencode-ai/plugin";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { PRIORITY_VALUES, REVIEW_STATUSES, STATUS_ENUMS } from "../fm/_lib";
+import {
+  PRIORITY_VALUES,
+  REVIEW_STATUSES,
+  STATUS_ENUMS,
+  ESTIMATE_VALUES,
+  TAG_VOCABULARY,
+  parseFlowArray,
+} from "../fm/_lib";
 
 // ---------------------------------------------------------------------------
 // Frontmatter helpers
@@ -33,7 +40,7 @@ function lintSchema(content: string, relPath: string): string[] {
     return errors;
   }
 
-  for (const field of ["repo", "date", "task"]) {
+  for (const field of ["repo", "date", "task", "tags", "estimate"]) {
     if (!new RegExp(`^${field}:`, "m").test(block)) {
       errors.push(`${relPath}: missing '${field}' in frontmatter`);
     }
@@ -66,6 +73,55 @@ function lintSchema(content: string, relPath: string): string[] {
 
   if (!/^issue:/m.test(block)) {
     errors.push(`${relPath}: warning: missing 'issue' in frontmatter`);
+  }
+
+  const estimateMatch = block.match(/^estimate:\s*(.+)$/m);
+  if (estimateMatch) {
+    const estimate = estimateMatch[1]!.trim();
+    if (!ESTIMATE_VALUES.includes(estimate)) {
+      errors.push(
+        `${relPath}: invalid estimate value: '${estimate}' (expected: ${ESTIMATE_VALUES.join(", ")})`,
+      );
+    }
+  }
+
+  const tagsMatch = block.match(/^tags:\s*(.+)$/m);
+  if (tagsMatch) {
+    const tagsRaw = tagsMatch[1]!.trim();
+    const parsed = parseFlowArray(tagsRaw);
+    if (parsed === null) {
+      errors.push(
+        `${relPath}: tags must be a flow array (e.g. [ci, bug]), got: '${tagsRaw}'`,
+      );
+    } else {
+      for (const tag of parsed) {
+        if (!TAG_VOCABULARY.includes(tag)) {
+          errors.push(
+            `${relPath}: warning: unknown tag '${tag}' (known: ${TAG_VOCABULARY.join(", ")})`,
+          );
+        }
+      }
+    }
+  }
+
+  const repoMatch = block.match(/^repo:\s*(.+)$/m);
+  if (repoMatch) {
+    const repoRaw = repoMatch[1]!.trim();
+    const repoPattern = /^[^/\s]+\/[^/\s]+$/;
+    const arr = parseFlowArray(repoRaw);
+    if (arr !== null) {
+      for (const elem of arr) {
+        if (!repoPattern.test(elem)) {
+          errors.push(
+            `${relPath}: invalid repo element '${elem}' — expected 'owner/repo' format`,
+          );
+        }
+      }
+    } else if (!repoPattern.test(repoRaw)) {
+      errors.push(
+        `${relPath}: invalid repo '${repoRaw}' — expected 'owner/repo' format`,
+      );
+    }
   }
 
   if (!/^# /m.test(content)) {
@@ -118,6 +174,45 @@ function lintReview(content: string, relPath: string): string[] {
 
   if (!/^## Verdict:/m.test(content)) {
     errors.push(`${relPath}: missing ## Verdict: section`);
+  }
+
+  // Warn about missing tags and estimate (not required for reviews, just advisory)
+  if (!/^tags:/m.test(block)) {
+    errors.push(`${relPath}: warning: missing 'tags' in frontmatter`);
+  }
+  if (!/^estimate:/m.test(block)) {
+    errors.push(`${relPath}: warning: missing 'estimate' in frontmatter`);
+  }
+
+  // Validate tags format and vocabulary if present
+  const reviewTagsMatch = block.match(/^tags:\s*(.+)$/m);
+  if (reviewTagsMatch) {
+    const tagsRaw = reviewTagsMatch[1]!.trim();
+    const parsed = parseFlowArray(tagsRaw);
+    if (parsed === null) {
+      errors.push(
+        `${relPath}: tags must be a flow array (e.g. [ci, bug]), got: '${tagsRaw}'`,
+      );
+    } else {
+      for (const tag of parsed) {
+        if (!TAG_VOCABULARY.includes(tag)) {
+          errors.push(
+            `${relPath}: warning: unknown tag '${tag}' (known: ${TAG_VOCABULARY.join(", ")})`,
+          );
+        }
+      }
+    }
+  }
+
+  // Validate estimate format if present
+  const reviewEstimateMatch = block.match(/^estimate:\s*(.+)$/m);
+  if (reviewEstimateMatch) {
+    const estimate = reviewEstimateMatch[1]!.trim();
+    if (!ESTIMATE_VALUES.includes(estimate)) {
+      errors.push(
+        `${relPath}: invalid estimate value: '${estimate}' (expected: ${ESTIMATE_VALUES.join(", ")})`,
+      );
+    }
   }
 
   // Check each ### N. issue block for **Severity:** and **Category:**
