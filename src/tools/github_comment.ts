@@ -3,15 +3,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-/**
- * Build the disclosure footer appended to every agent-generated comment.
- * Exported for testability.
- */
-export function buildFooter(agent: string, now?: Date): string {
-  const d = now ?? new Date();
-  const ts = d.toISOString().replace("T", " ").slice(0, 16) + " UTC";
-  return `\n\n---\n*Posted by **${agent}** at ${ts}*`;
-}
+export { buildFooter } from "./_lib/footer";
+import { buildFooter } from "./_lib/footer";
 
 export default tool({
   description:
