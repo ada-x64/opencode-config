@@ -95,29 +95,30 @@ automatically if the repo uses the bare/worktree layout.
    and be added to the correct project board. Follow this process:
 
    a. Run `vault_cache` to refresh the GitHub metadata cache for the repo's
-      owner. This populates `$AGENT_VAULT/_misc/cache/<owner>.json` with
-      current labels, projects, and milestones.
+   owner. This populates `$AGENT_VAULT/_misc/cache/<owner>.json` with
+   current labels, projects, and milestones.
 
    b. If you already passed `labels` and `project` to `create_issue` in step 6,
-      verify they were applied. If not (or if `create_issue` was called without
-      them), apply them now using `gh issue edit`:
-      ```
-      gh issue edit <number> -R <owner>/<repo> --add-label <label> --add-project <project>
-      ```
+   verify they were applied. If not (or if `create_issue` was called without
+   them), apply them now using `gh issue edit`:
+
+   ```
+   gh issue edit <number> -R <owner>/<repo> --add-label <label> --add-project <project>
+   ```
 
    c. If you are unsure which label(s) or project board to use, you **MUST**
-      ask the user using the `question` tool. Offer the available options
-      discovered from the cache. Do NOT guess or skip.
+   ask the user using the `question` tool. Offer the available options
+   discovered from the cache. Do NOT guess or skip.
 
    d. For labels, select from the repo's available labels. Common mappings:
-      - Bug fix / broken behavior → `bug`
-      - New feature / capability → `enhancement`
-      - Documentation changes → `documentation`
-      - If multiple apply, use multiple labels.
+   - Bug fix / broken behavior → `bug`
+   - New feature / capability → `enhancement`
+   - Documentation changes → `documentation`
+   - If multiple apply, use multiple labels.
 
    e. For project boards, select from the owner's available projects.
-      If the repo or task context makes the correct board obvious, use it.
-      Otherwise, ask the user.
+   If the repo or task context makes the correct board obvious, use it.
+   Otherwise, ask the user.
 
    **Never skip labeling or project assignment.** If the `question` tool is
    unavailable or the user declines to answer, note it in the schema and
@@ -125,23 +126,23 @@ automatically if the repo uses the bare/worktree layout.
 
 > **Important:** If you don't know which labels or project board to use, you
 > MUST ask the user using the `question` tool. Do not guess or skip. Every
-> issue must leave the planner workflow with labels and a project assignment.
-8. **Link** the issue back into the schema header.
-9. **Cross-reference PRs** — if the issue you just created relates to an open
-   PR (e.g., a bug found during CI, a design question from review, a follow-up
-   task), post a comment on the PR. Load the `github` skill and use the
-   `github_comment` tool:
-   ```
-   github_comment({
-     repo: "<owner>/<repo>",
-     number: <pr-number>,
-     body: "Opened #<issue-number> to track <short description>.",
-     agent: "planner",
-     type: "pr"
-   })
-   ```
-   Skip this step if there is no related PR or if the issue is the PR's own
-   tracking issue.
+> issue must leave the planner workflow with labels and a project assignment. 8. **Link** the issue back into the schema header. 9. **Cross-reference PRs** — if the issue you just created relates to an open
+> PR (e.g., a bug found during CI, a design question from review, a follow-up
+> task), post a comment on the PR. Load the `github` skill and use the
+> `github_comment` tool:
+
+```
+github_comment({
+  repo: "<owner>/<repo>",
+  number: <pr-number>,
+  body: "Opened #<issue-number> to track <short description>.",
+  agent: "planner",
+  type: "pr"
+})
+```
+
+Skip this step if there is no related PR or if the issue is the PR's own
+tracking issue.
 
 ## Research
 
