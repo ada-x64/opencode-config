@@ -76,6 +76,8 @@ Pass `reviewer` as the icon **and an outcome semantic key**:
 notify_triage({ type: "activity", task: "<owner>/<repo>/<task>", headline: "Review Complete", body: "• 3 findings, max severity: medium", icon: "reviewer", emoji: "clean" })
 ```
 
+{{include:agents/_shared/env-issues.md}}
+
 ## What you MUST NOT do
 
 - Write to any path outside the review file

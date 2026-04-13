@@ -150,6 +150,8 @@ its **Write Mode** instructions. The two post-work steps are **mandatory**:
 
 {{include:agents/_shared/triage.md}}
 
+{{include:agents/_shared/env-issues.md}}
+
 ## What you MUST NOT do
 
 - Write to any path outside the schema file and `$AGENT_VAULT/drafts/`

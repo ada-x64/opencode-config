@@ -22,6 +22,9 @@ opencode-config/
 │   ├── opencode.json          #   Core config: model, mode prompts
 │   ├── aoe-config.toml        #   AoE sandbox config template
 │   ├── agents/                #   Subagent definitions (7 agents)
+│   │   ├── _shared/           #     Include fragments shared across agents
+│   │   │   ├── triage.md      #       Triage & notification instructions
+│   │   │   └── env-issues.md  #       Environment problem reporting convention
 │   │   ├── planner.md
 │   │   ├── project-manager.md
 │   │   ├── implementor.md
