@@ -9,7 +9,8 @@ export default tool({
     "Create a GitHub issue from a schema Markdown file. " +
     "Extracts the H1 heading as the issue title. The body contains " +
     "the '## Problem' section as a visible summary, plus the full " +
-    "schema in a <details> block. Returns the issue URL.",
+    "schema in a <details> block. Optionally applies labels and " +
+    "adds the issue to a project board. Returns the issue URL.",
   args: {
     schema_file: tool.schema
       .string()
@@ -17,6 +18,20 @@ export default tool({
     repo: tool.schema
       .string()
       .describe("GitHub owner/repo slug (e.g. 'ada-x64/opencode-config')"),
+    labels: tool.schema
+      .string()
+      .optional()
+      .describe(
+        "Comma-separated label names to apply (e.g. 'bug,enhancement'). " +
+          "Each label is passed as a --label flag to gh issue create.",
+      ),
+    project: tool.schema
+      .string()
+      .optional()
+      .describe(
+        "Project board title to add the issue to (e.g. 'wf'). " +
+          "Passed as --project to gh issue create.",
+      ),
   },
   async execute(args) {
     const raw = await readFile(args.schema_file, "utf-8");
@@ -57,13 +72,38 @@ export default tool({
       ? `${problem}\n\n<details>\n<summary>Full schema</summary>\n\n${content}\n\n</details>`
       : `<details>\n<summary>Full schema</summary>\n\n${content}\n\n</details>`;
 
+    // Build dynamic args for gh issue create
+    const ghArgs: string[] = [
+      "issue",
+      "create",
+      "-R",
+      args.repo,
+      "--title",
+      title,
+    ];
+
+    // Add label flags (one --label per label)
+    if (args.labels) {
+      for (const label of args.labels.split(",")) {
+        const trimmed = label.trim();
+        if (trimmed) {
+          ghArgs.push("--label", trimmed);
+        }
+      }
+    }
+
+    // Add project flag
+    if (args.project) {
+      ghArgs.push("--project", args.project);
+    }
+
     // Write to temp file, run gh, then clean up
     const tmpDir = await mkdtemp(join(tmpdir(), "create-issue-"));
     const tmpFile = join(tmpDir, "body.md");
     try {
       await writeFile(tmpFile, body, "utf-8");
-      const result =
-        await Bun.$`gh issue create -R ${args.repo} --title ${title} --body-file ${tmpFile}`.text();
+      ghArgs.push("--body-file", tmpFile);
+      const result = await Bun.$`gh ${ghArgs}`.text();
       return result.trim();
     } finally {
       await rm(tmpDir, { recursive: true, force: true });
