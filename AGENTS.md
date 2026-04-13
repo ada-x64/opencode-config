@@ -59,7 +59,8 @@ opencode-config/
 │   │   ├── notify/            #     Notification tools
 │   │   │   ├── _lib.ts        #       Shared notification helpers
 │   │   │   ├── triage.ts      #       notify_triage tool
-│   │   │   └── session.ts     #       session_notify tool
+│   │   │   ├── session.ts     #       session_notify tool
+│   │   │   └── start.ts       #       notify_start tool
 │   │   ├── notify.ts          #     Barrel export for notify/ tools
 │   │   ├── triage/            #     Triage tools
 │   │   │   └── write.ts       #       triage_write tool
@@ -344,7 +345,7 @@ call tools directly — there are no shell scripts to invoke.
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Frontmatter | `fm_read`, `fm_write`                                                                                                                              |
 | Worktree    | `wt_detect`, `wt_owner_repo`, `wt_switch_branch`, `wt_cleanup`                                                                                     |
-| Notify      | `notify_triage`, `session_notify`                                                                                                                  |
+| Notify      | `notify_triage`, `notify_start`, `session_notify`                                                                                                                  |
 | Triage      | `triage_write`                                                                                                                                     |
 | Vault       | `vault_cache`, `vault_edit`, `vault_find`, `vault_gc`, `vault_init`, `vault_lint`, `vault_ls`, `vault_mv`, `vault_read`, `vault_rm`, `vault_write` |
 | GitHub      | `create_issue`, `create_pr`, `github_comment`                                                                                                      |

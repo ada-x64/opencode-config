@@ -99,16 +99,18 @@ Handle directly — without dispatching a subagent — when:
 
 ## Completion Notifications
 
-When handling a direct task (no subagent dispatched), capture the start time:
-
-```bash
-_start=$(date +%s)
-```
-
-When complete, call the `session_notify` tool to conditionally notify:
+When handling a direct task (no subagent dispatched), call `notify_start` at
+the beginning of work:
 
 ```
-session_notify({ start_epoch: "<_start value>", icon: "auditor", task: "<context>", headline: "<headline>" })
+notify_start({})
+```
+
+When complete, call `notify_session` — it reads the stored start time
+automatically:
+
+```
+notify_session({ icon: "auditor", task: "<context>", headline: "<headline>" })
 ```
 
 **Skip this** if a subagent was dispatched — subagents handle their own
