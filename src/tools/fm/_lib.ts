@@ -92,7 +92,8 @@ export const STATUS_ENUMS: Record<string, string[]> = {
   "tasks/": [
     "📋 todo",
     "🔨 in-progress",
-    "🔍 in-review",
+    "🔍 local-review",
+    "📤 peer-review",
     "✅ complete",
     "🚫 closed",
   ],
