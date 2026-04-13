@@ -212,7 +212,8 @@ the reality.
   skill implies autonomous commit consent. The prompting rule above applies
   only when the skill is NOT loaded.
 - For PR creation, prefer the `create_pr` tool which generates a body from commit
-  history: `create_pr({ repo: "<owner/repo>" })`
+  history: `create_pr({ repo: "<owner/repo>", agent: "<agent-name>" })`.
+  Always pass the `agent` parameter so the disclosure footer is appended.
 
 ### Bare Repo / Worktree Support
 
