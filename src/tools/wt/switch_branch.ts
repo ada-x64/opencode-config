@@ -19,9 +19,7 @@ async function syncToRemote(wtPath: string, branch: string): Promise<void> {
   if (refCheck.exitCode !== 0) return; // No remote ref — leave as-is
 
   // Compare local HEAD with remote
-  const localSha = (
-    await Bun.$`git -C ${wtPath} rev-parse HEAD`.text()
-  ).trim();
+  const localSha = (await Bun.$`git -C ${wtPath} rev-parse HEAD`.text()).trim();
   const remoteSha = (
     await Bun.$`git -C ${wtPath} rev-parse origin/${branch}`.text()
   ).trim();

@@ -81,7 +81,9 @@ beforeAll(async () => {
 
   // Create a stale local branch "remote-test" in the bare repo that's behind
   // (points to the initial commit, not the two extra ones)
-  await Bun.$`git -C ${bareDir}/.bare branch remote-test HEAD`.quiet().nothrow();
+  await Bun.$`git -C ${bareDir}/.bare branch remote-test HEAD`
+    .quiet()
+    .nothrow();
 });
 
 afterAll(async () => {
@@ -235,8 +237,7 @@ describe("wt_switch_branch", () => {
 
     // Should be on the branch, at the same commit as main (since it was
     // branched from main and has no remote)
-    const branch =
-      await Bun.$`git -C ${wtPath} branch --show-current`.text();
+    const branch = await Bun.$`git -C ${wtPath} branch --show-current`.text();
     expect(branch.trim()).toBe("local-only-test");
   });
 });
