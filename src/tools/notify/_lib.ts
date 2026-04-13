@@ -13,6 +13,11 @@ export function getSessionStart(): number | null {
   return _sessionStartEpoch;
 }
 
+/** @internal — reset state for testing only */
+export function _resetSessionStart(): void {
+  _sessionStartEpoch = null;
+}
+
 export async function notifyTriage(opts: {
   type: string;
   task: string;
