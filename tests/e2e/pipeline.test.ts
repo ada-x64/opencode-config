@@ -243,8 +243,8 @@ describe("install e2e", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain("Rsync (sandbox) complete");
 
-    // Default SANDBOX_CONFIG_DIR is $HOME/.config/opencode-sandbox
-    const sandboxConfigDir = join(home, ".config", "opencode-sandbox");
+    // Default SANDBOX_CONFIG_DIR is $HOME/.config/opencode/sandbox
+    const sandboxConfigDir = join(home, ".config", "opencode", "sandbox");
     expect(existsSync(join(sandboxConfigDir, "opencode.json"))).toBe(true);
   });
 
@@ -844,7 +844,7 @@ describe("full pipeline e2e", () => {
     expect(existsSync(join(home, ".local", "bin", "vault-sync"))).toBe(true);
 
     // Sandbox config deployed
-    const sandboxConfigDir = join(home, ".config", "opencode-sandbox");
+    const sandboxConfigDir = join(home, ".config", "opencode", "sandbox");
     expect(existsSync(join(sandboxConfigDir, "opencode.json"))).toBe(true);
   });
 });

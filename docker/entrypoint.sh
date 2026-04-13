@@ -55,24 +55,68 @@ if [[ -n "${SANDBOX_USER:-}" ]]; then
 	done
 
 	# Set HOME for the target user
-    export HOME="/home/$SANDBOX_USER"
+	export HOME="/home/$SANDBOX_USER"
 
-    # Grant Docker socket access if mounted
-    if [[ -S /var/run/docker.sock ]]; then
-        docker_gid=$(stat -c '%g' /var/run/docker.sock)
-        groupadd -g "$docker_gid" docker 2>/dev/null || true
-        usermod -aG docker "$SANDBOX_USER" 2>/dev/null || true
-    fi
+	# Grant Docker socket access if mounted
+	if [[ -S /var/run/docker.sock ]]; then
+		docker_gid=$(stat -c '%g' /var/run/docker.sock)
+		# Evict collisions (same pattern as sandbox group above)
+		existing_docker_group=$(getent group "$docker_gid" 2>/dev/null | cut -d: -f1 || true)
+		if [[ -n "$existing_docker_group" && "$existing_docker_group" != "docker" ]]; then
+			groupdel "$existing_docker_group" 2>/dev/null || true
+		fi
+		existing_docker_gid=$(getent group docker 2>/dev/null | cut -d: -f3 || true)
+		if [[ -n "$existing_docker_gid" && "$existing_docker_gid" != "$docker_gid" ]]; then
+			groupmod -g "$docker_gid" docker 2>/dev/null || true
+		fi
+		groupadd -g "$docker_gid" docker 2>/dev/null || true
+		usermod -aG docker "$SANDBOX_USER" 2>/dev/null || true
+	fi
 fi
 
 # Bridge /data/config → $HOME/.config/opencode so opencode finds its config.
 # Bridge /data/opencode-data → $HOME/.local/share/opencode for state/database.
 # Must run after HOME is set (either /home/$SANDBOX_USER or default /root).
-mkdir -p "$HOME/.config" "$HOME/.local/share"
-ln -sfn /data/config "$HOME/.config/opencode"
-ln -sfn /data/opencode-data "$HOME/.local/share/opencode"
+#
+# AoE may bind-mount its own config sync directory directly onto
+# /root/.config/opencode before the entrypoint runs. A bind mount cannot be
+# replaced with a symlink, so we detect it and populate the mount with
+# symlinks to the individual items in /data/config instead.
+bridge_config() {
+	local target="$1" source="$2"
+	mkdir -p "$(dirname "$target")"
+	if mountpoint -q "$target" 2>/dev/null; then
+		# Target is a bind mount — symlink each item from source into it.
+		# Existing files in the mount (e.g. opencode.json synced by AoE)
+		# are left alone; only missing items are linked.
+		local prev_nullglob
+		prev_nullglob=$(shopt -p nullglob || true)
+		shopt -s nullglob
+		for item in "$source"/*; do
+			local name
+			name=$(basename "$item")
+			if [[ ! -e "$target/$name" ]]; then
+				ln -sfn "$item" "$target/$name"
+			fi
+		done
+		$prev_nullglob
+	else
+		# No mount — replace with a single directory symlink.
+		ln -sfn "$source" "$target"
+	fi
+}
 
+bridge_config "$HOME/.config/opencode" /data/config
+bridge_config "$HOME/.local/share/opencode" /data/opencode-data
+
+# When SANDBOX_USER is set, HOME differs from /root. AoE's docker exec
+# runs as root, so also bridge /root paths to ensure opencode works
+# regardless of which user invokes it.
 if [[ -n "${SANDBOX_USER:-}" ]]; then
+	mkdir -p /root/.config /root/.local/share
+	bridge_config /root/.config/opencode /data/config
+	bridge_config /root/.local/share/opencode /data/opencode-data
+
 	# Ensure the symlink parents are owned by the target user
 	chown -R "${SANDBOX_UID}:${SANDBOX_GID}" "$HOME/.config" "$HOME/.local" 2>/dev/null || true
 
