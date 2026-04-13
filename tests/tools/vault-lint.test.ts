@@ -79,20 +79,159 @@ Approach.
 - file.ts
 `;
 
+// Schema with 🔍 in-review status (valid for tasks/)
+const IN_REVIEW_SCHEMA = `---
+status: 🔍 in-review
+repo: lint-owner/lint-repo
+task: task-in-review
+date: 2026-01-01
+priority: 🟡 medium
+issue: "[#3](https://github.com/lint-owner/lint-repo/issues/3)"
+---
+
+# In Review Task
+
+## Problem
+
+Problem.
+
+## Approach
+
+Approach.
+
+## Todos
+
+- [ ] item
+
+## Files changed
+
+- file.ts
+`;
+
+// Schema with 🚫 closed status (valid for tasks/)
+const CLOSED_SCHEMA = `---
+status: 🚫 closed
+repo: lint-owner/lint-repo
+task: task-closed
+date: 2026-01-01
+priority: 🟢 low
+issue: "[#4](https://github.com/lint-owner/lint-repo/issues/4)"
+---
+
+# Closed Task
+
+## Problem
+
+Problem.
+
+## Approach
+
+Approach.
+
+## Todos
+
+- [ ] item
+
+## Files changed
+
+- file.ts
+`;
+
+// Schema with bare "todo" (no emoji prefix) — should be rejected
+const BARE_TODO_SCHEMA = `---
+status: todo
+repo: lint-owner/lint-repo
+task: task-bare-todo
+date: 2026-01-01
+priority: 🟡 medium
+issue: "[#5](https://github.com/lint-owner/lint-repo/issues/5)"
+---
+
+# Bare Todo Task
+
+## Problem
+
+Problem.
+
+## Approach
+
+Approach.
+
+## Todos
+
+- [ ] item
+
+## Files changed
+
+- file.ts
+`;
+
+// Valid review with 📋 todo status
+const VALID_REVIEW = `---
+status: 📋 todo
+repo: lint-owner/lint-repo
+date: 2026-01-01
+---
+
+# Review: task-valid
+
+## Verdict: pending
+
+No issues found.
+`;
+
+// Review with 🔍 in-review status — NOT in REVIEW_STATUSES, should be rejected
+const BAD_REVIEW_STATUS = `---
+status: 🔍 in-review
+repo: lint-owner/lint-repo
+date: 2026-01-01
+---
+
+# Review: task-bad-review-status
+
+## Verdict: pending
+
+No issues found.
+`;
+
 beforeAll(async () => {
   tmp = await mkdtemp(path.join(tmpdir(), "vault-lint-test-"));
   vault = path.join(tmp, "vault");
 
-  const base = path.join(vault, "tasks", "lint-owner", "lint-repo");
+  const base = path.join(vault, "tasks");
   await mkdir(path.join(base, "task-valid"), { recursive: true });
   await mkdir(path.join(base, "task-invalid"), { recursive: true });
   await mkdir(path.join(base, "task-bad-status"), { recursive: true });
+  await mkdir(path.join(base, "task-in-review"), { recursive: true });
+  await mkdir(path.join(base, "task-closed"), { recursive: true });
+  await mkdir(path.join(base, "task-bare-todo"), { recursive: true });
+  await mkdir(path.join(base, "task-valid", "reviews"), { recursive: true });
+  await mkdir(path.join(base, "task-bad-review-status", "reviews"), {
+    recursive: true,
+  });
 
   await writeFile(path.join(base, "task-valid", "schema.md"), VALID_SCHEMA);
   await writeFile(path.join(base, "task-invalid", "schema.md"), INVALID_SCHEMA);
   await writeFile(
     path.join(base, "task-bad-status", "schema.md"),
     BAD_STATUS_SCHEMA,
+  );
+  await writeFile(
+    path.join(base, "task-in-review", "schema.md"),
+    IN_REVIEW_SCHEMA,
+  );
+  await writeFile(path.join(base, "task-closed", "schema.md"), CLOSED_SCHEMA);
+  await writeFile(
+    path.join(base, "task-bare-todo", "schema.md"),
+    BARE_TODO_SCHEMA,
+  );
+  await writeFile(
+    path.join(base, "task-valid", "reviews", "review.md"),
+    VALID_REVIEW,
+  );
+  await writeFile(
+    path.join(base, "task-bad-review-status", "reviews", "review.md"),
+    BAD_REVIEW_STATUS,
   );
 
   process.env.AGENT_VAULT = vault;
@@ -123,7 +262,7 @@ describe("vault_lint", () => {
   it("passes a fully valid schema", async () => {
     const result = await execute_tool(vault_lint, {
       schemas_only: true,
-      filter: "lint-owner/lint-repo/task-valid",
+      filter: "task-valid",
     });
     expect(result).toBe("All files pass validation.");
   });
@@ -133,7 +272,7 @@ describe("vault_lint", () => {
   it("reports missing H2 sections for an invalid schema", async () => {
     const result = await execute_tool(vault_lint, {
       schemas_only: true,
-      filter: "lint-owner/lint-repo/task-invalid",
+      filter: "task-invalid",
     });
     expect(result).toContain("task-invalid");
     expect(result).toMatch(/missing ## Problem/);
@@ -145,7 +284,7 @@ describe("vault_lint", () => {
   it("reports missing issue field as a warning", async () => {
     const result = await execute_tool(vault_lint, {
       schemas_only: true,
-      filter: "lint-owner/lint-repo/task-invalid",
+      filter: "task-invalid",
     });
     expect(result).toMatch(/warning.*missing 'issue'/i);
   });
@@ -153,7 +292,7 @@ describe("vault_lint", () => {
   it("reports an invalid status value", async () => {
     const result = await execute_tool(vault_lint, {
       schemas_only: true,
-      filter: "lint-owner/lint-repo/task-bad-status",
+      filter: "task-bad-status",
     });
     expect(result).toContain("task-bad-status");
     expect(result).toMatch(/invalid status value.*wip/);
@@ -162,7 +301,7 @@ describe("vault_lint", () => {
   it("includes 'Lint found issues above.' footer when errors exist", async () => {
     const result = await execute_tool(vault_lint, {
       schemas_only: true,
-      filter: "lint-owner/lint-repo/task-invalid",
+      filter: "task-invalid",
     });
     expect(result).toContain("Lint found issues above.");
   });
@@ -172,7 +311,7 @@ describe("vault_lint", () => {
   it("filter scopes lint to matching paths only", async () => {
     const result = await execute_tool(vault_lint, {
       schemas_only: true,
-      filter: "lint-owner/lint-repo/task-valid",
+      filter: "task-valid",
     });
     expect(result).not.toContain("task-invalid");
     expect(result).toBe("All files pass validation.");
@@ -188,5 +327,51 @@ describe("vault_lint", () => {
     } finally {
       process.env.AGENT_VAULT = vault;
     }
+  });
+
+  // ── Emoji-prefixed schema statuses ─────────────────────────────────────────
+
+  it("accepts 🔍 in-review as a valid schema status", async () => {
+    const result = await execute_tool(vault_lint, {
+      schemas_only: true,
+      filter: "task-in-review",
+    });
+    expect(result).toBe("All files pass validation.");
+  });
+
+  it("accepts 🚫 closed as a valid schema status", async () => {
+    const result = await execute_tool(vault_lint, {
+      schemas_only: true,
+      filter: "task-closed",
+    });
+    expect(result).toBe("All files pass validation.");
+  });
+
+  it("rejects bare 'todo' without emoji prefix", async () => {
+    const result = await execute_tool(vault_lint, {
+      schemas_only: true,
+      filter: "task-bare-todo",
+    });
+    expect(result).toContain("task-bare-todo");
+    expect(result).toMatch(/invalid status value.*todo/);
+  });
+
+  // ── Review status validation ───────────────────────────────────────────────
+
+  it("accepts 📋 todo as a valid review status", async () => {
+    const result = await execute_tool(vault_lint, {
+      reviews_only: true,
+      filter: "task-valid",
+    });
+    expect(result).toBe("All files pass validation.");
+  });
+
+  it("rejects 🔍 in-review for reviews (not in REVIEW_STATUSES)", async () => {
+    const result = await execute_tool(vault_lint, {
+      reviews_only: true,
+      filter: "task-bad-review-status",
+    });
+    expect(result).toContain("task-bad-review-status");
+    expect(result).toMatch(/invalid status value/);
   });
 });
