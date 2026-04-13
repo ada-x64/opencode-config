@@ -89,6 +89,41 @@ export function entrypointTests() {
     });
   });
 
+  describe("UID/GID collision with default ubuntu user", () => {
+    // ubuntu:24.04 ships with 'ubuntu' at UID 1000 / GID 1000.
+    // The entrypoint must evict it before creating the requested user.
+    const collisionEnv = {
+      SANDBOX_USER: "ada",
+      SANDBOX_GROUP: "agents",
+      SANDBOX_UID: "1000",
+      SANDBOX_GID: "1000",
+    };
+
+    it("creates the requested user at UID 1000 despite ubuntu user collision", async () => {
+      const result = await runEntrypoint(collisionEnv, ["whoami"]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe("ada");
+    });
+
+    it("creates the requested group at GID 1000 despite ubuntu group collision", async () => {
+      const result = await runEntrypoint(collisionEnv, ["id", "-gn"]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe("agents");
+    });
+
+    it("assigns the correct UID", async () => {
+      const result = await runEntrypoint(collisionEnv, ["id", "-u"]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe("1000");
+    });
+
+    it("assigns the correct GID", async () => {
+      const result = await runEntrypoint(collisionEnv, ["id", "-g"]);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe("1000");
+    });
+  });
+
   describe("config symlinks", () => {
     it("symlinks $HOME/.config/opencode → /data/config as root", async () => {
       const result = await runEntrypoint({}, [
