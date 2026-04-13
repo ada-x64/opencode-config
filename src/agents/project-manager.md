@@ -179,6 +179,8 @@ follow its **Write Mode** instructions. The two post-work steps are
 - Vault cleanup completed (type: `activity` — include archive count)
 -->
 
+{{include:agents/_shared/tone-indicators.md}}
+
 {{include:agents/_shared/triage.md}}
 
 > **For cross-repo operations:** If no per-task directory exists, write to

@@ -148,6 +148,8 @@ its **Write Mode** instructions. The two post-work steps are **mandatory**:
 - GitHub issue created for the schema (type: `activity`)
 -->
 
+{{include:agents/_shared/tone-indicators.md}}
+
 {{include:agents/_shared/triage.md}}
 
 ## What you MUST NOT do

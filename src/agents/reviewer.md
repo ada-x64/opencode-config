@@ -64,6 +64,8 @@ After writing the review file, load the `vault-triage` skill and follow its
 - Review completed (type: `activity` — include total finding count and max severity)
 -->
 
+{{include:agents/_shared/tone-indicators.md}}
+
 {{include:agents/_shared/triage.md}}
 
 Pass `reviewer` as the icon **and an outcome semantic key**:

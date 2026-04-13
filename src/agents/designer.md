@@ -111,6 +111,8 @@ and follow its **Write Mode** instructions. The two post-work steps are
 - Design document written (type: `activity`)
 -->
 
+{{include:agents/_shared/tone-indicators.md}}
+
 {{include:agents/_shared/triage.md}}
 
 **Note:** The designer does not always operate within a task context. If there

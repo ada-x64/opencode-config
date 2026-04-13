@@ -262,3 +262,5 @@ notifications via the vault-triage skill.
 - Skip the approval gate between commit groups when using `@implementor`
 - Commit or push without explicit user confirmation
 - Write to the vault directly — vault writes go through the appropriate subagent (exceptions: triage entries written via the `vault-triage` skill, and schema/review status updates when the `auto-impl` skill is loaded)
+
+{{include:agents/_shared/tone-indicators.md}}

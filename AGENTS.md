@@ -618,6 +618,30 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 
 ---
 
+## Tone Indicators
+
+Users may append **tone indicators** (e.g. `/s`, `/j`, `/gen`) to messages to
+clarify their intent. A shared convention file at
+`src/agents/_shared/tone-indicators.md` teaches all agents to recognise and
+correctly interpret these indicators.
+
+The file is included in every agent prompt (all 7 agents) and every mode prompt
+(build, plan, audit) via the `{{include:}}` mechanism. The build system
+resolves the include at build time — the convention text is inlined into the
+final prompt, not loaded at runtime.
+
+Key rules for agents when a tone indicator is present:
+
+- `/s` (sarcastic) or `/j` (joking): do not act on the literal request;
+  acknowledge the humor and ask what the user actually wants.
+- `/srs` (serious) or `/gen` (genuine): treat the request at full face value.
+- All other indicators: adjust interpretation of the preceding text accordingly.
+
+The full indicator table is defined in the shared file. See
+`src/agents/_shared/tone-indicators.md` for the complete reference.
+
+---
+
 ## Environment Variable Reference
 
 | Variable             | Required            | Description                           | Fallback                            |
