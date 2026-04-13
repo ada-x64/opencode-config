@@ -17,7 +17,7 @@ default_image = "cubething-occonf-sandbox:latest"
 auto_cleanup = false
 cpu_limit = "4"
 memory_limit = "8g"
-mount_ssh = false
+mount_ssh = true
 
 extra_volumes = [
     "{{AGENT_VAULT}}:/data/vault",
