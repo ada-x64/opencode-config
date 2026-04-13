@@ -56,7 +56,7 @@ and prints the updated working path (see Behavior §3 below).
 - **Read-write:** task directory under `$AGENT_VAULT/tasks/` (for status updates)
 - **Build tools:** pre-approved (make, uv, python, cargo, pip, npm, etc.)
 - **Git staging:** pre-approved (`git add`)
-- **GitHub issue label transitions:** pre-approved (`gh issue edit` for `in-progress` label only; `review-ready` is set manually)
+- **GitHub issue label transitions:** pre-approved (`gh issue edit` for `in-progress` and `local-review` labels; `peer-review` is set when PR is pushed)
 - **Git commit/push, other gh mutations:** NOT pre-approved — always prompt
 
 ## Behavior
@@ -116,11 +116,11 @@ and prints the updated working path (see Behavior §3 below).
   ```
   This is best-effort and never blocks the startup sequence.
 - **After final commit group:** When all commit groups are complete and validated,
-  update the schema status to `🔍 in-review`:
+  update the schema status to `🔍 local-review`:
   ```
-  fm_write({ file: schema_file, key: "status", value: "🔍 in-review" })
+  fm_write({ file: schema_file, key: "status", value: "🔍 local-review" })
   ```
-- **After setting status `🔍 in-review`:** Remove the `in-progress` label and add the `review-ready` label on the linked GitHub issue (skip if vault-only or blank):
+- **After setting status `🔍 local-review`:** Remove the `in-progress` label and add the `local-review` label on the linked GitHub issue (skip if vault-only or blank):
   ```
   issue_field = fm_read({ file: schema_file, key: "issue" })
   repo_slug = fm_read({ file: schema_file, key: "repo" })
@@ -128,7 +128,7 @@ and prints the updated working path (see Behavior §3 below).
   If `issue_field` is non-empty and does not start with `local-`:
   ```bash
   _issue_num="$(echo "$issue_field" | grep -oP '#\K[0-9]+')"
-  gh issue edit "$_issue_num" -R "$repo_slug" --remove-label "in-progress" --add-label "review-ready" 2>/dev/null || true
+  gh issue edit "$_issue_num" -R "$repo_slug" --remove-label "in-progress" --add-label "local-review" 2>/dev/null || true
   ```
   This is best-effort and never blocks the completion sequence.
 - **Also on completion:** Post a completion comment on the linked GitHub issue (skip if vault-only or blank).

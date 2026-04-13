@@ -136,13 +136,14 @@ All status fields use emoji-prefixed values. Plain strings (`todo`, `complete`, 
 
 #### Schemas (Task file class)
 
-| Status           | Meaning                           |
-| ---------------- | --------------------------------- |
-| `📋 todo`        | Planned, not started              |
-| `🔨 in-progress` | Active implementation             |
-| `🔍 in-review`   | Implementation done, under review |
-| `✅ complete`    | Done                              |
-| `🚫 closed`      | Cancelled or superseded           |
+| Status            | Meaning                                   |
+| ----------------- | ----------------------------------------- |
+| `📋 todo`         | Planned, not started                      |
+| `🔨 in-progress`  | Active implementation                     |
+| `🔍 local-review` | Implementation done, awaiting user review |
+| `📤 peer-review`  | PR pushed, awaiting maintainer review     |
+| `✅ complete`     | Done                                      |
+| `🚫 closed`       | Cancelled or superseded                   |
 
 #### Reviews (Task file class)
 

@@ -18,7 +18,13 @@ savedViews:
         name: status
         direction: asc
         priority: 2
-        customOrder: []
+        customOrder:
+          - 🔨 in-progress
+          - 📋 todo
+          - 🔍 local-review
+          - 📤 peer-review
+          - ✅ complete
+          - 🚫 closed
     filters:
       - id: Task____file
         name: file
@@ -180,9 +186,10 @@ fields:
       valuesList:
         "0": 📋 todo
         "1": 🔨 in-progress
-        "2": 🔍 in-review
-        "3": ✅ complete
-        "4": 🚫 closed
+        "2": 🔍 local-review
+        "3": 📤 peer-review
+        "4": ✅ complete
+        "5": 🚫 closed
   - name: priority
     type: Select
     id: priority
