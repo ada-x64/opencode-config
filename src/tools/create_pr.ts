@@ -2,6 +2,7 @@ import { tool } from "@opencode-ai/plugin";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { buildFooter } from "./_lib/footer";
 
 export default tool({
   description:
@@ -28,6 +29,13 @@ export default tool({
       .optional()
       .describe(
         "Agent-generated summary placed in a ## Summary section at the top",
+      ),
+    agent: tool.schema
+      .string()
+      .optional()
+      .describe(
+        "Agent name for the disclosure footer (e.g. 'implementor'). " +
+          "If omitted, no footer is appended.",
       ),
   },
   async execute(args) {
@@ -74,11 +82,14 @@ export default tool({
     sections.push(`## Diff summary\n\n\`\`\`\n${diffstat}\n\`\`\``);
     const body = sections.join("\n\n");
 
+    // Append disclosure footer when agent is specified
+    const finalBody = args.agent ? body + buildFooter(args.agent) : body;
+
     // Write to temp file, run gh, then clean up
     const tmpDir = await mkdtemp(join(tmpdir(), "create-pr-"));
     const tmpFile = join(tmpDir, "body.md");
     try {
-      await writeFile(tmpFile, body, "utf-8");
+      await writeFile(tmpFile, finalBody, "utf-8");
       const result =
         await Bun.$`gh pr create -R ${args.repo} --base ${base} --head ${head} --title ${title} --body-file ${tmpFile}`.text();
       return result.trim();
