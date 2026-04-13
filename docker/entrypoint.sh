@@ -55,7 +55,14 @@ if [[ -n "${SANDBOX_USER:-}" ]]; then
 	done
 
 	# Set HOME for the target user
-	export HOME="/home/$SANDBOX_USER"
+    export HOME="/home/$SANDBOX_USER"
+
+    # Grant Docker socket access if mounted
+    if [[ -S /var/run/docker.sock ]]; then
+        docker_gid=$(stat -c '%g' /var/run/docker.sock)
+        groupadd -g "$docker_gid" docker 2>/dev/null || true
+        usermod -aG docker "$SANDBOX_USER" 2>/dev/null || true
+    fi
 fi
 
 # Bridge /data/config → $HOME/.config/opencode so opencode finds its config.
