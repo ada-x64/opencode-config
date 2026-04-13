@@ -25,6 +25,12 @@ RUN curl -fsSL https://github.com/mikefarah/yq/releases/latest/download/yq_linux
       -o /usr/local/bin/yq \
     && chmod +x /usr/local/bin/yq
 
+# actionlint — GitHub Actions workflow linter
+RUN ACTIONLINT_VER="1.7.7" \
+    && curl -fsSL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VER}/actionlint_${ACTIONLINT_VER}_linux_amd64.tar.gz" \
+      | tar xz -C /usr/local/bin actionlint \
+    && chmod +x /usr/local/bin/actionlint
+
 # gosu — clean privilege dropping without TTY/signal issues
 RUN curl -fsSL "https://github.com/tianon/gosu/releases/latest/download/gosu-$(dpkg --print-architecture)" \
       -o /usr/local/bin/gosu \
