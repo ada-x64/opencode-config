@@ -45,6 +45,12 @@ savedViews:
       - id: Task____priority
         name: priority
         query: ""
+      - id: Task____tags
+        name: tags
+        query: ""
+      - id: Task____estimate
+        name: estimate
+        query: ""
     columns:
       - id: Task____file
         name: file
@@ -57,15 +63,15 @@ savedViews:
       - id: Task____issue
         name: issue
         hidden: false
-        position: 5
+        position: 7
       - id: Task____branch
         name: branch
         hidden: false
-        position: 6
+        position: 8
       - id: Task____date
         name: date
         hidden: false
-        position: 7
+        position: 9
       - id: Task____status
         name: status
         hidden: false
@@ -78,6 +84,14 @@ savedViews:
         name: priority
         hidden: false
         position: 4
+      - id: Task____estimate
+        name: estimate
+        hidden: false
+        position: 5
+      - id: Task____tags
+        name: tags
+        hidden: false
+        position: 6
   - name: active
     children: []
     sorters:
@@ -130,6 +144,14 @@ savedViews:
         name: repo
         query: ""
         customFilter: ""
+      - id: Task____tags
+        name: tags
+        query: ""
+        customFilter: ""
+      - id: Task____estimate
+        name: estimate
+        query: ""
+        customFilter: ""
     columns:
       - id: Task____file
         name: file
@@ -142,15 +164,15 @@ savedViews:
       - id: Task____issue
         name: issue
         hidden: false
-        position: 5
+        position: 7
       - id: Task____branch
         name: branch
         hidden: true
-        position: 7
+        position: 9
       - id: Task____date
         name: date
         hidden: true
-        position: 6
+        position: 8
       - id: Task____status
         name: status
         hidden: false
@@ -163,13 +185,21 @@ savedViews:
         name: repo
         hidden: false
         position: 4
+      - id: Task____estimate
+        name: estimate
+        hidden: false
+        position: 5
+      - id: Task____tags
+        name: tags
+        hidden: false
+        position: 6
 fields:
   - name: task
     type: Input
     id: task
     options: {}
   - name: repo
-    type: Input
+    type: Multi
     id: repo
     options: {}
   - name: status
@@ -194,6 +224,17 @@ fields:
         "2": 🟡 medium
         "3": 🟢 low
         "4": 🟣 non-work
+  - name: estimate
+    type: Select
+    id: estimate
+    options:
+      sourceType: ValuesList
+      valuesList:
+        "0": XS
+        "1": S
+        "2": M
+        "3": L
+        "4": XL
   - name: date
     type: Date
     id: date
@@ -206,6 +247,10 @@ fields:
     type: Input
     id: issue
     options: {}
+  - name: tags
+    type: Multi
+    id: tags
+    options: {}
 filesPaths:
   - tasks
 bookmarksGroups:
@@ -217,6 +262,8 @@ fieldsOrder:
   - date
   - status
   - priority
+  - estimate
   - repo
-version: "2.8"
+  - tags
+version: "2.9"
 ---
