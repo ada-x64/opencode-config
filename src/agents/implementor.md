@@ -161,6 +161,29 @@ reflect progress. Do not modify any other part of the review file.
   fm_write({ file: review_file, key: "status", value: "✅ complete" })
   ```
 
+### GitHub Actions validation
+
+When any commit modifies files matching `.github/workflows/*.yml` or
+workflow template files (e.g., `templates/*.yml`), you MUST run
+`actionlint` on the changed workflow files as an additional validation
+step alongside the schema's own `validate-commitN`:
+
+```bash
+actionlint .github/workflows/*.yml
+```
+
+For template files that use non-standard placeholders (e.g.,
+`{{ZUTIL_VERSION}}`), actionlint may report false positives. Use
+`-ignore` flags for known template patterns:
+
+```bash
+actionlint -ignore '{{' templates/*.yml || true
+```
+
+If `actionlint` is not installed, file an issue on
+`ada-x64/opencode-config` per the environment problem reporting
+convention and continue with other validation.
+
 ## What you MUST NOT do
 
 - Write outside the repository directory provided by the caller (schema/review status updates excepted)
