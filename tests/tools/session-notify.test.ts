@@ -1,8 +1,16 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 import session_notify from "../../src/tools/notify/session";
+import {
+  setSessionStart,
+  _resetSessionStart,
+} from "../../src/tools/notify/_lib";
 import { execute_tool } from "./_lib";
 
 describe("session_notify", () => {
+  beforeEach(() => {
+    _resetSessionStart();
+  });
+
   it("has the correct description", () => {
     expect(session_notify.description).toContain("3 minutes");
   });
@@ -49,7 +57,7 @@ describe("session_notify", () => {
 
   it("would notify for a start epoch older than 3 minutes", async () => {
     // 4 minutes ago — crosses the 180s threshold.
-    // notify.sh will fail silently in CI (no ntfy configured), but the
+    // notifyTriage will fail silently in CI (no ntfy configured), but the
     // tool should still return the "Notification sent" message.
     const fourMinsAgo = (Math.floor(Date.now() / 1000) - 240).toString();
     const result = await execute_tool(session_notify, {
@@ -60,5 +68,47 @@ describe("session_notify", () => {
     });
     expect(result).toContain("minutes");
     expect(result).not.toContain("below");
+  });
+
+  it("returns error when start_epoch omitted and session_start never called", async () => {
+    const result = await execute_tool(session_notify, {
+      icon: "build",
+    });
+    expect(result).toContain("session_start was never called");
+  });
+
+  it("uses stored epoch when start_epoch omitted after session_start", async () => {
+    // Set a recent start — should be below threshold
+    setSessionStart();
+    const result = await execute_tool(session_notify, {
+      icon: "build",
+    });
+    expect(result).toContain("below");
+    expect(result).toMatch(/\d+s/);
+  });
+
+  it("uses stored epoch for above-threshold notification", async () => {
+    // Set start to 4 minutes ago
+    const fourMinsAgo = Math.floor(Date.now() / 1000) - 240;
+    setSessionStart(fourMinsAgo);
+    const result = await execute_tool(session_notify, {
+      icon: "build",
+      task: "test-owner/test-repo/test-task",
+      headline: "Test Complete",
+    });
+    expect(result).toContain("minutes");
+    expect(result).not.toContain("below");
+  });
+
+  it("explicit start_epoch takes precedence over stored value", async () => {
+    // Store a value from 4 minutes ago (would trigger notification)
+    setSessionStart(Math.floor(Date.now() / 1000) - 240);
+    // But pass a recent explicit epoch (should be below threshold)
+    const now = Math.floor(Date.now() / 1000).toString();
+    const result = await execute_tool(session_notify, {
+      start_epoch: now,
+      icon: "build",
+    });
+    expect(result).toContain("below");
   });
 });

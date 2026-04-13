@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin";
-import { notifyTriage } from "./_lib";
+import { getSessionStart, notifyTriage } from "./_lib";
 
 export default tool({
   description:
@@ -11,8 +11,9 @@ export default tool({
   args: {
     start_epoch: tool.schema
       .string()
+      .optional()
       .describe(
-        "Unix epoch (seconds) captured at the start of work via date +%s",
+        "Unix epoch (seconds). If omitted, uses the value from session_start.",
       ),
     icon: tool.schema
       .string()
@@ -29,12 +30,21 @@ export default tool({
       .describe("Notification headline (default: 'Session Task Complete')"),
   },
   async execute(args) {
-    if (!/^\d+$/.test(args.start_epoch)) {
+    let startStr = args.start_epoch;
+    if (!startStr) {
+      const stored = getSessionStart();
+      if (stored === null) {
+        return "No start_epoch provided and session_start was never called";
+      }
+      startStr = stored.toString();
+    }
+
+    if (!/^\d+$/.test(startStr)) {
       return "Invalid start_epoch — must be a Unix timestamp";
     }
 
     const now = Math.floor(Date.now() / 1000);
-    const start = parseInt(args.start_epoch, 10);
+    const start = parseInt(startStr, 10);
     const elapsed = now - start;
 
     if (elapsed <= 180) {

@@ -1,6 +1,23 @@
 import path from "path";
 import fs from "fs/promises";
 
+// Module-level session state
+let _sessionStartEpoch: number | null = null;
+
+export function setSessionStart(epoch?: number): number {
+  _sessionStartEpoch = epoch ?? Math.floor(Date.now() / 1000);
+  return _sessionStartEpoch;
+}
+
+export function getSessionStart(): number | null {
+  return _sessionStartEpoch;
+}
+
+/** @internal — reset state for testing only */
+export function _resetSessionStart(): void {
+  _sessionStartEpoch = null;
+}
+
 export async function notifyTriage(opts: {
   type: string;
   task: string;
