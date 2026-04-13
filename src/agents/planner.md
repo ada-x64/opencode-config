@@ -77,15 +77,55 @@ automatically if the repo uses the bare/worktree layout.
    Present the schema path and wait for feedback. If the user requests
    changes, iterate on the schema and ask for review again.
 6. **Create** a GitHub issue using the `create_issue` tool. Pass the schema file
-   path and the `repo` from frontmatter:
+   path, the `repo` from frontmatter, and any labels/project determined in
+   the previous step:
    ```
-   create_issue({ schema_file: "$schema_file", repo: "<owner>/<repo>" })
+   create_issue({
+     schema_file: "$schema_file",
+     repo: "<owner>/<repo>",
+     labels: "<comma-separated labels>",
+     project: "<project title>"
+   })
    ```
    The tool reads the file from disk, extracts the H1 as the title, extracts
    the `## Problem` section as a visible summary, and wraps the full content in
    a `<details>` block. You do NOT need to read the schema file into context
    for this step.
-7. **Add** the issue to the project board and set milestone.
+7. **Label and project assignment.** Every issue MUST have at least one label
+   and be added to the correct project board. Follow this process:
+
+   a. Run `vault_cache` to refresh the GitHub metadata cache for the repo's
+      owner. This populates `$AGENT_VAULT/_misc/cache/<owner>.json` with
+      current labels, projects, and milestones.
+
+   b. If you already passed `labels` and `project` to `create_issue` in step 6,
+      verify they were applied. If not (or if `create_issue` was called without
+      them), apply them now using `gh issue edit`:
+      ```
+      gh issue edit <number> -R <owner>/<repo> --add-label <label> --add-project <project>
+      ```
+
+   c. If you are unsure which label(s) or project board to use, you **MUST**
+      ask the user using the `question` tool. Offer the available options
+      discovered from the cache. Do NOT guess or skip.
+
+   d. For labels, select from the repo's available labels. Common mappings:
+      - Bug fix / broken behavior → `bug`
+      - New feature / capability → `enhancement`
+      - Documentation changes → `documentation`
+      - If multiple apply, use multiple labels.
+
+   e. For project boards, select from the owner's available projects.
+      If the repo or task context makes the correct board obvious, use it.
+      Otherwise, ask the user.
+
+   **Never skip labeling or project assignment.** If the `question` tool is
+   unavailable or the user declines to answer, note it in the schema and
+   create a triage entry.
+
+> **Important:** If you don't know which labels or project board to use, you
+> MUST ask the user using the `question` tool. Do not guess or skip. Every
+> issue must leave the planner workflow with labels and a project assignment.
 8. **Link** the issue back into the schema header.
 9. **Cross-reference PRs** — if the issue you just created relates to an open
    PR (e.g., a bug found during CI, a design question from review, a follow-up
