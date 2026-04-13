@@ -625,7 +625,7 @@ calls fail silently if ntfy is not configured, so they never block agent work.
 | `AGENT_VAULT`        | Yes (for vault ops) | Absolute path to the Obsidian vault   | None — must be set                  |
 | `AGENT_REPOS`        | Yes (for repo ops)  | Absolute path to local repo checkouts | None — must be set                  |
 | `NTFY_TOPIC`         | No                  | ntfy.sh topic for push notifications  | `$AGENT_VAULT/_misc/ntfy-topic.txt` |
-| `SANDBOX_CONFIG_DIR` | No                  | Path where sandbox config is deployed | `$HOME/.config/opencode-sandbox`    |
+| `SANDBOX_CONFIG_DIR` | No                  | Path where sandbox config is deployed | `$HOME/.config/opencode/sandbox`    |
 
 `AGENT_VAULT` and `AGENT_REPOS` are checked at the top of any agent session
 that uses the vault or operates on a repository. The `vault-init` skill can

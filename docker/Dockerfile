@@ -65,6 +65,11 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
 RUN curl -fsSL https://opencode.ai/install | bash \
     && mv /root/.opencode/bin/opencode /usr/local/bin/opencode
 
+# Docker CLI (static binary — for Docker socket access, local CI, AoE dispatch)
+RUN ARCH=$(uname -m) && \
+    curl -fsSL "https://download.docker.com/linux/static/stable/${ARCH}/docker-27.5.1.tgz" \
+      | tar -xz --strip-components=1 -C /usr/local/bin/ docker/docker
+
 # Generic mount points (not tied to /root/)
 RUN mkdir -p /data/vault /data/config /data/opencode-data /workspace
 

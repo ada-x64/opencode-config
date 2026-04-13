@@ -8,7 +8,7 @@
  * Options:
  *   --opencode-config-dir <path>  Host config directory (default: ~/.config/opencode,
  *                                  override with OPENCODE_CONFIG_DIR env var).
- *   --sandbox-config-dir <path>   Sandbox config directory (default: ~/.config/opencode-sandbox,
+ *   --sandbox-config-dir <path>   Sandbox config directory (default: ~/.config/opencode/sandbox,
  *                                  override with SANDBOX_CONFIG_DIR env var).
  *   --profiles-config <path>      Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
  *                                  override with OCCONF_PROFILES env var).
@@ -733,7 +733,7 @@ Usage:
 Options:
   --opencode-config-dir <path>  Host config directory (default: ~/.config/opencode,
                                  override with OPENCODE_CONFIG_DIR env var).
-  --sandbox-config-dir <path>   Sandbox config directory (default: ~/.config/opencode-sandbox,
+  --sandbox-config-dir <path>   Sandbox config directory (default: ~/.config/opencode/sandbox,
                                  override with SANDBOX_CONFIG_DIR env var).
   --profiles-config <path>      Path to profiles.toml (default: ~/.config/occonf/profiles.toml,
                                  override with OCCONF_PROFILES env var).
@@ -800,7 +800,7 @@ Options:
     expandHome(
       args["sandbox-config-dir"] ||
         Bun.env.SANDBOX_CONFIG_DIR ||
-        "~/.config/opencode-sandbox",
+        "~/.config/opencode/sandbox",
     ),
   );
   const opencodeDataDir = resolve(

@@ -17,7 +17,7 @@ in `src/` are never modified. All stamping happens on the copies in `out/`.
 ```
 src/ ──build.ts──► out/host/    ──install.ts──► ~/.config/opencode
                                                   (or custom CONFIG_DIR)
-               ├─► out/sandbox/ ──install.ts──► ~/.config/opencode-sandbox
+               ├─► out/sandbox/ ──install.ts──► ~/.config/opencode/sandbox
                      ▲                            (or SANDBOX_CONFIG_DIR)
                build.json
             (model tiers, external_directory)
@@ -107,7 +107,7 @@ Path resolution order: CLI flag → env var → default.
 | Flag                    | Env var               | Default                          |
 | ----------------------- | --------------------- | -------------------------------- |
 | `--opencode-config-dir` | `OPENCODE_CONFIG_DIR` | `~/.config/opencode`             |
-| `--sandbox-config-dir`  | `SANDBOX_CONFIG_DIR`  | `~/.config/opencode-sandbox`     |
+| `--sandbox-config-dir`  | `SANDBOX_CONFIG_DIR`  | `~/.config/opencode/sandbox`     |
 | `--profiles-config`     | `OCCONF_PROFILES`     | `~/.config/occonf/profiles.toml` |
 
 ### `scripts/setup.ts`

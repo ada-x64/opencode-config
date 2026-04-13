@@ -12,7 +12,7 @@
 default_tool = "opencode"
 
 [sandbox]
-enabled_by_default = false
+enabled_by_default = true
 default_image = "cubething-occonf-sandbox:latest"
 auto_cleanup = false
 cpu_limit = "4"
@@ -23,4 +23,5 @@ extra_volumes = [
     "{{AGENT_VAULT}}:/data/vault",
     "{{SANDBOX_CONFIG_DIR}}:/data/config",
     "{{OPENCODE_DATA_DIR}}:/data/opencode-data",
+    "/var/run/docker.sock:/var/run/docker.sock",
 ]
