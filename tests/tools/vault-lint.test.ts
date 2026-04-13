@@ -16,6 +16,8 @@ const VALID_SCHEMA = `---
 status: 📋 todo
 repo: lint-owner/lint-repo
 task: task-valid
+tags: [ci, bug]
+estimate: M
 date: 2026-01-01
 priority: 🟡 medium
 issue: "[#1](https://github.com/lint-owner/lint-repo/issues/1)"
@@ -56,11 +58,135 @@ const BAD_STATUS_SCHEMA = `---
 status: wip
 repo: lint-owner/lint-repo
 task: task-bad-status
+tags: [ci]
+estimate: M
 date: 2026-01-01
 issue: "[#2](https://github.com/lint-owner/lint-repo/issues/2)"
 ---
 
 # Bad Status Task
+
+## Problem
+
+Problem.
+
+## Approach
+
+Approach.
+
+## Todos
+
+- [ ] item
+
+## Files changed
+
+- file.ts
+`;
+
+// Schema missing tags field
+const MISSING_TAGS_SCHEMA = `---
+status: 📋 todo
+repo: lint-owner/lint-repo
+task: task-no-tags
+estimate: M
+date: 2026-01-01
+priority: 🟡 medium
+issue: "[#3](https://github.com/lint-owner/lint-repo/issues/3)"
+---
+
+# Missing Tags Task
+
+## Problem
+
+Problem.
+
+## Approach
+
+Approach.
+
+## Todos
+
+- [ ] item
+
+## Files changed
+
+- file.ts
+`;
+
+// Schema missing estimate field
+const MISSING_ESTIMATE_SCHEMA = `---
+status: 📋 todo
+repo: lint-owner/lint-repo
+task: task-no-estimate
+tags: [ci]
+date: 2026-01-01
+priority: 🟡 medium
+issue: "[#4](https://github.com/lint-owner/lint-repo/issues/4)"
+---
+
+# Missing Estimate Task
+
+## Problem
+
+Problem.
+
+## Approach
+
+Approach.
+
+## Todos
+
+- [ ] item
+
+## Files changed
+
+- file.ts
+`;
+
+// Schema with invalid estimate value
+const BAD_ESTIMATE_SCHEMA = `---
+status: 📋 todo
+repo: lint-owner/lint-repo
+task: task-bad-estimate
+tags: [ci]
+estimate: XXL
+date: 2026-01-01
+priority: 🟡 medium
+issue: "[#5](https://github.com/lint-owner/lint-repo/issues/5)"
+---
+
+# Bad Estimate Task
+
+## Problem
+
+Problem.
+
+## Approach
+
+Approach.
+
+## Todos
+
+- [ ] item
+
+## Files changed
+
+- file.ts
+`;
+
+// Schema with unknown tag (should warn, not error on required)
+const UNKNOWN_TAG_SCHEMA = `---
+status: 📋 todo
+repo: lint-owner/lint-repo
+task: task-unknown-tag
+tags: [ci, custom-foo]
+estimate: S
+date: 2026-01-01
+priority: 🟡 medium
+issue: "[#6](https://github.com/lint-owner/lint-repo/issues/6)"
+---
+
+# Unknown Tag Task
 
 ## Problem
 
@@ -87,12 +213,32 @@ beforeAll(async () => {
   await mkdir(path.join(base, "task-valid"), { recursive: true });
   await mkdir(path.join(base, "task-invalid"), { recursive: true });
   await mkdir(path.join(base, "task-bad-status"), { recursive: true });
+  await mkdir(path.join(base, "task-no-tags"), { recursive: true });
+  await mkdir(path.join(base, "task-no-estimate"), { recursive: true });
+  await mkdir(path.join(base, "task-bad-estimate"), { recursive: true });
+  await mkdir(path.join(base, "task-unknown-tag"), { recursive: true });
 
   await writeFile(path.join(base, "task-valid", "schema.md"), VALID_SCHEMA);
   await writeFile(path.join(base, "task-invalid", "schema.md"), INVALID_SCHEMA);
   await writeFile(
     path.join(base, "task-bad-status", "schema.md"),
     BAD_STATUS_SCHEMA,
+  );
+  await writeFile(
+    path.join(base, "task-no-tags", "schema.md"),
+    MISSING_TAGS_SCHEMA,
+  );
+  await writeFile(
+    path.join(base, "task-no-estimate", "schema.md"),
+    MISSING_ESTIMATE_SCHEMA,
+  );
+  await writeFile(
+    path.join(base, "task-bad-estimate", "schema.md"),
+    BAD_ESTIMATE_SCHEMA,
+  );
+  await writeFile(
+    path.join(base, "task-unknown-tag", "schema.md"),
+    UNKNOWN_TAG_SCHEMA,
   );
 
   process.env.AGENT_VAULT = vault;
@@ -188,5 +334,50 @@ describe("vault_lint", () => {
     } finally {
       process.env.AGENT_VAULT = vault;
     }
+  });
+
+  // ── Tags/estimate lint rules ──────────────────────────────────────────────
+
+  it("reports missing tags as an error", async () => {
+    const result = await execute_tool(vault_lint, {
+      schemas_only: true,
+      filter: "lint-owner/lint-repo/task-no-tags",
+    });
+    expect(result).toMatch(/missing 'tags'/);
+  });
+
+  it("reports missing estimate as an error", async () => {
+    const result = await execute_tool(vault_lint, {
+      schemas_only: true,
+      filter: "lint-owner/lint-repo/task-no-estimate",
+    });
+    expect(result).toMatch(/missing 'estimate'/);
+  });
+
+  it("reports invalid estimate value", async () => {
+    const result = await execute_tool(vault_lint, {
+      schemas_only: true,
+      filter: "lint-owner/lint-repo/task-bad-estimate",
+    });
+    expect(result).toMatch(/invalid estimate value.*XXL/);
+  });
+
+  it("reports unknown tags as warnings", async () => {
+    const result = await execute_tool(vault_lint, {
+      schemas_only: true,
+      filter: "lint-owner/lint-repo/task-unknown-tag",
+    });
+    expect(result).toMatch(/warning.*unknown tag.*custom-foo/);
+    // Should NOT report tags as missing (they are present)
+    expect(result).not.toMatch(/missing 'tags'/);
+  });
+
+  it("invalid schema also reports missing tags and estimate", async () => {
+    const result = await execute_tool(vault_lint, {
+      schemas_only: true,
+      filter: "lint-owner/lint-repo/task-invalid",
+    });
+    expect(result).toMatch(/missing 'tags'/);
+    expect(result).toMatch(/missing 'estimate'/);
   });
 });

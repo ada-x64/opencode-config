@@ -84,6 +84,25 @@ export function fmWrite(content: string, key: string, value: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Flow-array parsing
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse a YAML flow-array value like `[a, b, c]` into a string array.
+ * Returns `null` if the value is not a flow array (i.e. a plain scalar).
+ */
+export function parseFlowArray(value: string): string[] | null {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return null;
+  const inner = trimmed.slice(1, -1).trim();
+  if (inner === "") return [];
+  return inner
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s !== "");
+}
+
+// ---------------------------------------------------------------------------
 // Validation enums (exported for use by vault_lint)
 // ---------------------------------------------------------------------------
 
@@ -114,10 +133,28 @@ export const PRIORITY_VALUES = [
   "🟣 non-work",
 ];
 
+/** Valid estimate values (t-shirt sizes). */
+export const ESTIMATE_VALUES = ["XS", "S", "M", "L", "XL"];
+
+/** Soft vocabulary for task tags — unknown tags produce warnings, not errors. */
+export const TAG_VOCABULARY = [
+  "ci",
+  "bug",
+  "feature",
+  "enhancement",
+  "refactor",
+  "docs",
+  "tooling",
+  "infra",
+  "test",
+  "security",
+  "release",
+];
+
 /**
  * Validate a frontmatter key/value pair for a given file path.
  *
- * Only validates `status` and `priority` keys for files inside `$AGENT_VAULT`.
+ * Validates `status`, `priority`, `estimate`, `tags`, and `repo` keys for files inside `$AGENT_VAULT`.
  * Returns an error message string if invalid, `null` if valid or not applicable.
  */
 export function validateFmValue(
@@ -125,8 +162,9 @@ export function validateFmValue(
   key: string,
   value: string,
 ): string | null {
-  // Only validate status and priority keys
-  if (key !== "status" && key !== "priority") return null;
+  // Only validate known keys
+  if (!["status", "priority", "estimate", "tags", "repo"].includes(key))
+    return null;
 
   // Read AGENT_VAULT — skip validation if unset or file is outside vault
   const vault = process.env.AGENT_VAULT;
@@ -142,6 +180,39 @@ export function validateFmValue(
     if (!relPath.startsWith("tasks/")) return null;
     if (!PRIORITY_VALUES.includes(value)) {
       return `invalid priority '${value}' — valid values: ${PRIORITY_VALUES.join(", ")}`;
+    }
+    return null;
+  }
+
+  if (key === "estimate") {
+    // Estimate validation only applies to task schemas
+    if (!relPath.startsWith("tasks/")) return null;
+    if (!ESTIMATE_VALUES.includes(value)) {
+      return `invalid estimate '${value}' — valid values: ${ESTIMATE_VALUES.join(", ")}`;
+    }
+    return null;
+  }
+
+  if (key === "tags") {
+    // Tags use soft vocabulary — fm_write never rejects.
+    // Lint handles vocabulary warnings.
+    return null;
+  }
+
+  if (key === "repo") {
+    const repoPattern = /^[^/\s]+\/[^/\s]+$/;
+    const arr = parseFlowArray(value);
+    if (arr !== null) {
+      for (const elem of arr) {
+        if (!repoPattern.test(elem)) {
+          return `invalid repo element '${elem}' — expected 'owner/repo' format`;
+        }
+      }
+      return null;
+    }
+    // Scalar — validate format
+    if (!repoPattern.test(value)) {
+      return `invalid repo '${value}' — expected 'owner/repo' format`;
     }
     return null;
   }

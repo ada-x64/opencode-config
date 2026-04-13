@@ -1,6 +1,7 @@
 import { tool } from "@opencode-ai/plugin";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { parseFlowArray } from "../fm/_lib";
 
 // Parse all key: value pairs from the YAML frontmatter block
 function parseFrontmatter(content: string): Record<string, string> {
@@ -180,7 +181,13 @@ export default tool({
           try {
             const content = await readFile(f, "utf-8");
             const fm = parseFrontmatter(content);
-            return fm["repo"] === args.repo ? f : null;
+            const repoVal = fm["repo"];
+            if (!repoVal) return null;
+            const arr = parseFlowArray(repoVal);
+            if (arr !== null) {
+              return arr.includes(args.repo!) ? f : null;
+            }
+            return repoVal === args.repo ? f : null;
           } catch {
             return null;
           }
