@@ -4,6 +4,7 @@ import { tmpdir } from "os";
 import path from "path";
 import fm_read from "../../src/tools/fm/read";
 import fm_write from "../../src/tools/fm/write";
+import { parseFlowArray, validateFmValue } from "../../src/tools/fm/_lib";
 import { execute_tool } from "./_lib";
 
 const SAMPLE_DOC = `---
@@ -287,7 +288,7 @@ describe("fm_write validation", () => {
     }
   });
 
-  it("skips validation for non-status/priority keys (e.g. 'repo')", async () => {
+  it("validates repo format for task files (accepts valid owner/repo)", async () => {
     const file = await makeVaultFile("tasks/owner/repo/mytask7/schema.md");
     const result = await execute_tool(fm_write, {
       file,
@@ -363,5 +364,155 @@ describe("fm_write validation", () => {
     });
     // Key doesn't exist in frontmatter → fmWrite is a no-op → no validation
     expect(result).not.toMatch(/^Error:/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseFlowArray tests
+// ---------------------------------------------------------------------------
+
+describe("parseFlowArray", () => {
+  it("parses a multi-element array", () => {
+    expect(parseFlowArray("[a, b, c]")).toEqual(["a", "b", "c"]);
+  });
+
+  it("returns null for a scalar", () => {
+    expect(parseFlowArray("foo")).toBeNull();
+  });
+
+  it("parses an empty array", () => {
+    expect(parseFlowArray("[]")).toEqual([]);
+  });
+
+  it("parses a single-element array", () => {
+    expect(parseFlowArray("[single]")).toEqual(["single"]);
+  });
+
+  it("handles whitespace around brackets", () => {
+    expect(parseFlowArray("  [ a , b ]  ")).toEqual(["a", "b"]);
+  });
+
+  it("filters out empty entries from trailing comma", () => {
+    expect(parseFlowArray("[a, b, ]")).toEqual(["a", "b"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateFmValue tests for estimate, tags, repo
+// ---------------------------------------------------------------------------
+
+describe("validateFmValue for estimate", () => {
+  it("accepts valid estimate 'M'", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "estimate", "M"),
+    ).toBeNull();
+  });
+
+  it("accepts valid estimate 'XS'", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "estimate", "XS"),
+    ).toBeNull();
+  });
+
+  it("accepts valid estimate 'XL'", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "estimate", "XL"),
+    ).toBeNull();
+  });
+
+  it("rejects invalid estimate 'XXL'", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "estimate", "XXL"),
+    ).toMatch(/invalid estimate/);
+  });
+
+  it("rejects lowercase estimate 'm'", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "estimate", "m"),
+    ).toMatch(/invalid estimate/);
+  });
+
+  it("skips estimate validation for non-task files", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/audits/a/b.md`, "estimate", "INVALID"),
+    ).toBeNull();
+  });
+});
+
+describe("validateFmValue for tags", () => {
+  it("accepts known tags (always returns null)", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "tags", "[ci, bug]"),
+    ).toBeNull();
+  });
+
+  it("accepts unknown tags (soft vocabulary — no write-time error)", () => {
+    expect(
+      validateFmValue(
+        `${vaultTmp}/tasks/t/schema.md`,
+        "tags",
+        "[ci, custom-tag]",
+      ),
+    ).toBeNull();
+  });
+
+  it("accepts empty tags array", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "tags", "[]"),
+    ).toBeNull();
+  });
+});
+
+describe("validateFmValue for repo", () => {
+  it("accepts scalar owner/repo", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "repo", "owner/repo"),
+    ).toBeNull();
+  });
+
+  it("accepts flow array of repos", () => {
+    expect(
+      validateFmValue(
+        `${vaultTmp}/tasks/t/schema.md`,
+        "repo",
+        "[owner/a, owner/b]",
+      ),
+    ).toBeNull();
+  });
+
+  it("rejects malformed repo in array", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "repo", "[malformed]"),
+    ).toMatch(/invalid repo/);
+  });
+
+  it("rejects malformed scalar repo", () => {
+    expect(
+      validateFmValue(`${vaultTmp}/tasks/t/schema.md`, "repo", "no-slash"),
+    ).toMatch(/invalid repo/);
+  });
+
+  it("rejects repo with spaces", () => {
+    expect(
+      validateFmValue(
+        `${vaultTmp}/tasks/t/schema.md`,
+        "repo",
+        "owner/ repo",
+      ),
+    ).toMatch(/invalid repo/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fm_read flow-array test
+// ---------------------------------------------------------------------------
+
+describe("fm_read flow-array", () => {
+  it("reads flow array value as raw string", async () => {
+    const doc = `---\nrepo: [owner/a, owner/b]\n---\n\n# Title\n`;
+    const file = path.join(tmp, "flow-array.md");
+    await writeFile(file, doc);
+    const result = await execute_tool(fm_read, { file, key: "repo" });
+    expect(result).toBe("[owner/a, owner/b]");
   });
 });
